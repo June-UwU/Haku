@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
+message("Building Haku Shared Library")
+
 set(PROJECT_NAME "Haku_Api")
 
 file(GLOB_RECURSE g_inc ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
@@ -29,5 +31,5 @@ add_library(${PROJECT_NAME}
 	${c_src}
 	${r_inc}
 	${r_src} )
-
+message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/")
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/)
