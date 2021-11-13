@@ -29,3 +29,5 @@ add_library(${PROJECT_NAME}
 	${c_src}
 	${r_inc}
 	${r_src} )
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/)
