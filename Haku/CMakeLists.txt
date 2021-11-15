@@ -11,6 +11,11 @@ file(GLOB_RECURSE c_src ${CMAKE_CURRENT_SOURCE_DIR}/Core/*.cpp)
 file(GLOB_RECURSE r_inc ${CMAKE_CURRENT_SOURCE_DIR}/Renderer*.hpp)
 file(GLOB_RECURSE r_src ${CMAKE_CURRENT_SOURCE_DIR}/Renderer*.cpp)
 
+#needs to be made platform dependant selections
+
+file(GLOB_RECURSE p_inc ${CMAKE_CURRENT_SOURCE_DIR}/platform/Windows/*.hpp)
+file(GLOB_RECURSE p_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/Windows/*.cpp)
+
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${g_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${g_src})
 
@@ -30,6 +35,10 @@ add_library(${PROJECT_NAME}
 	${c_inc}
 	${c_src}
 	${r_inc}
-	${r_src} )
+	${r_src}
+	${p_inc}
+	${p_src} )
 message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/")
+message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/")
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/)

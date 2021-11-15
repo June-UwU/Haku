@@ -15,8 +15,13 @@ add_executable(${PROJECT_NAME}
 	${g_inc}
 	${g_src})
 
+message("Dependencies : ${CMAKE_CURRENT_SOURCE_DIR}/../Haku/")
+message("Dependencies : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/")
+message("Dependencies : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/")
+
 target_include_directories(${PROJECT_NAME}  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../Haku/)
 target_include_directories(${PROJECT_NAME}  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/)
+target_include_directories(${PROJECT_NAME}  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/)
 
 message("Linking Haku api")
 target_link_libraries(${PROJECT_NAME} Haku_Api)
