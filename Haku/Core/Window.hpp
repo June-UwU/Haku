@@ -1,22 +1,20 @@
-#include "../Defines.hpp"
-#include <Windows.h>
-#include "wil/resource.h"
+#include <stdint.h>
+class Application;
 
 namespace Haku
 {
-class HAKU_API Window
+class Window
 {
 	friend class Application;
 
 public:
 	Window(uint32_t height, uint32_t width, bool maximize, const char* Windowname);
-	void run();
-	static LRESULT ProcessMessage(HWND handle, UINT message, WPARAM wParam, LPARAM lParam);
+	virtual void run() = 0;
+
 private:
-	std::uint32_t height;
-	std::uint32_t width;
+	Application*  Owner = nullptr;
+	uint32_t height;
+	uint32_t width;
 	bool		  maximize;
-	/*needs to be abstracted*/
-	wil::unique_hwnd handle;
 };
 } // namespace Haku
