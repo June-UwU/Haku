@@ -1,4 +1,5 @@
 #include "MainWindow.hpp"
+#include "../../Core/HakuLog.hpp"
 
 namespace Haku
 {
@@ -12,6 +13,9 @@ static LRESULT CALLBACK WindowProc(HWND handle, UINT message, WPARAM wParam, LPA
 Windows::Windows(uint32_t height, uint32_t width, bool maximize, const char* Windowname)
 	: Window(height, width, maximize, Windowname)
 {
+	HAKU_LOG_INIT();
+	HAKU_LOG_INFO("Haku chan : hellow... ^_^");
+	HAKU_LOG_INFO("Windows creation");
 	HINSTANCE	Instance = GetModuleHandleA(nullptr);
 	WNDCLASSEXA WindowClass{};
 	WindowClass.cbSize		  = sizeof(WNDCLASSEXA);
@@ -22,6 +26,7 @@ Windows::Windows(uint32_t height, uint32_t width, bool maximize, const char* Win
 	DWORD styles = WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_EX_LAYERED;
 	if (maximize)
 	{
+		HAKU_LOG_INFO("style maximum :", maximize);
 		styles |= WS_MAXIMIZE;
 	}
 
@@ -38,6 +43,10 @@ Windows::Windows(uint32_t height, uint32_t width, bool maximize, const char* Win
 		nullptr,
 		Instance,
 		this));
+	if (!handle.get())
+	{
+		HAKU_LOG_CRIT("No Windows Handle returned ");
+	}
 	SetWindowLongPtr(handle.get(), GWLP_USERDATA, (LONG_PTR)this);
 }
 

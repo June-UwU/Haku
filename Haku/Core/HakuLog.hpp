@@ -1,35 +1,17 @@
 #pragma once
 #include "spdlog/spdlog.h"
 
-void info(std::string& ref)
-{
-	spdlog::info(ref);
-}
+void info(std::string& ref);
+void warn(std::string& ref);
+void critical(std::string& ref);
+void error(std::string& ref);
 
-void warn(std::string& ref)
-{
-	spdlog::warn(ref);
-}
-
-void critical(std::string& ref)
-{
-	spdlog::critical(ref);
-}
-
-void error(std::string& ref)
-{
-	spdlog::error(ref);
-}
+std::string stringify(const char* args);
 
 template<typename T>
 std::string stringify(T args)
 {
 	return std::to_string(args);
-}
-
-std::string stringify(const char* args)
-{
-	return std::string(args);
 }
 
 template<typename T>
@@ -77,13 +59,17 @@ void log_error(T& param, args&... arg)
 	error(ref);
 }
 
+void init();
+
 #ifdef _DEBUG
-#define HAKU_LOG_INIT()
+
+#define HAKU_LOG_INIT()		init();
 #define HAKU_LOG_INFO(...)	log_info(__VA_ARGS__)
 #define HAKU_LOG_WARN(...)	log_warn(__VA_ARGS__)
 #define HAKU_LOG_CRIT(...)	log_critical(__VA_ARGS__)
 #define HAKU_LOG_ERROR(...) log_error(__VA_ARGS__)
 #else
+#define HAKU_LOG_INIT()
 #define HAKU_LOG_INFO(...)
 #define HAKU_LOG_WARN(...)
 #define HAKU_LOG_CRIT(...)
