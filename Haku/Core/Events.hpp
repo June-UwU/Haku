@@ -88,6 +88,9 @@ private:
 	uint32_t EventBitSet;
 };
 
+//should handle the the function as the dispatcher internal structure of functions
+//Skittles tip : change the EventQueue to a std::vector...? might as well do it with the logging support
+
 class EventDispatcher
 {
 	using EventQueue = std::list<Event>;

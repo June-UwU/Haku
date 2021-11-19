@@ -1,5 +1,7 @@
 #include "MainWindow.hpp"
+#include "../../Core/Events.hpp"
 #include "../../Core/HakuLog.hpp"
+#include <WinUser.h>
 
 namespace Haku
 {
@@ -52,12 +54,18 @@ Windows::Windows(uint32_t height, uint32_t width, bool maximize, const char* Win
 
 void Windows::run()
 {
+	// need to change to peek message
 	MSG msg = {};
-	while (GetMessage(&msg, NULL, 0, 0) > 0)
+	while (PeekMessageA(&msg, handle.get(), 0, 0, PM_REMOVE))
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+}
+
+void Windows::SetEventRoutine(const EventRoutine& func)
+{
+	Routine = func;
 }
 
 LRESULT Windows::ProcessMessage(HWND handle, UINT message, WPARAM wParam, LPARAM lParam)
@@ -65,12 +73,72 @@ LRESULT Windows::ProcessMessage(HWND handle, UINT message, WPARAM wParam, LPARAM
 	LRESULT ret{};
 	switch (message)
 	{
-	case WM_QUIT:
+	case WM_CLOSE:
 	{
 		PostQuitMessage(0);
-		return 0;
+		Window::Routine(HAKU_WINDOW_EVENT(EventType::WindowCloseEvent, 0));
+		break;
 	}
-	break;
+	case WM_KEYDOWN:
+	{
+		Window::Routine(HAKU_KEY_EVENT(EventType::KeyDownEvent,wParam));
+		break;
+	}
+	case WM_KEYUP:
+	{
+		Window::Routine(HAKU_KEY_EVENT(EventType::KeyUpEvent,wParam));
+		break;
+	}
+	case WM_MOUSEMOVE:
+	{
+		POINTS points = MAKEPOINTS(lParam);
+		int64_t data = HAKU_MOUSE_PACK(data, points.x, points.y);
+		Window::Routine(HAKU_MOUSE_EVENT(EventType::MouseMoveEvent,data));
+		break;
+	}
+	case WM_LBUTTONDOWN:
+	{
+		POINTS points = MAKEPOINTS(lParam);
+		int64_t data = HAKU_MOUSE_PACK(data, points.x, points.y);
+		Window::Routine(HAKU_MOUSE_EVENT(EventType::MouseLeftDownEvent, data));
+		break;
+	}
+	case WM_LBUTTONUP:
+	{
+		POINTS points = MAKEPOINTS(lParam);
+		int64_t data = HAKU_MOUSE_PACK(data, points.x, points.y);
+		Window::Routine(HAKU_MOUSE_EVENT(EventType::MouseLeftUpEvent, data));
+		break;
+	}
+	case WM_RBUTTONDOWN:
+	{
+		POINTS points = MAKEPOINTS(lParam);
+		int64_t data = HAKU_MOUSE_PACK(data, points.x, points.y);
+		Window::Routine(HAKU_MOUSE_EVENT(EventType::MouseRightDownEvent, data));
+		break;
+	}
+	case WM_RBUTTONUP:
+	{
+		POINTS points = MAKEPOINTS(lParam);
+		int64_t data = HAKU_MOUSE_PACK(data, points.x, points.y);
+		Window::Routine(HAKU_MOUSE_EVENT(EventType::MouseRightUpEvent, data));
+		break;
+	}
+	case WM_MBUTTONDOWN:
+	{
+		POINTS points = MAKEPOINTS(lParam);
+		int64_t data = HAKU_MOUSE_PACK(data, points.x, points.y);
+		Window::Routine(HAKU_MOUSE_EVENT(EventType::MouseMiddleDownEvent, data));
+		break;
+	}
+	case WM_MBUTTONUP:
+	{
+		POINTS points = MAKEPOINTS(lParam);
+		int64_t data = HAKU_MOUSE_PACK(data, points.x, points.y);
+		Window::Routine(HAKU_MOUSE_EVENT(EventType::MouseMiddleUpEvent, data));
+		break;
+	}
+
 	default:
 		return DefWindowProcA(handle, message, wParam, lParam);
 	}
