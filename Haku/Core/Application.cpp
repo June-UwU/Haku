@@ -11,7 +11,7 @@ namespace Haku
 {
 void Application::SetMainWindow(Windows& window) noexcept
 {
-	HAKU_LOG_INFO("setting window");
+	HAKU_LOG_INFO(__FUNCTION__, "Setting Window");
 	m_Window = &window;
 
 	// need to learn perfect forwarding
@@ -32,7 +32,7 @@ void Application::OnEvent(Event Event)
 }
 bool Application::Onclose(Event& Close)
 {
-	HAKU_LOG_INFO("Application Window Close Event ", __FUNCTION__);
+	HAKU_LOG_INFO(__FUNCTION__);
 	m_Running = false;
 	return true;
 }

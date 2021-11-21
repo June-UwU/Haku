@@ -74,7 +74,7 @@ public:
 		: EventBitSet(bits)
 		, Data(data)
 	{
-		HAKU_LOG_INFO("Event Constructor : Event :{0} : Data :{1} :", bits, data);
+		HAKU_LOG_INFO(__FUNCTION__, "Event :", bits, "Data :", data);
 	}
 	~Event() = default;
 	uint32_t  GetEvent() { return EventBitSet; }
@@ -88,8 +88,8 @@ private:
 	uint32_t EventBitSet;
 };
 
-//should handle the the function as the dispatcher internal structure of functions
-//Skittles tip : change the EventQueue to a std::vector...? might as well do it with the logging support
+// should handle the the function as the dispatcher internal structure of functions
+// Skittles tip : change the EventQueue to a std::vector...? might as well do it with the logging support
 
 class EventDispatcher
 {
@@ -106,6 +106,7 @@ public:
 		m_Queue.front().Handled |= Routine(m_Queue.front());
 		if (m_Queue.front().Handled)
 		{
+			HAKU_LOG_INFO(__FUNCTION__);
 			m_Queue.pop_front();
 		}
 	}

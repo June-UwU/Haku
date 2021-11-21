@@ -17,8 +17,12 @@ public:
 private:
 	bool Onclose(Event& Close);
 	void DispatchEvent();
-/*stud event to handle the unmapped event for the time being*/
-	bool return_true(Event& event) { return true; }
+	/*stud event to handle the unmapped event for the time being*/
+	bool return_true(Event& event)
+	{
+		HAKU_LOG_WARN(__FUNCTION__);
+		return true;
+	}
 
 private:
 	bool			m_Running = true;

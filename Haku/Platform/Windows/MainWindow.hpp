@@ -24,5 +24,6 @@ public:
 
 private:
 	wil::unique_hwnd handle;
+	wil::unique_hicon icon;
 };
 } // namespace Haku
