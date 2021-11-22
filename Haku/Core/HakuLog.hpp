@@ -1,12 +1,15 @@
 #pragma once
 #include "spdlog/spdlog.h"
 
+
 void info(std::string& ref);
 void warn(std::string& ref);
 void critical(std::string& ref);
 void error(std::string& ref);
 
 std::string stringify(const char* args);
+
+std::string stringify(const std::string args);
 
 template<typename T>
 std::string stringify(T args)

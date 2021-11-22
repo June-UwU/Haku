@@ -27,6 +27,9 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${c_src})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${r_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${r_src})
 
+
+
+
 add_compile_definitions(HAKU_API_BUILD)
 add_library(${PROJECT_NAME} 
 	SHARED 
@@ -40,5 +43,8 @@ add_library(${PROJECT_NAME}
 	${p_src} )
 message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/")
 message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/")
+
+target_precompile_headers(${PROJECT_NAME} PRIVATE hakupch.hpp)
+
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/)

@@ -1,11 +1,6 @@
 #include "HakuLog.hpp"
 #include "Application.hpp"
 
-#define HAKU_BIND_FUNC(x)                                                                                              \
-	[this](auto&&... args) -> decltype(auto)                                                                           \
-	{                                                                                                                  \
-		return this->x(std::forward<decltype(args)>(args)...);                                                         \
-	}
 
 namespace Haku
 {

@@ -31,3 +31,8 @@ std::string stringify(const char* args)
 {
 	return std::string(args);
 }
+
+std::string stringify(const std::string args)
+{
+	return args;
+}

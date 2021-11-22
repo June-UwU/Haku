@@ -2,9 +2,8 @@
 
 /*MAKE THE EVENT SYSTEM AN COMMON CLASS WITH EXTRACTABLE PARAM AND BIT SET FOR APPICATION EVENT TYPE*/
 #include "HakuLog.hpp"
-#include "../Defines.hpp"
-#include <list>
-#include <functional>
+#include "../macros.hpp"
+#include "../hakupch.hpp"
 
 /*Things Needed For The Event System Event Entity */
 // Mouse Clicks Handled By Eventtypes

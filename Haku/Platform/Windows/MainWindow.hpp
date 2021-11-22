@@ -1,5 +1,5 @@
 #include "wil/resource.h"
-#include "../../Defines.hpp"
+#include "../../macros.hpp"
 #include "../../Core/Window.hpp"
 #include <Windows.h>
 

@@ -1,8 +1,7 @@
 #pragma once
 
-#include <stdint.h>
 #include "Events.hpp"
-#include <functional>
+#include "../hakupch.hpp"
 
 class Application;
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "Events.hpp"
-#include "../Defines.hpp"
+#include "../macros.hpp"
 #include "../Platform/Windows/MainWindow.hpp"
 
 namespace Haku

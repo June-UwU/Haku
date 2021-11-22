@@ -18,6 +18,5 @@ set(CMAKE_CXX_STANDARD 20)
 message("Cmake C++ standard : ${CMAKE_CXX_STANDARD}")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
 add_subdirectory("Haku")
 add_subdirectory("Editor")

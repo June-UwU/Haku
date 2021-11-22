@@ -1,4 +1,4 @@
-/*COMMON DEFINES*/
-#include "Defines.hpp"
+/*COMMON macros*/
+#include "macros.hpp"
 #include "Core/Application.hpp"
 

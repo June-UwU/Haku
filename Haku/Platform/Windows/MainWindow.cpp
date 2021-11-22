@@ -54,10 +54,7 @@ Windows::Windows(uint32_t height, uint32_t width, bool maximize, const char* Win
 		nullptr,
 		Instance,
 		this));
-	if (!handle.get())
-	{
-		HAKU_LOG_CRIT(__FUNCTION__, "No Windows Handle returned ");
-	}
+	HAKU_IF_CHECK_ASSERT(handle.get())
 	SetWindowLongPtr(handle.get(), GWLP_USERDATA, (LONG_PTR)this);
 }
 
