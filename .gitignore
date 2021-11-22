@@ -4,3 +4,5 @@
 
 /build
 /bin/Debug
+/bin
+/.clang-format

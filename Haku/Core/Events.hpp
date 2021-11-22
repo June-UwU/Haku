@@ -66,7 +66,7 @@ enum class EventType : uint32_t
 	None					= BIT(23)
 };
 
-class Event
+class HAKU_API Event
 {
 public:
 	Event(uint32_t bits, int64_t data)
