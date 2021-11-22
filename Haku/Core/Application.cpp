@@ -61,8 +61,8 @@ void Application::DispatchEvent()
 		{
 		case EventType::WindowCloseEvent:
 		{
-			Dispatcher.ServiceEvent(HAKU_BIND_FUNC(Application::Onclose));
 			Dispatcher.ServiceEvent(HAKU_BIND_FUNC(m_LayerStack.OnEvent));
+                        Dispatcher.ServiceEvent(HAKU_BIND_FUNC(Application::Onclose));
 			break;
 		}
 		default:
