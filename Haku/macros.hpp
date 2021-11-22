@@ -16,6 +16,7 @@
 #define HAKU_ASSERT(x)                                                                                                 \
 	if (!x)                                                                                                            \
 	{                                                                                                                  \
+		std::string line(std::to_string(__LINE__));                                                                    \
 		HAKU_LOG_CRIT("FILE: ", __FILE__, " FUNCTION: ", __FUNCTION__, " LINE: ", line);                               \
 		__debugbreak();                                                                                                \
 	}
