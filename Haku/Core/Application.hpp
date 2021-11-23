@@ -15,7 +15,7 @@ public:
 	void OnEvent(Event Event);
 
 private:
-	bool Onclose(Event& Close);
+	void Onclose(Event& Close);
 	/*stud event to handle the unmapped event for the time being*/
 	bool return_true(Event& event)
 	{

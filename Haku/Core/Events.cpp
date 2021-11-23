@@ -6,6 +6,12 @@ void EventDispatcher::ServiceEvent()
 {
 	while (!m_Queue.empty())
 	{
+		auto result = m_CallBack.find(static_cast<uint32_t>(m_Queue.front().GetEventType()));
+		if (result == m_CallBack.end())
+		{
+			m_Queue.pop_front();
+			continue;
+		}
 		auto range = m_CallBack.equal_range(static_cast<uint32_t>(m_Queue.front().GetEventType()));
 		for (auto it = range.first; it != range.second; ++it)
 		{
@@ -17,7 +23,6 @@ void EventDispatcher::ServiceEvent()
 			}
 		}
 		/*this is temp  for the handling of event*/
-		m_Queue.pop_front();
 	}
 }
 void EventDispatcher::RegisterRoutine(Routine r, uint32_t type)

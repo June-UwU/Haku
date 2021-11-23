@@ -34,11 +34,11 @@ void Application::OnEvent(Event Event)
 	Dispatcher.OnEvent(Event);
 }
 
-bool Application::Onclose(Event& Close)
+void Application::Onclose(Event& Close)
 {
 	HAKU_LOG_INFO(__FUNCTION__);
-	m_Running = false;
-	return true;
+	Close.Handled = true;
+	m_Running	  = false;
 }
 
 } // namespace Haku

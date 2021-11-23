@@ -93,7 +93,7 @@ private:
 class EventDispatcher
 {
 	using EventQueue  = std::list<Event>;
-	using Routine	  = std::function<bool(Event& e)>;
+	using Routine	  = std::function<void(Event& e)>;
 	using CallBackMap = std::unordered_map<uint32_t, Routine>;
 
 public:
