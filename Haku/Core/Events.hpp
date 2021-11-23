@@ -92,26 +92,21 @@ private:
 
 class EventDispatcher
 {
-	using EventQueue = std::list<Event>;
+	using EventQueue  = std::list<Event>;
+	using Routine	  = std::function<bool(Event& e)>;
+	using CallBackMap = std::unordered_map<uint32_t, Routine>;
 
 public:
 	EventDispatcher() = default;
 	void   OnEvent(Event& e) noexcept { m_Queue.push_back(e); }
 	Event& peek() { return m_Queue.front(); }
 	bool   empty() { return m_Queue.empty(); }
-	template<typename F>
-	void ServiceEvent(F Routine)
-	{
-		m_Queue.front().Handled |= Routine(m_Queue.front());
-		if (m_Queue.front().Handled)
-		{
-			HAKU_LOG_INFO(__FUNCTION__);
-			m_Queue.pop_front();
-		}
-	}
+	void   ServiceEvent();
+	void   RegisterRoutine(Routine r, uint32_t type);
 
 private:
-	EventQueue m_Queue; /// Looks like std::queue is out
+	EventQueue	m_Queue; /// Looks like std::queue is out
+	CallBackMap m_CallBack;
 };
 
 } // namespace Haku
