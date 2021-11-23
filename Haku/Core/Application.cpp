@@ -9,6 +9,8 @@ Application::Application()
 {
 	HAKU_ASSERT(!s_Instance);
 	s_Instance = this;
+	Dispatcher.RegisterRoutine(
+		HAKU_BIND_FUNC(Application::Onclose), static_cast<uint32_t>(EventType::WindowCloseEvent));
 }
 void Application::SetMainWindow(Windows& window) noexcept
 {
@@ -24,53 +26,19 @@ void Application::ProcessMessage()
 	while (m_Running)
 	{
 		m_Window->run();
-		DispatchEvent();
+		Dispatcher.ServiceEvent();
 	}
 }
 void Application::OnEvent(Event Event)
 {
 	Dispatcher.OnEvent(Event);
 }
-void Application::AddLayer(Layer* layer)
-{
-	m_LayerStack.Addlayer(layer);
-}
-void Application::AddOverlay(Layer* layer)
-{
-	m_LayerStack.AddOverLay(layer);
-}
-void Application::RemoveLayer(Layer* layer)
-{
-	m_LayerStack.RemoveLayer(layer);
-}
-void Application::RemoveOverlay(Layer* layer)
-{
-	m_LayerStack.RemoveOverlay(layer);
-}
+
 bool Application::Onclose(Event& Close)
 {
 	HAKU_LOG_INFO(__FUNCTION__);
 	m_Running = false;
 	return true;
 }
-void Application::DispatchEvent()
-{
-	if (!Dispatcher.empty())
-	{
-		switch (Dispatcher.peek().GetEventType())
-		{
-		case EventType::WindowCloseEvent:
-		{
-			Dispatcher.ServiceEvent(HAKU_BIND_FUNC(m_LayerStack.OnEvent));
-                        Dispatcher.ServiceEvent(HAKU_BIND_FUNC(Application::Onclose));
-			break;
-		}
-		default:
-		{
-			Dispatcher.ServiceEvent(HAKU_BIND_FUNC(m_LayerStack.OnEvent));
-			Dispatcher.ServiceEvent(HAKU_BIND_FUNC(Application::return_true));
-		}
-		}
-	}
-}
+
 } // namespace Haku

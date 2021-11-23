@@ -1,5 +1,4 @@
 #pragma once
-#include "LayerStack.hpp"
 #include "Events.hpp"
 #include "../macros.hpp"
 #include "../Platform/Windows/MainWindow.hpp"
@@ -14,14 +13,9 @@ public:
 	/*might get redefined to return exit code*/
 	void ProcessMessage();
 	void OnEvent(Event Event);
-	void AddLayer(Layer* layer);
-	void AddOverlay(Layer* layer);
-	void RemoveLayer(Layer* layer);
-	void RemoveOverlay(Layer* layer);
 
 private:
 	bool Onclose(Event& Close);
-	void DispatchEvent();
 	/*stud event to handle the unmapped event for the time being*/
 	bool return_true(Event& event)
 	{
@@ -31,7 +25,6 @@ private:
 
 private:
 	EventDispatcher Dispatcher;
-	LayerStack		m_LayerStack;
 	bool			m_Running = true;
 	Windows*		m_Window  = nullptr;
 
