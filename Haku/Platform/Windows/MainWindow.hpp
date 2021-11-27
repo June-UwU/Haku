@@ -21,9 +21,10 @@ public:
 	void	run() override;
 	void	SetEventRoutine(const EventRoutine& func) override;
 	LRESULT ProcessMessage(HWND handle, UINT message, WPARAM wParam, LPARAM lParam);
+	HWND	GetHandle() { return handle.get(); }
 
 private:
-	wil::unique_hwnd handle;
+	wil::unique_hwnd  handle;
 	wil::unique_hicon icon;
 };
 } // namespace Haku

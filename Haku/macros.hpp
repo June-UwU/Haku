@@ -29,6 +29,14 @@
 		HAKU_LOG_CRIT("FILE: ", __FILE__, " FUNCTION: ", __FUNCTION__, " LINE: ", line);                               \
 		__debugbreak();                                                                                                \
 	}
+
+#define HAKU_SOK_ASSERT(x)                                                                                             \
+	if (x != S_OK)                                                                                                     \
+	{                                                                                                                  \
+		std::string line(std::to_string(__LINE__));                                                                    \
+		HAKU_LOG_CRIT("FILE: ", __FILE__, " FUNCTION: ", __FUNCTION__, " LINE: ", line);                               \
+		__debugbreak();                                                                                                \
+	}
 #elif
 /*we need a throwable*/
 #define HAKU_IF_CHECK_ASSERT(x)

@@ -19,6 +19,8 @@ protected:
 public:
 	virtual void run()									   = 0;
 	virtual void SetEventRoutine(const EventRoutine& func) = 0;
+	uint32_t	 GetHeight() { return height; }
+	uint32_t	 GetWidth() { return width; }
 
 private:
 	uint32_t height;

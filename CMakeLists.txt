@@ -20,3 +20,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory("Haku")
 add_subdirectory("Editor")
+add_subdirectory("vendor/DirectXMath")
+add_subdirectory("vendor/DirectX-Headers")

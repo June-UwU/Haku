@@ -48,3 +48,6 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE hakupch.hpp)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/)
+target_link_libraries(${PROJECT_NAME} DirectXMath)
+target_link_libraries(${PROJECT_NAME} DirectX-Headers)
+
