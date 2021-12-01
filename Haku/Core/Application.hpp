@@ -2,8 +2,7 @@
 #include "Events.hpp"
 #include "../macros.hpp"
 #include "../Platform/Windows/MainWindow.hpp"
-#include "Renderer.hpp"
-
+#include "../Platform/DirectX12/D3D12Renderer.hpp"
 
 namespace Haku
 {
@@ -33,7 +32,6 @@ private:
 private:
 	static Application* s_Instance;
 
-	/*will be ripped out*/
-	D3D12HelloTriangle scrap;
+	Renderer::DX12Renderer m_Renderer;
 };
 } // namespace Haku

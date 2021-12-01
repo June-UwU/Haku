@@ -1,6 +1,6 @@
 #include "Renderer.hpp"
 #include "..\macros.hpp"
-#include "HakuLog.hpp"
+#include "../Core/HakuLog.hpp"
 #include "d3dcompiler.h"
 
 #pragma comment(lib, "D3D12.lib")

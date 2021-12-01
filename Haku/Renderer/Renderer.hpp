@@ -10,6 +10,33 @@
 // referenced by the GPU.
 // An example of this can be found in the class method: OnDestroy().
 
+namespace Haku
+{
+namespace Renderer
+{
+class Renderer
+{
+public:
+	Renderer() = default;
+	Renderer(uint32_t height, uint32_t width)
+		: height(height)
+		, width(width)
+	{
+	}
+	virtual void Cleanup()			  = 0;
+	virtual void Render()			  = 0;
+	virtual void Update()			  = 0;
+	//virtual void Init(Window* window) = 0;
+	uint32_t	 getHeight() { return height; }
+	uint32_t	 getWidth() { return width; }
+
+protected:
+	uint32_t height = 0;
+	uint32_t width	= 0;
+};
+} // namespace Renderer
+} // namespace Haku
+
 class D3D12HelloTriangle
 {
 public:

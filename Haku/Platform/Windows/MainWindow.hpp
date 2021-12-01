@@ -1,3 +1,4 @@
+#pragma once
 #include "wil/resource.h"
 #include "../../macros.hpp"
 #include "../../Core/Window.hpp"
