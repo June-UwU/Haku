@@ -105,6 +105,9 @@ public:
 	void   RegisterRoutine(Routine r, uint32_t type);
 
 private:
+	/// <summary>
+	/// this might need to be turned into single event bus
+	/// </summary>
 	EventQueue	m_Queue; /// Looks like std::queue is out
 	CallBackMap m_CallBack;
 };

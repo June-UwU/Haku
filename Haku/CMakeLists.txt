@@ -17,7 +17,24 @@ file(GLOB_RECURSE w_inc ${CMAKE_CURRENT_SOURCE_DIR}/platform/Windows/*.hpp)
 file(GLOB_RECURSE w_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/Windows/*.cpp)
 file(GLOB_RECURSE a_inc ${CMAKE_CURRENT_SOURCE_DIR}/platform/DirectX12/*.hpp)
 file(GLOB_RECURSE a_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/DirectX12/*.cpp)
+set(DEPEND_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../vendor)
 
+set(im_gui 
+	${DEPEND_DIR}/imgui/imgui.h
+	${DEPEND_DIR}/imgui/imgui.cpp
+	${DEPEND_DIR}/imgui/imconfig.h
+	${DEPEND_DIR}/imgui/imgui_demo.cpp
+	${DEPEND_DIR}/imgui/imgui_draw.cpp
+	${DEPEND_DIR}/imgui/imgui_internal.h
+	${DEPEND_DIR}/imgui/imgui_tables.cpp
+	${DEPEND_DIR}/imgui/imgui_widgets.cpp
+	${DEPEND_DIR}/imgui/imstb_rectpack.h
+	${DEPEND_DIR}/imgui/imstb_textedit.h
+	${DEPEND_DIR}/imgui/imstb_truetype.h
+	${DEPEND_DIR}/imgui/backends/imgui_impl_win32.h
+	${DEPEND_DIR}/imgui/backends/imgui_impl_win32.cpp
+	${DEPEND_DIR}/imgui/backends/imgui_impl_dx12.h
+	${DEPEND_DIR}/imgui/backends/imgui_impl_dx12.cpp)
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${g_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${g_src})
@@ -51,7 +68,8 @@ add_library(${PROJECT_NAME}
 	${p_inc}
 	${p_src}
 	${a_inc}
-	${a_src} )
+	${a_src}
+	${im_gui} )
 message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/")
 message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/")
 

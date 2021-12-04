@@ -1,7 +1,6 @@
 #pragma once
 #include "spdlog/spdlog.h"
 
-
 void info(std::string& ref);
 void warn(std::string& ref);
 void critical(std::string& ref);
@@ -67,10 +66,10 @@ void init();
 #ifdef _DEBUG
 
 #define HAKU_LOG_INIT()		init();
-#define HAKU_LOG_INFO(...)	log_info(__VA_ARGS__)
-#define HAKU_LOG_WARN(...)	log_warn(__VA_ARGS__)
-#define HAKU_LOG_CRIT(...)	log_critical(__VA_ARGS__)
-#define HAKU_LOG_ERROR(...) log_error(__VA_ARGS__)
+#define HAKU_LOG_INFO(...)	log_info(__FUNCTION__, __VA_ARGS__)
+#define HAKU_LOG_WARN(...)	log_warn(__FUNCTION__, __VA_ARGS__)
+#define HAKU_LOG_CRIT(...)	log_critical(__FUNCTION__, __VA_ARGS__)
+#define HAKU_LOG_ERROR(...) log_error(__FUNCTION__, __VA_ARGS__)
 #else
 #define HAKU_LOG_INIT()
 #define HAKU_LOG_INFO(...)

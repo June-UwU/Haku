@@ -1,5 +1,6 @@
 #include "Haku.hpp"
 #include <iostream>
+
 class Editor : public Haku::Application
 {
 };

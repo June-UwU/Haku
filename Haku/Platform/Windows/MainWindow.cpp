@@ -3,6 +3,10 @@
 #include "../../Core/HakuLog.hpp"
 #include <filesystem>
 #include <WinUser.h>
+#include "..\..\imgui\imgui.h"
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 
 namespace Haku
 {
@@ -19,7 +23,7 @@ Windows::Windows(uint32_t height, uint32_t width, bool maximize, const char* Win
 	char Filepath[256];
 	HAKU_LOG_INIT();
 	HAKU_LOG_INFO("Haku chan : hellow... ^_^");
-	HAKU_LOG_INFO(__FUNCTION__, "Windows creation");
+	HAKU_LOG_INFO("Windows creation");
 	GetModuleFileName(nullptr, Filepath, std::size(Filepath));
 
 	std::filesystem::path ExecutablePath(Filepath);
@@ -71,13 +75,15 @@ void Windows::run()
 
 void Windows::SetEventRoutine(const EventRoutine& func)
 {
-	HAKU_LOG_INFO(__FUNCTION__);
+	HAKU_LOG_INFO();
 	Routine = func;
 }
 
 LRESULT Windows::ProcessMessage(HWND handle, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT ret{};
+	if (ImGui_ImplWin32_WndProcHandler(handle, message, wParam, lParam))
+		return true;
 	switch (message)
 	{
 	case WM_CLOSE:

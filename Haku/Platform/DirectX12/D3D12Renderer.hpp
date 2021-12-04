@@ -14,10 +14,12 @@ class DX12Renderer : public Renderer
 public:
 	DX12Renderer() = default;
 	DX12Renderer(uint32_t height, uint32_t width);
-	void Cleanup() override{};
-	void Render() override;
-	void Update() override{};
-	void Init(Haku::Windows* window);
+	void				  Cleanup() override{};
+	void				  Render() override;
+	void				  Update() override{};
+	void				  Init(Haku::Windows* window);
+	ID3D12Device*		  GetDevice() { return m_Device.Get(); }
+	ID3D12DescriptorHeap* GetDesciptor() { return m_SCU_RV_Desciptor.Get(); }
 
 private:
 	// this fuction will be pulled out for asset management and other
@@ -35,16 +37,26 @@ private:
 	// swapchain and render devices
 	Microsoft::WRL::ComPtr<IDXGISwapChain3> m_SwapChain;
 	Microsoft::WRL::ComPtr<ID3D12Device>	m_Device;
+	
 	// Render targets
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_RenderTargets[FrameCount];
-	// Render and GPU commands
+	// Render and GPU commands helpers for command list
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue>	   m_CommandQueue;
+	
 	// currently unknown functions
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>		  m_RootSignature;
+	
+	//rtv needs a descriptor..? this method is still not understood clearly
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	  m_RtvHeap;
+	//creating a desciptor for the directx shader resouce view (srv),unordered access view and constant buffers view
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_SCU_RV_Desciptor;
+
+	//pipeline state that is used to set the stages and shaders
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>		  m_PipelineState;
+	//commands that the gpu must execute
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_CommandList;
+
 	UINT											  m_RtvDescriptorSize;
 
 	// App resources.

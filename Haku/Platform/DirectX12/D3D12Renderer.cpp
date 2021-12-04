@@ -5,6 +5,9 @@
 #pragma comment(lib, "D3DCompiler.lib")
 #pragma comment(lib, "DXGI.lib")
 
+//TEMP
+#include "..\..\imgui\backends\imgui_impl_dx12.h"
+
 namespace Haku
 {
 namespace Renderer
@@ -94,6 +97,12 @@ void DX12Renderer::Init(Haku::Windows* window)
 		RTVdesc.Flags		   = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		HAKU_SOK_ASSERT(m_Device->CreateDescriptorHeap(&RTVdesc, IID_PPV_ARGS(&m_RtvHeap)))
 		m_RtvDescriptorSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+		D3D12_DESCRIPTOR_HEAP_DESC srvdesc{};
+		srvdesc.Type		   = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		srvdesc.Flags		   = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		srvdesc.NumDescriptors = 1;
+		HAKU_SOK_ASSERT(m_Device->CreateDescriptorHeap(&srvdesc, IID_PPV_ARGS(&m_SCU_RV_Desciptor)))
 	}
 	// Frame res
 	{
@@ -272,6 +281,10 @@ void DX12Renderer::Commands()
 
 	// Set necessary state.
 	m_CommandList->SetGraphicsRootSignature(m_RootSignature.Get());
+	ID3D12DescriptorHeap* ppHeaps[] = { m_SCU_RV_Desciptor.Get() };
+	m_CommandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+
+
 	m_CommandList->RSSetViewports(1, &m_Viewport);
 	m_CommandList->RSSetScissorRects(1, &m_ScissorRect);
 
@@ -291,6 +304,8 @@ void DX12Renderer::Commands()
 	m_CommandList->IASetVertexBuffers(0, 1, &m_VertexBufferView);
 	m_CommandList->DrawInstanced(3, 1, 0, 0);
 
+	//Imgui impl func
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_CommandList.Get());
 	// Indicate that the back buffer will now be used to present.
 	auto resbarpres = CD3DX12_RESOURCE_BARRIER::Transition(
 		m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);

@@ -3,6 +3,7 @@
 #include "../macros.hpp"
 #include "../Platform/Windows/MainWindow.hpp"
 #include "../Platform/DirectX12/D3D12Renderer.hpp"
+#include "UILayer.hpp"
 
 namespace Haku
 {
@@ -11,9 +12,13 @@ class HAKU_API Application
 public:
 	Application();
 	void SetMainWindow(Windows& window) noexcept;
+
 	/*might get redefined to return exit code*/
-	void ProcessMessage();
-	void OnEvent(Event Event);
+	void					ProcessMessage();
+	void					OnEvent(Event Event);
+	static Application*		Get() { return s_Instance; }
+	Windows*				GetWindow() { return m_Window; }
+	Renderer::DX12Renderer* GetRenderer() { return &m_Renderer; }
 
 private:
 	void Onclose(Event& Close);
@@ -25,13 +30,14 @@ private:
 	}
 
 private:
-	EventDispatcher Dispatcher;
-	bool			m_Running = true;
-	Windows*		m_Window  = nullptr;
+	EventDispatcher		   Dispatcher;
+	bool				   m_Running = true;
+	Windows*			   m_Window	 = nullptr;
+	Renderer::DX12Renderer m_Renderer;
+
+	UILayer layer;
 
 private:
 	static Application* s_Instance;
-
-	Renderer::DX12Renderer m_Renderer;
 };
 } // namespace Haku

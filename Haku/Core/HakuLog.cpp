@@ -27,6 +27,7 @@ void error(std::string& ref)
 	logger->error(ref);
 }
 
+
 std::string stringify(const char* args)
 {
 	return std::string(args);
