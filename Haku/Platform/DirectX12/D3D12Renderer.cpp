@@ -5,118 +5,53 @@
 #pragma comment(lib, "D3DCompiler.lib")
 #pragma comment(lib, "DXGI.lib")
 
-//TEMP
+// TEMP
 #include "..\..\imgui\backends\imgui_impl_dx12.h"
 
 namespace Haku
 {
 namespace Renderer
 {
-DX12Renderer::DX12Renderer(uint32_t height, uint32_t width)
+DX12Renderer::DX12Renderer()
 	: Renderer(height, width)
-	, m_FrameIndex(0)
+	, m_Device()
+	, m_Command(m_Device)
 	, m_Viewport(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height))
 	, m_ScissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height))
-	, m_RtvDescriptorSize(0)
+{
+}
+DX12Renderer::DX12Renderer(uint32_t height, uint32_t width)
+	: Renderer(height, width)
+	, m_Device()
+	, m_Command(m_Device)
+	, m_Viewport(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height))
+	, m_ScissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height))
 {
 }
 void DX12Renderer::Render()
 {
 	Commands();
-	ID3D12CommandList* ppCommandLists[] = { m_CommandList.Get() };
-	m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-	// Present the frame.
-	HAKU_SOK_ASSERT(m_SwapChain->Present(1, 0));
-	Synchronize();
+	m_Command.Execute();
+	m_Device.Render();
+	m_Command.Synchronize();
+	m_Device.FrameIndexReset();
+	// Synchronize();
 }
 void DX12Renderer::Init(Haku::Windows* window)
 {
 	height = window->GetHeight();
 	width  = window->GetWidth();
-	unsigned int FactoryFlags{};
-#ifdef _DEBUG
+	m_Device.init(window, m_Command.GetCommandQueue());
+
 	{
-		Microsoft::WRL::ComPtr<ID3D12Debug> DebugDevice;
-		HAKU_SOK_ASSERT(D3D12GetDebugInterface(IID_PPV_ARGS(&DebugDevice)))
-		FactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
-		DebugDevice->EnableDebugLayer();
-	}
-#endif
-	Microsoft::WRL::ComPtr<IDXGIAdapter> GraphicsAdapter; // Graphics adapter IUnknown
-	Microsoft::WRL::ComPtr<IDXGIFactory6>
-		DxgiFactory; // this might fail due to lack of support,might need to extend the interface
-	HAKU_SOK_ASSERT(CreateDXGIFactory2(FactoryFlags, IID_PPV_ARGS(&DxgiFactory)))
-	HAKU_SOK_ASSERT(DxgiFactory->EnumAdapterByGpuPreference(
-		0, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&GraphicsAdapter)))
-#ifdef _DEBUG
-	DXGI_ADAPTER_DESC adpter_desc{};
-	HAKU_SOK_ASSERT(GraphicsAdapter->GetDesc(&adpter_desc))
-	// HAKU_LOG_INFO(adpter_desc.Description);
-
-#endif
-
-	HAKU_SOK_ASSERT(D3D12CreateDevice(
-		GraphicsAdapter.Get(),
-		D3D_FEATURE_LEVEL_12_0,
-		IID_PPV_ARGS(&m_Device))) // the support and request needs checking
-								  // Command Queue Creations
-	D3D12_COMMAND_QUEUE_DESC Queue_desc{};
-	Queue_desc.Type	 = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	Queue_desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-
-	HAKU_SOK_ASSERT(m_Device->CreateCommandQueue(&Queue_desc, IID_PPV_ARGS(&m_CommandQueue)))
-	// Create Swapchain
-	DXGI_SWAP_CHAIN_DESC1 Swap_desc{};
-	Swap_desc.Height			 = height;
-	Swap_desc.Width				 = width;
-	Swap_desc.Format			 = DXGI_FORMAT_R8G8B8A8_UNORM;
-	Swap_desc.Stereo			 = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	Swap_desc.BufferUsage		 = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	Swap_desc.BufferCount		 = 2u;
-	Swap_desc.Scaling			 = DXGI_SCALING_NONE; // contrevesial movement
-	Swap_desc.SwapEffect		 = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	Swap_desc.AlphaMode			 = DXGI_ALPHA_MODE_UNSPECIFIED; // mess around with the alpha
-	Swap_desc.SampleDesc.Count	 = 1;
-	Swap_desc.SampleDesc.Quality = 0;
-
-	// Swap chain flags are something to be looked at
-
-	// basic swapchain1  interface
-	Microsoft::WRL::ComPtr<IDXGISwapChain1> swap_chain1;
-	HAKU_SOK_ASSERT(DxgiFactory->CreateSwapChainForHwnd(
-		m_CommandQueue.Get(), window->GetHandle(), &Swap_desc, nullptr, nullptr, &swap_chain1))
-	// Extending the swapchain interface
-	HAKU_SOK_ASSERT(swap_chain1.As(&m_SwapChain))
-	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
-	// Creating RTV heaps
-	{
-		D3D12_DESCRIPTOR_HEAP_DESC RTVdesc{};
-		RTVdesc.Type		   = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-		RTVdesc.NumDescriptors = FrameCount;
-		RTVdesc.Flags		   = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-		HAKU_SOK_ASSERT(m_Device->CreateDescriptorHeap(&RTVdesc, IID_PPV_ARGS(&m_RtvHeap)))
-		m_RtvDescriptorSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
 		D3D12_DESCRIPTOR_HEAP_DESC srvdesc{};
 		srvdesc.Type		   = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		srvdesc.Flags		   = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		srvdesc.NumDescriptors = 1;
-		HAKU_SOK_ASSERT(m_Device->CreateDescriptorHeap(&srvdesc, IID_PPV_ARGS(&m_SCU_RV_Desciptor)))
+		HAKU_SOK_ASSERT(m_Device.get()->CreateDescriptorHeap(&srvdesc, IID_PPV_ARGS(&m_SCU_RV_Desciptor)))
 	}
-	// Frame res
-	{
-		CD3DX12_CPU_DESCRIPTOR_HANDLE cpu_handle(m_RtvHeap->GetCPUDescriptorHandleForHeapStart());
-		// Creating a render target view(RTV)
-		for (size_t i = 0; i < FrameCount; i++)
-		{
-			HAKU_SOK_ASSERT(m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&m_RenderTargets[i])))
-			m_Device->CreateRenderTargetView(m_RenderTargets[i].Get(), nullptr, cpu_handle);
-			cpu_handle.Offset(1, m_RtvDescriptorSize);
-		}
-	}
+
 	// creating a command issuer
-	HAKU_SOK_ASSERT(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocator)))
 	// TO BE REMOVED
 	LoadAssets();
 }
@@ -132,7 +67,7 @@ void DX12Renderer::LoadAssets()
 		Microsoft::WRL::ComPtr<ID3DBlob> error;
 		HAKU_SOK_ASSERT(
 			D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
-		HAKU_SOK_ASSERT(m_Device->CreateRootSignature(
+		HAKU_SOK_ASSERT(m_Device.get()->CreateRootSignature(
 			0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
 	}
 
@@ -190,21 +125,15 @@ void DX12Renderer::LoadAssets()
 		psoDesc.NumRenderTargets				   = 1;
 		psoDesc.RTVFormats[0]					   = DXGI_FORMAT_R8G8B8A8_UNORM;
 		psoDesc.SampleDesc.Count				   = 1;
-		HAKU_SOK_ASSERT(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineState)));
+		HAKU_SOK_ASSERT(m_Device.get()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineState)));
 	}
 
-	// Create the command list.
-	HAKU_SOK_ASSERT(m_Device->CreateCommandList(
-		0,
-		D3D12_COMMAND_LIST_TYPE_DIRECT,
-		m_CommandAllocator.Get(),
-		m_PipelineState.Get(),
-		IID_PPV_ARGS(&m_CommandList)));
-
+	// Command queue co
+	m_Command.CommandListCreate(m_Device, m_PipelineState.Get());
 	// Command lists are created in the recording state, but there is nothing
 	// to record yet. The main loop expects it to be closed, so close it now.
-	HAKU_SOK_ASSERT(m_CommandList->Close());
-
+	// HAKU_SOK_ASSERT(m_CommandList->Close());
+	m_Command.Close();
 	// Create the vertex buffer.
 	{
 		// Define the geometry for a triangle.
@@ -220,7 +149,7 @@ void DX12Renderer::LoadAssets()
 		// code simplicity and because there are very few verts to actually transfer.
 		auto heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 		auto resdesc  = CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize);
-		HAKU_SOK_ASSERT(m_Device->CreateCommittedResource(
+		HAKU_SOK_ASSERT(m_Device.get()->CreateCommittedResource(
 			&heapprop,
 			D3D12_HEAP_FLAG_NONE,
 			&resdesc,
@@ -240,78 +169,68 @@ void DX12Renderer::LoadAssets()
 		m_VertexBufferView.StrideInBytes  = sizeof(VertexData);
 		m_VertexBufferView.SizeInBytes	  = vertexBufferSize;
 	}
-
-	// Create synchronization objects and wait until assets have been uploaded to the GPU.
-	{
-		HAKU_SOK_ASSERT(m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence)));
-		m_FenceValue = 1;
-
-		// Create an event handle to use for frame synchronization.
-		m_FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-		if (m_FenceEvent == nullptr)
-		{
-			HAKU_SOK_ASSERT(HRESULT_FROM_WIN32(GetLastError()));
-		}
-	}
-	Synchronize();
+	m_Command.Synchronize();
 }
 void DX12Renderer::Synchronize()
 {
-	const uint64_t fence_value = m_FenceValue;
-	HAKU_SOK_ASSERT(m_CommandQueue->Signal(m_Fence.Get(), fence_value))
-	m_FenceValue++;
-	if (m_Fence->GetCompletedValue() < fence_value)
-	{
-		HAKU_SOK_ASSERT(m_Fence->SetEventOnCompletion(fence_value, m_FenceEvent))
-		WaitForSingleObject(m_FenceEvent, INFINITE);
-	}
-	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
+	// const uint64_t fence_value = m_FenceValue;
+	// HAKU_SOK_ASSERT(m_CommandQueue->Signal(m_Fence.Get(), fence_value))
+	// m_FenceValue++;
+	// if (m_Fence->GetCompletedValue() < fence_value)
+	//{
+	//	HAKU_SOK_ASSERT(m_Fence->SetEventOnCompletion(fence_value, m_FenceEvent))
+	//	WaitForSingleObject(m_FenceEvent, INFINITE);
+	//}
+	// m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
 }
 void DX12Renderer::Commands()
 {
 	// Command list allocators can only be reset when the associated
 	// command lists have finished execution on the GPU; apps should use
-	// fences to determine GPU execution progress.
-	HAKU_SOK_ASSERT(m_CommandAllocator->Reset());
-
-	// However, when ExecuteCommandList() is called on a particular command
-	// list, that command list can then be reset at any time and must be before
-	// re-recording.
-	HAKU_SOK_ASSERT(m_CommandList->Reset(m_CommandAllocator.Get(), m_PipelineState.Get()));
-
+	//// fences to determine GPU execution progress.
+	// HAKU_SOK_ASSERT(m_CommandAllocator->Reset());
+	//
+	//// However, when ExecuteCommandList() is called on a particular command
+	//// list, that command list can then be reset at any time and must be before
+	//// re-recording.
+	// HAKU_SOK_ASSERT(m_CommandList->Reset(m_CommandAllocator.Get(), m_PipelineState.Get()));
+	m_Command.Reset(m_PipelineState.Get());
 	// Set necessary state.
-	m_CommandList->SetGraphicsRootSignature(m_RootSignature.Get());
+	m_Command.GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
 	ID3D12DescriptorHeap* ppHeaps[] = { m_SCU_RV_Desciptor.Get() };
-	m_CommandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+	m_Command.GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
+	m_Command.GetCommandList()->RSSetViewports(1, &m_Viewport);
+	m_Command.GetCommandList()->RSSetScissorRects(1, &m_ScissorRect);
 
-	m_CommandList->RSSetViewports(1, &m_Viewport);
-	m_CommandList->RSSetScissorRects(1, &m_ScissorRect);
-
-	// Indicate that the back buffer will be used as a render target.
-	auto resbar = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	m_CommandList->ResourceBarrier(1, &resbar);
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(
-		m_RtvHeap->GetCPUDescriptorHandleForHeapStart(), m_FrameIndex, m_RtvDescriptorSize);
-	m_CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	//// Indicate that the back buffer will be used as a render target.
+	// auto resbar = CD3DX12_RESOURCE_BARRIER::Transition(
+	// m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	// m_CommandList->ResourceBarrier(1, &resbar);
+	//
+	// CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(
+	//	m_RtvHeap->GetCPUDescriptorHandleForHeapStart(), m_FrameIndex, m_RtvDescriptorSize);
+	// m_CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
 	// Record commands.
-	const float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-	m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_CommandList->IASetVertexBuffers(0, 1, &m_VertexBufferView);
-	m_CommandList->DrawInstanced(3, 1, 0, 0);
+	// const float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+	// m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	m_Device.RenderTarget(m_Command.GetCommandList());
 
-	//Imgui impl func
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_CommandList.Get());
-	// Indicate that the back buffer will now be used to present.
-	auto resbarpres = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	m_CommandList->ResourceBarrier(1, &resbarpres);
+	m_Command.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_Command.GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBufferView);
+	m_Command.GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
-	HAKU_SOK_ASSERT(m_CommandList->Close());
+	// Imgui impl func
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_Command.GetCommandList());
+
+	//// Indicate that the back buffer will now be used to present.
+	// auto resbarpres = CD3DX12_RESOURCE_BARRIER::Transition(
+	//	m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	// m_CommandList->ResourceBarrier(1, &resbarpres);
+	m_Device.BackBuffer(m_Command.GetCommandList());
+	m_Command.Close();
+	// HAKU_SOK_ASSERT(m_CommandList->Close());
 }
 } // namespace Renderer
 } // namespace Haku
