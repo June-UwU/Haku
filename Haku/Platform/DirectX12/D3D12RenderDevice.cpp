@@ -1,5 +1,6 @@
 #include "D3D12RenderDevice.hpp"
 #include "../../Core/HakuLog.hpp"
+#include "../../Core/Exceptions.hpp"
 #include "../../macros.hpp"
 
 

@@ -3,17 +3,18 @@
 #include "directx/d3dx12.h"
 #include <d3d12.h>
 #include <dxgi1_6.h>
+#include "../../Renderer/RenderDevice.hpp"
 #include "../Windows/MainWindow.hpp"
 #include "wil/wrl.h"
 namespace Haku
 {
 namespace Renderer
 {
-class D3D12RenderDevice
+class D3D12RenderDevice : public RenderDevice
 {
 public:
 	D3D12RenderDevice();
-	void		  Render();
+	void		  Render() override;
 	void		  FrameIndexReset();
 	ID3D12Device* get() { return m_Device.Get(); }
 	void		  BackBuffer(ID3D12GraphicsCommandList* list);

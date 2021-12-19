@@ -7,14 +7,14 @@ namespace Haku
 {
 namespace Renderer
 {
-class D3D12CommandQueue
+class D3D12CommandQueue : public RenderCommandQueue
 {
 public:
 	D3D12CommandQueue(D3D12RenderDevice& Device);
 	// this will change with the development of PSO class development
-	void Close();
-	void Execute();
-	void Synchronize();
+	void Close() override;
+	void Execute() override;
+	void Synchronize() override;
 	// void					   PopulateCommandList();
 	void					   ResetCommandAllocator();
 	void					   Reset(ID3D12PipelineState* PipelineState);

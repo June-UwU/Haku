@@ -1,9 +1,11 @@
 #include "D3D12Renderer.hpp"
 #include "d3dcompiler.h"
+#include "../../Core/Exceptions.hpp"
 
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 #pragma comment(lib, "DXGI.lib")
+
 
 // TEMP
 #include "..\..\imgui\backends\imgui_impl_dx12.h"
@@ -171,18 +173,7 @@ void DX12Renderer::LoadAssets()
 	}
 	m_Command.Synchronize();
 }
-void DX12Renderer::Synchronize()
-{
-	// const uint64_t fence_value = m_FenceValue;
-	// HAKU_SOK_ASSERT(m_CommandQueue->Signal(m_Fence.Get(), fence_value))
-	// m_FenceValue++;
-	// if (m_Fence->GetCompletedValue() < fence_value)
-	//{
-	//	HAKU_SOK_ASSERT(m_Fence->SetEventOnCompletion(fence_value, m_FenceEvent))
-	//	WaitForSingleObject(m_FenceEvent, INFINITE);
-	//}
-	// m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
-}
+
 void DX12Renderer::Commands()
 {
 	// Command list allocators can only be reset when the associated

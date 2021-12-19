@@ -15,18 +15,17 @@ class DX12Renderer : public Renderer
 public:
 	DX12Renderer();
 	DX12Renderer(uint32_t height, uint32_t width);
-	void				  Cleanup() override{};
 	void				  Render() override;
 	void				  Update() override{};
+	void				  Cleanup() override{};
 	void				  Init(Haku::Windows* window);
 	ID3D12Device*		  GetDevice() { return m_Device.get(); }
 	ID3D12DescriptorHeap* GetDesciptor() { return m_SCU_RV_Desciptor.Get(); }
 
 private:
 	// this fuction will be pulled out for asset management and other
-	void LoadAssets();
-	void Synchronize();
 	void Commands();
+	void LoadAssets();
 
 private:
 	D3D12RenderDevice m_Device;

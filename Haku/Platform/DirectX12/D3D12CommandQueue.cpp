@@ -1,4 +1,5 @@
 #include "D3D12CommandQueue.hpp"
+#include "../../Core/Exceptions.hpp"
 
 namespace Haku
 {
