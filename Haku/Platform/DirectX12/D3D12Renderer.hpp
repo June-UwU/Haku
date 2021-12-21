@@ -3,8 +3,6 @@
 #include "../Windows/MainWindow.hpp"
 #include "D3D12RenderDevice.hpp"
 #include "D3D12CommandQueue.hpp"
-/*WORK TO BE DONE */
-// HAKU_SOK_ASSERT ====> an exceptions
 
 namespace Haku
 {
@@ -18,9 +16,9 @@ public:
 	void				  Render() override;
 	void				  Update() override{};
 	void				  Cleanup() override{};
-	void				  Init(Haku::Windows* window);
+	void				  Init();
 	ID3D12Device*		  GetDevice() { return m_Device.get(); }
-	ID3D12DescriptorHeap* GetDesciptor() { return m_SCU_RV_Desciptor.Get(); }
+	ID3D12DescriptorHeap* GetDesciptor() { return UI_Desciptor.Get(); }
 
 private:
 	// this fuction will be pulled out for asset management and other
@@ -40,7 +38,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_RootSignature;
 
 	// creating a desciptor for the directx shader resouce view (srv),unordered access view and constant buffers view
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_SCU_RV_Desciptor;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> UI_Desciptor;
 
 	// pipeline state that is used to set the stages and shaders
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;

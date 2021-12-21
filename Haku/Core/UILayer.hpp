@@ -8,10 +8,11 @@ namespace Haku
 class HAKU_API UILayer
 {
 public:
-	UILayer() = default;
-	void		 OnAttach();
-	void		 Render();
-	void		 OnDetach();
-	//virtual void OnEvent(Event& ref) = 0;
+	UILayer()		   = default;
+	virtual ~UILayer() = default;
+	virtual void Render(){};
+	virtual void OnAttach(){};
+	virtual void OnDetach(){};
+	// virtual void OnEvent(Event& ref) = 0;
 };
 } // namespace Haku

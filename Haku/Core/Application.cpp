@@ -18,9 +18,9 @@ void Application::SetMainWindow(Windows& window) noexcept
 	HAKU_LOG_INFO("Setting Window");
 	m_Window = &window;
 
-	m_Renderer.Init(m_Window);
-	layer.OnAttach();
-	// need to learn perfect forwarding
+	m_Renderer.Init();
+	// layer = new UILayer();
+	// layer->OnAttach();
 	m_Window->SetEventRoutine(HAKU_BIND_FUNC(OnEvent));
 }
 void Application::ProcessMessage()
@@ -29,14 +29,20 @@ void Application::ProcessMessage()
 	{
 		m_Window->run();
 		Dispatcher.ServiceEvent();
-		layer.Render();
+		layer->Render();
 		m_Renderer.Render();
 	}
-	layer.OnDetach();
+	layer->OnDetach();
 }
 void Application::OnEvent(Event Event)
 {
 	Dispatcher.OnEvent(Event);
+}
+
+void Application::SetUILayer(UILayer* ui)
+{
+	layer = ui;
+	layer->OnAttach();
 }
 
 void Application::Onclose(Event& Close)

@@ -1,6 +1,7 @@
 #include "D3D12Renderer.hpp"
 #include "d3dcompiler.h"
 #include "../../Core/Exceptions.hpp"
+#include "../../Core/Application.hpp"
 
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "D3DCompiler.lib")
@@ -39,8 +40,9 @@ void DX12Renderer::Render()
 	m_Device.FrameIndexReset();
 	// Synchronize();
 }
-void DX12Renderer::Init(Haku::Windows* window)
+void DX12Renderer::Init()
 {
+	auto window = Haku::Application::Get()->GetWindow();
 	height = window->GetHeight();
 	width  = window->GetWidth();
 	m_Device.init(window, m_Command.GetCommandQueue());
@@ -50,7 +52,7 @@ void DX12Renderer::Init(Haku::Windows* window)
 		srvdesc.Type		   = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		srvdesc.Flags		   = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		srvdesc.NumDescriptors = 1;
-		HAKU_SOK_ASSERT(m_Device.get()->CreateDescriptorHeap(&srvdesc, IID_PPV_ARGS(&m_SCU_RV_Desciptor)))
+		HAKU_SOK_ASSERT(m_Device.get()->CreateDescriptorHeap(&srvdesc, IID_PPV_ARGS(&UI_Desciptor)))
 	}
 
 	// creating a command issuer
@@ -73,13 +75,11 @@ void DX12Renderer::LoadAssets()
 			0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
 	}
 
-	// Create the pipeline state, which includes compiling and loading shaders.
 	{
 		Microsoft::WRL::ComPtr<ID3DBlob> vertexShader;
 		Microsoft::WRL::ComPtr<ID3DBlob> pixelShader;
 
 #if defined(_DEBUG)
-		// Enable better shader debugging with the graphics debugging tools.
 		UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #else
 		UINT compileFlags = 0;
@@ -106,13 +106,11 @@ void DX12Renderer::LoadAssets()
 			&pixelShader,
 			nullptr));
 
-		// Define the vertex input layout.
 		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		};
 
-		// Describe and create the graphics pipeline state object (PSO).
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
 		psoDesc.InputLayout						   = { inputElementDescs, _countof(inputElementDescs) };
 		psoDesc.pRootSignature					   = m_RootSignature.Get();
@@ -130,11 +128,7 @@ void DX12Renderer::LoadAssets()
 		HAKU_SOK_ASSERT(m_Device.get()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineState)));
 	}
 
-	// Command queue co
 	m_Command.CommandListCreate(m_Device, m_PipelineState.Get());
-	// Command lists are created in the recording state, but there is nothing
-	// to record yet. The main loop expects it to be closed, so close it now.
-	// HAKU_SOK_ASSERT(m_CommandList->Close());
 	m_Command.Close();
 	// Create the vertex buffer.
 	{
@@ -159,14 +153,12 @@ void DX12Renderer::LoadAssets()
 			nullptr,
 			IID_PPV_ARGS(&m_VertexBuffer)));
 
-		// Copy the triangle data to the vertex buffer.
 		UINT8*		  pVertexDataBegin;
-		CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU.
+		CD3DX12_RANGE readRange(0, 0); 
 		HAKU_SOK_ASSERT(m_VertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
 		memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
 		m_VertexBuffer->Unmap(0, nullptr);
 
-		// Initialize the vertex buffer view.
 		m_VertexBufferView.BufferLocation = m_VertexBuffer->GetGPUVirtualAddress();
 		m_VertexBufferView.StrideInBytes  = sizeof(VertexData);
 		m_VertexBufferView.SizeInBytes	  = vertexBufferSize;
@@ -176,52 +168,25 @@ void DX12Renderer::LoadAssets()
 
 void DX12Renderer::Commands()
 {
-	// Command list allocators can only be reset when the associated
-	// command lists have finished execution on the GPU; apps should use
-	//// fences to determine GPU execution progress.
-	// HAKU_SOK_ASSERT(m_CommandAllocator->Reset());
-	//
-	//// However, when ExecuteCommandList() is called on a particular command
-	//// list, that command list can then be reset at any time and must be before
-	//// re-recording.
-	// HAKU_SOK_ASSERT(m_CommandList->Reset(m_CommandAllocator.Get(), m_PipelineState.Get()));
 	m_Command.Reset(m_PipelineState.Get());
-	// Set necessary state.
+
 	m_Command.GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
-	ID3D12DescriptorHeap* ppHeaps[] = { m_SCU_RV_Desciptor.Get() };
+	ID3D12DescriptorHeap* ppHeaps[] = { UI_Desciptor.Get() };
 	m_Command.GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
 	m_Command.GetCommandList()->RSSetViewports(1, &m_Viewport);
 	m_Command.GetCommandList()->RSSetScissorRects(1, &m_ScissorRect);
 
-	//// Indicate that the back buffer will be used as a render target.
-	// auto resbar = CD3DX12_RESOURCE_BARRIER::Transition(
-	// m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	// m_CommandList->ResourceBarrier(1, &resbar);
-	//
-	// CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(
-	//	m_RtvHeap->GetCPUDescriptorHandleForHeapStart(), m_FrameIndex, m_RtvDescriptorSize);
-	// m_CommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
-
-	// Record commands.
-	// const float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-	// m_CommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_Device.RenderTarget(m_Command.GetCommandList());
 
 	m_Command.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_Command.GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBufferView);
 	m_Command.GetCommandList()->DrawInstanced(3, 1, 0, 0);
-
-	// Imgui impl func
+	
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_Command.GetCommandList());
 
-	//// Indicate that the back buffer will now be used to present.
-	// auto resbarpres = CD3DX12_RESOURCE_BARRIER::Transition(
-	//	m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	// m_CommandList->ResourceBarrier(1, &resbarpres);
 	m_Device.BackBuffer(m_Command.GetCommandList());
 	m_Command.Close();
-	// HAKU_SOK_ASSERT(m_CommandList->Close());
 }
 } // namespace Renderer
 } // namespace Haku
