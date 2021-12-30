@@ -1,8 +1,8 @@
 #pragma once
 #include "wil/resource.h"
 #include "../../macros.hpp"
+#include "../../hakupch.hpp"
 #include "../../Core/Window.hpp"
-#include <Windows.h>
 
 //	using EventRoutine = std::function<void(Event& e)>;
 //
@@ -20,12 +20,12 @@ class HAKU_API Windows : public Window
 public:
 	Windows(uint32_t height, uint32_t width, bool maximize, const char* Windowname);
 	void	run() override;
+	HWND	GetHandle() { return handle.get(); }
 	void	SetEventRoutine(const EventRoutine& func) override;
 	LRESULT ProcessMessage(HWND handle, UINT message, WPARAM wParam, LPARAM lParam);
-	HWND	GetHandle() { return handle.get(); }
 
 private:
-	wil::unique_hwnd  handle;
 	wil::unique_hicon icon;
+	wil::unique_hwnd  handle;
 };
 } // namespace Haku

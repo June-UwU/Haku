@@ -1,13 +1,12 @@
 #pragma once
 #include "spdlog/spdlog.h"
 
-void info(std::string& ref);
-void warn(std::string& ref);
-void critical(std::string& ref);
-void error(std::string& ref);
-
+void		init();
+void		info(std::string& ref);
+void		warn(std::string& ref);
+void		error(std::string& ref);
+void		critical(std::string& ref);
 std::string stringify(const char* args);
-
 std::string stringify(const std::string args);
 
 template<typename T>
@@ -21,6 +20,7 @@ void append(std::string& ref, T& param)
 {
 	ref.append(stringify(param));
 }
+
 
 template<typename T, typename... Targs>
 void append(std::string& ref, T param, Targs&... args)
@@ -60,8 +60,6 @@ void log_error(T& param, args&... arg)
 	append(ref, param, arg...);
 	error(ref);
 }
-
-void init();
 
 #ifdef _DEBUG
 

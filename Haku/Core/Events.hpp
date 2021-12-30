@@ -98,16 +98,13 @@ class EventDispatcher
 
 public:
 	EventDispatcher() = default;
-	void   OnEvent(Event& e) noexcept { m_Queue.push_back(e); }
+	void   ServiceEvent();
 	Event& peek() { return m_Queue.front(); }
 	bool   empty() { return m_Queue.empty(); }
-	void   ServiceEvent();
 	void   RegisterRoutine(Routine r, uint32_t type);
+	void   OnEvent(Event& e) noexcept { m_Queue.push_back(e); }
 
 private:
-	/// <summary>
-	/// this might need to be turned into single event bus
-	/// </summary>
 	EventQueue	m_Queue; /// Looks like std::queue is out
 	CallBackMap m_CallBack;
 };

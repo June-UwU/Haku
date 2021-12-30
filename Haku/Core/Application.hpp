@@ -31,8 +31,8 @@ private:
 private:
 	EventDispatcher		   Dispatcher;
 	Renderer::DX12Renderer m_Renderer;
-	UILayer*			   layer	 = nullptr;
 	bool				   m_Running = true;
+	UILayer*			   layer	 = nullptr;
 	Windows*			   m_Window	 = nullptr;
 
 private:

@@ -1,6 +1,6 @@
 #pragma once
-#include "../hakupch.hpp"
 #include "../macros.hpp"
+#include "../hakupch.hpp"
 #include "directx/d3dx12.h"
 #include <dxgi1_6.h>
 #include <d3d12.h>
