@@ -1,7 +1,7 @@
 #pragma once
-#include "../../Renderer/RenderCommandQueue.hpp"
-#include "D3D12RenderDevice.hpp"
 #include "wil/wrl.h"
+#include "D3D12RenderDevice.hpp"
+#include "../../Renderer/RenderCommandQueue.hpp"
 #include <d3d12.h>
 namespace Haku
 {

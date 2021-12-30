@@ -1,12 +1,13 @@
-#include "D3D12Renderer.hpp"
+#include "directx/d3d12.h"
+#include "directx/D3dx12.h"
 #include "d3dcompiler.h"
+#include "D3D12Renderer.hpp"
 #include "../../Core/Exceptions.hpp"
 #include "../../Core/Application.hpp"
 
+#pragma comment(lib, "DXGI.lib")
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "D3DCompiler.lib")
-#pragma comment(lib, "DXGI.lib")
-
 
 // TEMP
 #include "..\..\imgui\backends\imgui_impl_dx12.h"
@@ -17,46 +18,44 @@ namespace Renderer
 {
 DX12Renderer::DX12Renderer()
 	: Renderer(height, width)
-	, m_Device()
-	, m_Command(m_Device)
 	, m_Viewport(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height))
 	, m_ScissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height))
 {
+	m_Device  = new D3D12RenderDevice();
+	m_Command = new D3D12CommandQueue(*m_Device);
 }
 DX12Renderer::DX12Renderer(uint32_t height, uint32_t width)
 	: Renderer(height, width)
-	, m_Device()
-	, m_Command(m_Device)
 	, m_Viewport(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height))
 	, m_ScissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height))
 {
+	m_Device  = new D3D12RenderDevice();
+	m_Command = new D3D12CommandQueue(*m_Device);
 }
 void DX12Renderer::Render()
 {
 	Commands();
-	m_Command.Execute();
-	m_Device.Render();
-	m_Command.Synchronize();
-	m_Device.FrameIndexReset();
+	m_Command->Execute();
+	m_Device->Render();
+	m_Command->Synchronize();
+	m_Device->FrameIndexReset();
 	// Synchronize();
 }
 void DX12Renderer::Init()
 {
 	auto window = Haku::Application::Get()->GetWindow();
-	height = window->GetHeight();
-	width  = window->GetWidth();
-	m_Device.init(window, m_Command.GetCommandQueue());
+	height		= window->GetHeight();
+	width		= window->GetWidth();
+	m_Device->init(window, m_Command->GetCommandQueue());
 
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC srvdesc{};
 		srvdesc.Type		   = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		srvdesc.Flags		   = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		srvdesc.NumDescriptors = 1;
-		HAKU_SOK_ASSERT(m_Device.get()->CreateDescriptorHeap(&srvdesc, IID_PPV_ARGS(&UI_Desciptor)))
+		HAKU_SOK_ASSERT(m_Device->get()->CreateDescriptorHeap(&srvdesc, IID_PPV_ARGS(&UI_Desciptor)))
 	}
 
-	// creating a command issuer
-	// TO BE REMOVED
 	LoadAssets();
 }
 
@@ -71,7 +70,7 @@ void DX12Renderer::LoadAssets()
 		Microsoft::WRL::ComPtr<ID3DBlob> error;
 		HAKU_SOK_ASSERT(
 			D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
-		HAKU_SOK_ASSERT(m_Device.get()->CreateRootSignature(
+		HAKU_SOK_ASSERT(m_Device->get()->CreateRootSignature(
 			0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
 	}
 
@@ -125,68 +124,44 @@ void DX12Renderer::LoadAssets()
 		psoDesc.NumRenderTargets				   = 1;
 		psoDesc.RTVFormats[0]					   = DXGI_FORMAT_R8G8B8A8_UNORM;
 		psoDesc.SampleDesc.Count				   = 1;
-		HAKU_SOK_ASSERT(m_Device.get()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineState)));
+		HAKU_SOK_ASSERT(m_Device->get()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineState)));
 	}
 
-	m_Command.CommandListCreate(m_Device, m_PipelineState.Get());
-	m_Command.Close();
+	m_Command->CommandListCreate(*m_Device, m_PipelineState.Get());
 	// Create the vertex buffer.
-	{
-		// Define the geometry for a triangle.
-		VertexData triangleVertices[] = { { { 0.0f, 0.25f, 0.0f }, { 0.2f, 0.0f, 0.0f, 0.4f } },
-										  { { 0.25f, -0.25f, 0.0f }, { 0.0f, 0.3f, 0.0f, 0.4f } },
-										  { { -0.25f, -0.25f, 0.0f }, { 0.0f, 0.0f, 0.1f, 0.4f } } };
 
-		const UINT vertexBufferSize = sizeof(triangleVertices);
+	// Define the geometry for a triangle.
+	VertexData triangleVertices[] = { { { 0.0f, 0.25f, 0.0f }, { 0.2f, 0.0f, 0.0f, 0.4f } },
+									  { { 0.25f, -0.25f, 0.0f }, { 0.0f, 0.3f, 0.0f, 0.4f } },
+									  { { -0.25f, -0.25f, 0.0f }, { 0.0f, 0.0f, 0.1f, 0.4f } } };
 
-		// Note: using upload heaps to transfer static data like vert buffers is not
-		// recommended. Every time the GPU needs it, the upload heap will be marshalled
-		// over. Please read up on Default Heap usage. An upload heap is used here for
-		// code simplicity and because there are very few verts to actually transfer.
-		auto heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-		auto resdesc  = CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize);
-		HAKU_SOK_ASSERT(m_Device.get()->CreateCommittedResource(
-			&heapprop,
-			D3D12_HEAP_FLAG_NONE,
-			&resdesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&m_VertexBuffer)));
+	const UINT vertexBufferSize = sizeof(triangleVertices);
 
-		UINT8*		  pVertexDataBegin;
-		CD3DX12_RANGE readRange(0, 0); 
-		HAKU_SOK_ASSERT(m_VertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-		memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
-		m_VertexBuffer->Unmap(0, nullptr);
+	Buffer = new D3D12VertexBuffer(*m_Device, *m_Command, triangleVertices, vertexBufferSize);
 
-		m_VertexBufferView.BufferLocation = m_VertexBuffer->GetGPUVirtualAddress();
-		m_VertexBufferView.StrideInBytes  = sizeof(VertexData);
-		m_VertexBufferView.SizeInBytes	  = vertexBufferSize;
-	}
-	m_Command.Synchronize();
 }
 
 void DX12Renderer::Commands()
 {
-	m_Command.Reset(m_PipelineState.Get());
+	m_Command->Reset(m_PipelineState.Get());
 
-	m_Command.GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
+	m_Command->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
 	ID3D12DescriptorHeap* ppHeaps[] = { UI_Desciptor.Get() };
-	m_Command.GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+	m_Command->GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
-	m_Command.GetCommandList()->RSSetViewports(1, &m_Viewport);
-	m_Command.GetCommandList()->RSSetScissorRects(1, &m_ScissorRect);
+	m_Command->GetCommandList()->RSSetViewports(1, &m_Viewport);
+	m_Command->GetCommandList()->RSSetScissorRects(1, &m_ScissorRect);
 
-	m_Device.RenderTarget(m_Command.GetCommandList());
+	m_Device->RenderTarget(m_Command->GetCommandList());
 
-	m_Command.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_Command.GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBufferView);
-	m_Command.GetCommandList()->DrawInstanced(3, 1, 0, 0);
-	
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_Command.GetCommandList());
+	m_Command->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	Buffer->SetBuffer(*m_Command);
+	m_Command->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
-	m_Device.BackBuffer(m_Command.GetCommandList());
-	m_Command.Close();
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_Command->GetCommandList());
+
+	m_Device->BackBuffer(m_Command->GetCommandList());
+	m_Command->Close();
 }
 } // namespace Renderer
 } // namespace Haku

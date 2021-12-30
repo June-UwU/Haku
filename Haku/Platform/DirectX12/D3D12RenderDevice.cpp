@@ -1,8 +1,7 @@
+#include "../../macros.hpp"
 #include "D3D12RenderDevice.hpp"
 #include "../../Core/HakuLog.hpp"
 #include "../../Core/Exceptions.hpp"
-#include "../../macros.hpp"
-
 
 namespace Haku
 {
@@ -89,7 +88,6 @@ void D3D12RenderDevice::init(Haku::Windows* window, ID3D12CommandQueue* CommandQ
 	HAKU_SOK_ASSERT(m_Device->CreateDescriptorHeap(&RTVdesc, IID_PPV_ARGS(&m_RtvHeap)))
 	m_RtvDescriptorSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	// Frame res
 	{
 		CD3DX12_CPU_DESCRIPTOR_HANDLE cpu_handle(m_RtvHeap->GetCPUDescriptorHandleForHeapStart());
 		// Creating a render target view(RTV)

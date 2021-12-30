@@ -1,8 +1,9 @@
 #pragma once
-#include "../../Renderer/Renderer.hpp"
-#include "../Windows/MainWindow.hpp"
+#include "D3D12Buffer.hpp"
 #include "D3D12RenderDevice.hpp"
 #include "D3D12CommandQueue.hpp"
+#include "../Windows/MainWindow.hpp"
+#include "../../Renderer/Renderer.hpp"
 
 namespace Haku
 {
@@ -13,11 +14,11 @@ class DX12Renderer : public Renderer
 public:
 	DX12Renderer();
 	DX12Renderer(uint32_t height, uint32_t width);
+	void				  Init();
 	void				  Render() override;
 	void				  Update() override{};
 	void				  Cleanup() override{};
-	void				  Init();
-	ID3D12Device*		  GetDevice() { return m_Device.get(); }
+	ID3D12Device*		  GetDevice() { return m_Device->get(); }
 	ID3D12DescriptorHeap* GetDesciptor() { return UI_Desciptor.Get(); }
 
 private:
@@ -26,13 +27,12 @@ private:
 	void LoadAssets();
 
 private:
-	D3D12RenderDevice m_Device;
-	D3D12CommandQueue m_Command;
-	// Pipeline objects.
-	// view port and the cut rect
+	D3D12RenderDevice* m_Device;
+	D3D12CommandQueue* m_Command;
+
+	/*RAW DIRECTX OBJECTS*/
 	CD3DX12_VIEWPORT m_Viewport;
 	CD3DX12_RECT	 m_ScissorRect;
-	// swapchain and render devices
 
 	// currently unknown functions
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_RootSignature;
@@ -43,10 +43,10 @@ private:
 	// pipeline state that is used to set the stages and shaders
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
 	// commands that the gpu must execute
-
+	D3D12VertexBuffer* Buffer = nullptr;
 	// App resources.
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_VertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW			   m_VertexBufferView;
+	// Microsoft::WRL::ComPtr<ID3D12Resource> m_VertexBuffer;
+	// D3D12_VERTEX_BUFFER_VIEW			   m_VertexBufferView;
 };
 } // namespace Renderer
 } // namespace Haku

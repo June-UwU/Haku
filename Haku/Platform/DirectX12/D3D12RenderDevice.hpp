@@ -1,11 +1,10 @@
 #pragma once
-
+#include "directx/d3d12.h"
 #include "directx/d3dx12.h"
-#include <d3d12.h>
 #include <dxgi1_6.h>
-#include "../../Renderer/RenderDevice.hpp"
-#include "../Windows/MainWindow.hpp"
 #include "wil/wrl.h"
+#include "../Windows/MainWindow.hpp"
+#include "../../Renderer/RenderDevice.hpp"
 namespace Haku
 {
 namespace Renderer
