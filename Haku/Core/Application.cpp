@@ -8,21 +8,21 @@ Application* Application::s_Instance = nullptr;
 Application::Application()
 	: m_Renderer(720, 1080)
 {
+	HAKU_LOG_INFO("Creating Application");
 	HAKU_ASSERT(!s_Instance);
 	s_Instance = this;
 	Dispatcher.RegisterRoutine(
 		HAKU_BIND_FUNC(Application::Onclose), static_cast<uint32_t>(EventType::WindowCloseEvent));
 	Dispatcher.RegisterRoutine(
 		HAKU_BIND_FUNC(Application::OnResize), HAKU_EVENT_OR(EventType::WindowResizeEvent, EventType::Recurring));
+	Dispatcher.RegisterRoutine(
+		HAKU_BIND_FUNC(Application::OnMinimize), static_cast<uint32_t>(EventType::WindowMinimizeEvent));
 }
 void Application::SetMainWindow(Windows& window) noexcept
 {
 	HAKU_LOG_INFO("Setting Window");
 	m_Window = &window;
-
 	m_Renderer.Init();
-	// layer = new UILayer();
-	// layer->OnAttach();
 	m_Window->SetEventRoutine(HAKU_BIND_FUNC(OnEvent));
 }
 void Application::ProcessMessage()
@@ -31,8 +31,11 @@ void Application::ProcessMessage()
 	{
 		m_Window->run();
 		Dispatcher.ServiceEvent();
-		layer->Render();
-		m_Renderer.Render();
+		if (!m_Window->GetMinimize())
+		{
+			layer->Render();
+			m_Renderer.Render();
+		}
 	}
 	layer->OnDetach();
 }
@@ -43,6 +46,7 @@ void Application::OnEvent(Event Event)
 
 void Application::SetUILayer(UILayer* ui)
 {
+	HAKU_LOG_INFO("setting UI");
 	layer = ui;
 	layer->OnAttach();
 }
@@ -62,8 +66,17 @@ void Application::OnResize(Event& Resize)
 	HAKU_DISPLAY_SIZE_EXTRACT(Resize.GetData(), height, width)
 	m_Window->SetWidth(width);
 	m_Window->SetHeight(height);
+	m_Window->SetMinimize(false);
 	m_Renderer.Resize(height, width);
 	Resize.Handled = true;
+}
+
+void Application::OnMinimize(Event& Minimize)
+{
+	HAKU_LOG_INFO();
+	HAKU_ASSERT(m_Window);
+	Minimize.Handled = true;
+	m_Window->SetMinimize(true);
 }
 
 } // namespace Haku

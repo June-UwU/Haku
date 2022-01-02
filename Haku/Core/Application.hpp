@@ -22,6 +22,7 @@ public:
 private:
 	void Onclose(Event& Close);
 	void OnResize(Event& Resize);
+	void OnMinimize(Event& Minimize);
 	/*stud event to handle the unmapped event for the time being*/
 	bool return_true(Event& event)
 	{
