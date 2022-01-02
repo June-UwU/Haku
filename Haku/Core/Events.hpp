@@ -14,8 +14,9 @@
 
 namespace Haku
 {
+#define HAKU_EVENT_OR(x, y) static_cast<uint32_t>(static_cast<uint32_t>(x) | static_cast<uint32_t>(y))
 /*MACROS TO CREATE ,PACK AND EXRACT HAKU EVENTS*/
-#define HAKU_EVENT_TYPE(x) (x & 0xFFFFFFF0)
+#define HAKU_EVENT_TYPE(x)	(x & 0xFFFFFFF0)
 /*mouse event pack macro*/
 #define HAKU_MOUSE_PACK(x, y, z)                                                                                       \
 	x = y;                                                                                                             \
@@ -25,6 +26,9 @@ namespace Haku
 #define HAKU_MOUSE_EXTRACT(x, y, z)                                                                                    \
 	y = 0xFFFF & (x >> 32);                                                                                            \
 	z = 0xFFFF & x;
+#define HAKU_DISPLAY_SIZE_EXTRACT(param, height, width)                                                                \
+	width  = 0xFFFF & param;                                                                                           \
+	height = 0xFFFF & (param >> 32);
 
 #define HAKU_EVENT(x, y, z)		Event(static_cast<uint32_t>(x) | static_cast<uint32_t>(y), z)
 #define HAKU_APP_EVENT(x, y)	Event(static_cast<uint32_t>(EventCatagory::ApplicationEvent) | static_cast<uint32_t>(x), y)
@@ -63,19 +67,21 @@ enum class EventType : uint32_t
 	AppicationRenderEvent	= BIT(20),
 	ApplicationUpdateEvent	= BIT(21),
 	ApplicationSuspendEvent = BIT(22),
-	None					= BIT(23)
+	None					= BIT(23),
+	Recurring				= BIT(30)
 };
 
 class HAKU_API Event
 {
 public:
+	~Event() = default;
 	Event(uint32_t bits, int64_t data)
 		: EventBitSet(bits)
 		, Data(data)
 	{
-		HAKU_LOG_INFO(__FUNCTION__, "Event :", bits, "Data :", data);
+		HAKU_LOG_INFO("Event :", bits, "Data :", data);
 	}
-	~Event() = default;
+	int64_t	  GetData() { return Data; }
 	uint32_t  GetEvent() { return EventBitSet; }
 	EventType GetEventType() { return (static_cast<EventType>(HAKU_EVENT_TYPE(EventBitSet))); }
 

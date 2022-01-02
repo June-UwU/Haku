@@ -12,6 +12,8 @@ Application::Application()
 	s_Instance = this;
 	Dispatcher.RegisterRoutine(
 		HAKU_BIND_FUNC(Application::Onclose), static_cast<uint32_t>(EventType::WindowCloseEvent));
+	Dispatcher.RegisterRoutine(
+		HAKU_BIND_FUNC(Application::OnResize), HAKU_EVENT_OR(EventType::WindowResizeEvent, EventType::Recurring));
 }
 void Application::SetMainWindow(Windows& window) noexcept
 {
@@ -50,6 +52,18 @@ void Application::Onclose(Event& Close)
 	HAKU_LOG_INFO();
 	Close.Handled = true;
 	m_Running	  = false;
+}
+
+void Application::OnResize(Event& Resize)
+{
+	HAKU_LOG_INFO();
+	uint32_t width{};
+	uint32_t height{};
+	HAKU_DISPLAY_SIZE_EXTRACT(Resize.GetData(), height, width)
+	m_Window->SetWidth(width);
+	m_Window->SetHeight(height);
+	m_Renderer.Resize(height, width);
+	Resize.Handled = true;
 }
 
 } // namespace Haku

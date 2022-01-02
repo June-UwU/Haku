@@ -41,6 +41,10 @@ void DX12Renderer::Render()
 	m_Device->FrameIndexReset();
 	// Synchronize();
 }
+void DX12Renderer::Resize(uint32_t height, uint32_t width)
+{
+	m_Device->Resize(height, width,*m_Command);
+}
 void DX12Renderer::Init()
 {
 	auto window = Haku::Application::Get()->GetWindow();
@@ -74,60 +78,7 @@ void DX12Renderer::LoadAssets()
 			0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
 	}
 
-	{
-		Microsoft::WRL::ComPtr<ID3DBlob> vertexShader;
-		Microsoft::WRL::ComPtr<ID3DBlob> pixelShader;
-
-#if defined(_DEBUG)
-		UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-		UINT compileFlags = 0;
-#endif
-
-		HAKU_SOK_ASSERT(D3DCompileFromFile(
-			L"D:\\Haku\\Assets\\Shaders\\vertexshader.hlsl",
-			nullptr,
-			nullptr,
-			"VSMain",
-			"vs_5_0",
-			compileFlags,
-			0,
-			&vertexShader,
-			nullptr));
-		HAKU_SOK_ASSERT(D3DCompileFromFile(
-			L"D:\\Haku\\Assets\\Shaders\\pixelshader.hlsl",
-			nullptr,
-			nullptr,
-			"PSMain",
-			"ps_5_0",
-			compileFlags,
-			0,
-			&pixelShader,
-			nullptr));
-
-		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-		};
-
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-		psoDesc.InputLayout						   = { inputElementDescs, _countof(inputElementDescs) };
-		psoDesc.pRootSignature					   = m_RootSignature.Get();
-		psoDesc.VS								   = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
-		psoDesc.PS								   = CD3DX12_SHADER_BYTECODE(pixelShader.Get());
-		psoDesc.RasterizerState					   = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		psoDesc.BlendState						   = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		psoDesc.DepthStencilState.DepthEnable	   = FALSE;
-		psoDesc.DepthStencilState.StencilEnable	   = FALSE;
-		psoDesc.SampleMask						   = UINT_MAX;
-		psoDesc.PrimitiveTopologyType			   = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		psoDesc.NumRenderTargets				   = 1;
-		psoDesc.RTVFormats[0]					   = DXGI_FORMAT_R8G8B8A8_UNORM;
-		psoDesc.SampleDesc.Count				   = 1;
-		HAKU_SOK_ASSERT(m_Device->get()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineState)));
-	}
-
-	m_Command->CommandListCreate(*m_Device, m_PipelineState.Get());
+	m_Command->CommandListCreate(*m_Device, nullptr);
 	// Create the vertex buffer.
 
 	// Define the geometry for a triangle.
@@ -136,15 +87,13 @@ void DX12Renderer::LoadAssets()
 									  { { -0.25f, -0.25f, 0.0f }, { 0.0f, 0.0f, 0.1f, 0.4f } } };
 
 	const UINT vertexBufferSize = sizeof(triangleVertices);
-
-	Buffer = new D3D12VertexBuffer(*m_Device, *m_Command, triangleVertices, vertexBufferSize);
-
+	m_PipelineState				= new D3D12PipelineState(*m_Device, m_RootSignature.Get());
+	m_Buffer					= new D3D12VertexBuffer(*m_Device, *m_Command, triangleVertices, vertexBufferSize);
 }
 
 void DX12Renderer::Commands()
 {
-	m_Command->Reset(m_PipelineState.Get());
-
+	m_PipelineState->SetPipelineState(*m_Command);
 	m_Command->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
 	ID3D12DescriptorHeap* ppHeaps[] = { UI_Desciptor.Get() };
 	m_Command->GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
@@ -155,7 +104,7 @@ void DX12Renderer::Commands()
 	m_Device->RenderTarget(m_Command->GetCommandList());
 
 	m_Command->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	Buffer->SetBuffer(*m_Command);
+	m_Buffer->SetBuffer(*m_Command);
 	m_Command->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_Command->GetCommandList());

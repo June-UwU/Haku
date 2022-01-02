@@ -40,6 +40,7 @@ void D3D12CommandQueue::Reset(ID3D12PipelineState* PipelineState)
 	ResetCommandAllocator();
 	ResetCommandList(PipelineState);
 }
+
 void D3D12CommandQueue::Close()
 {
 	HAKU_SOK_ASSERT(m_CommandList->Close())

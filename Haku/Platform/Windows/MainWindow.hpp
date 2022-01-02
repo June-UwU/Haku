@@ -23,7 +23,7 @@ public:
 	HWND	GetHandle() { return handle.get(); }
 	void	SetEventRoutine(const EventRoutine& func) override;
 	LRESULT ProcessMessage(HWND handle, UINT message, WPARAM wParam, LPARAM lParam);
-
+	
 private:
 	wil::unique_hicon icon;
 	wil::unique_hwnd  handle;

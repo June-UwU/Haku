@@ -17,9 +17,11 @@ protected:
 	Window(uint32_t height, uint32_t width, bool maximize, const char* Windowname);
 
 public:
+	virtual void run() = 0;
 	uint32_t	 GetWidth() { return width; }
 	uint32_t	 GetHeight() { return height; }
-	virtual void run()									   = 0;
+	void		 SetWidth(uint32_t value) { width = value; }
+	void		 SetHeight(uint32_t value) { height = value; }
 	virtual void SetEventRoutine(const EventRoutine& func) = 0;
 
 private:

@@ -1,14 +1,15 @@
 #pragma once
+#include "wil/wrl.h"
 #include "directx/d3d12.h"
 #include "directx/d3dx12.h"
 #include <dxgi1_6.h>
-#include "wil/wrl.h"
 #include "../Windows/MainWindow.hpp"
 #include "../../Renderer/RenderDevice.hpp"
 namespace Haku
 {
 namespace Renderer
 {
+class D3D12CommandQueue;
 class D3D12RenderDevice : public RenderDevice
 {
 public:
@@ -19,6 +20,7 @@ public:
 	void		  BackBuffer(ID3D12GraphicsCommandList* list);
 	void		  RenderTarget(ID3D12GraphicsCommandList* list);
 	void		  init(Haku::Windows* window, ID3D12CommandQueue* CommandQueue);
+	void		  Resize(uint32_t height, uint32_t width, D3D12CommandQueue& Command);
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12Device>	m_Device;
@@ -27,8 +29,8 @@ private:
 	// Render targets
 	// rtv needs a descriptor..? this method is still not understood clearly
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_RtvHeap;
-	static const uint32_t						 FrameCount			 = 2;
 	uint32_t									 m_RtvDescriptorSize = 0;
+	static const uint32_t						 FrameCount			 = 2;
 	Microsoft::WRL::ComPtr<ID3D12Resource>		 m_RenderTargets[FrameCount];
 };
 } // namespace Renderer

@@ -86,6 +86,17 @@ LRESULT Windows::ProcessMessage(HWND handle, UINT message, WPARAM wParam, LPARAM
 		return true;
 	switch (message)
 	{
+	case WM_SIZE:
+	{
+		if (this != nullptr)
+		{
+			Window::Routine(HAKU_WINDOW_EVENT(
+				(static_cast<EventType>(
+					static_cast<uint32_t>(EventType::WindowResizeEvent) | static_cast<uint32_t>(EventType::Recurring))),
+				lParam));
+		}
+		break;
+	}
 	case WM_CLOSE:
 	{
 		PostQuitMessage(0);

@@ -2,9 +2,9 @@
 #include "D3D12Buffer.hpp"
 #include "D3D12RenderDevice.hpp"
 #include "D3D12CommandQueue.hpp"
+#include "D3D12PipelineState.hpp"
 #include "../Windows/MainWindow.hpp"
 #include "../../Renderer/Renderer.hpp"
-
 namespace Haku
 {
 namespace Renderer
@@ -19,6 +19,7 @@ public:
 	void				  Update() override{};
 	void				  Cleanup() override{};
 	ID3D12Device*		  GetDevice() { return m_Device->get(); }
+	void				  Resize(uint32_t height, uint32_t width);
 	ID3D12DescriptorHeap* GetDesciptor() { return UI_Desciptor.Get(); }
 
 private:
@@ -41,12 +42,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> UI_Desciptor;
 
 	// pipeline state that is used to set the stages and shaders
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
-	// commands that the gpu must execute
-	D3D12VertexBuffer* Buffer = nullptr;
-	// App resources.
-	// Microsoft::WRL::ComPtr<ID3D12Resource> m_VertexBuffer;
-	// D3D12_VERTEX_BUFFER_VIEW			   m_VertexBufferView;
+	D3D12PipelineState* m_PipelineState = nullptr;
+	D3D12VertexBuffer*	m_Buffer		= nullptr;
 };
 } // namespace Renderer
 } // namespace Haku
