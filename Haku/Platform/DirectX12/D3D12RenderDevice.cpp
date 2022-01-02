@@ -41,6 +41,16 @@ void D3D12RenderDevice::FrameIndexReset()
 {
 	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
 }
+void D3D12RenderDevice::ShutDown() noexcept
+{
+	m_Device.Reset();
+	m_RtvHeap.Reset();
+	m_SwapChain.Reset();
+	for (size_t i = 0; i < FrameCount; i++)
+	{
+		m_RenderTargets[i].Reset();
+	}
+}
 void D3D12RenderDevice::RenderTarget(ID3D12GraphicsCommandList* list)
 {
 	// Indicate that the back buffer will be used as a render target.

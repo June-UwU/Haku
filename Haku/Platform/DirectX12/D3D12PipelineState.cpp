@@ -8,7 +8,11 @@ namespace Haku
 {
 namespace Renderer
 {
-D3D12PipelineState::D3D12PipelineState(D3D12RenderDevice& Device, ID3D12RootSignature* RootSignature)
+D3D12PipelineState::D3D12PipelineState(
+	D3D12RenderDevice&	 Device,
+	ID3D12RootSignature* RootSignature,
+	std::wstring		 VertexShader,
+	std::wstring		 PixelShader)
 {
 	Microsoft::WRL::ComPtr<ID3DBlob> vertexShader;
 	Microsoft::WRL::ComPtr<ID3DBlob> pixelShader;
@@ -20,25 +24,9 @@ D3D12PipelineState::D3D12PipelineState(D3D12RenderDevice& Device, ID3D12RootSign
 #endif
 
 	HAKU_SOK_ASSERT(D3DCompileFromFile(
-		L"D:\\Haku\\Assets\\Shaders\\vertexshader.hlsl",
-		nullptr,
-		nullptr,
-		"VSMain",
-		"vs_5_0",
-		compileFlags,
-		0,
-		&vertexShader,
-		nullptr));
+		VertexShader.c_str(), nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
 	HAKU_SOK_ASSERT(D3DCompileFromFile(
-		L"D:\\Haku\\Assets\\Shaders\\pixelshader.hlsl",
-		nullptr,
-		nullptr,
-		"PSMain",
-		"ps_5_0",
-		compileFlags,
-		0,
-		&pixelShader,
-		nullptr));
+		PixelShader.c_str(), nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
 
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -60,6 +48,11 @@ D3D12PipelineState::D3D12PipelineState(D3D12RenderDevice& Device, ID3D12RootSign
 	psoDesc.RTVFormats[0]					   = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.SampleDesc.Count				   = 1;
 	HAKU_SOK_ASSERT(Device.get()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineState)));
+}
+
+void D3D12PipelineState::ShutDown() noexcept
+{
+	m_PipelineState.Reset();
 }
 
 void D3D12PipelineState::SetPipelineState(D3D12CommandQueue& Command)

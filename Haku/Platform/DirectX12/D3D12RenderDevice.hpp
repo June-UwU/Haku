@@ -16,6 +16,7 @@ public:
 	D3D12RenderDevice();
 	void		  Render() override;
 	void		  FrameIndexReset();
+	void		  ShutDown() noexcept;
 	ID3D12Device* get() { return m_Device.Get(); }
 	void		  BackBuffer(ID3D12GraphicsCommandList* list);
 	void		  RenderTarget(ID3D12GraphicsCommandList* list);

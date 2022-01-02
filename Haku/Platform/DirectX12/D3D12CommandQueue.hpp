@@ -14,8 +14,10 @@ public:
 	// this will change with the development of PSO class development
 	void					   Close() override;
 	void					   Execute() override;
+	void					   ShutDown() noexcept;
 	void					   Synchronize() override;
 	void					   ResetCommandAllocator();
+	void					   CloseFenceHandle() noexcept;
 	void					   Reset(ID3D12PipelineState* PipelineState);
 	ID3D12GraphicsCommandList* GetCommandList() { return m_CommandList.Get(); }
 	ID3D12CommandQueue*		   GetCommandQueue() { return m_CommandQueue.Get(); }

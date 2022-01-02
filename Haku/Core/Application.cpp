@@ -38,6 +38,7 @@ void Application::ProcessMessage()
 		}
 	}
 	layer->OnDetach();
+	m_Renderer.Close();
 }
 void Application::OnEvent(Event Event)
 {
@@ -54,8 +55,8 @@ void Application::SetUILayer(UILayer* ui)
 void Application::Onclose(Event& Close)
 {
 	HAKU_LOG_INFO();
-	Close.Handled = true;
 	m_Running	  = false;
+	Close.Handled = true;
 }
 
 void Application::OnResize(Event& Resize)

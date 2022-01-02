@@ -12,7 +12,12 @@ namespace Renderer
 class D3D12PipelineState : public PipelineState
 {
 public:
-	D3D12PipelineState(D3D12RenderDevice& Device, ID3D12RootSignature* RootSignature);
+	D3D12PipelineState(
+		D3D12RenderDevice&	 Device,
+		ID3D12RootSignature* RootSignature,
+		std::wstring		 VertexShader,
+		std::wstring		 PixelShader);
+	void ShutDown() noexcept;
 	void SetPipelineState(D3D12CommandQueue& Command);
 
 private:

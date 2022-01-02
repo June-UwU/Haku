@@ -50,6 +50,13 @@ void D3D12CommandQueue::Execute()
 	ID3D12CommandList* ppCommandLists[] = { m_CommandList.Get() };
 	m_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 }
+void D3D12CommandQueue::ShutDown() noexcept
+{
+	m_Fence.Reset();
+	m_CommandList.Reset();
+	m_CommandQueue.Reset();
+	m_CommandAllocator.Reset();
+}
 void D3D12CommandQueue::Synchronize()
 {
 	const uint64_t fence_value = m_FenceValue;
@@ -64,6 +71,10 @@ void D3D12CommandQueue::Synchronize()
 void D3D12CommandQueue::ResetCommandAllocator()
 {
 	HAKU_SOK_ASSERT(m_CommandAllocator->Reset())
+}
+void D3D12CommandQueue::CloseFenceHandle() noexcept
+{
+	CloseHandle(m_FenceEvent);
 }
 void D3D12CommandQueue::ResetCommandList(ID3D12PipelineState* PipelineState)
 {

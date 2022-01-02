@@ -15,6 +15,7 @@ public:
 	DX12Renderer();
 	DX12Renderer(uint32_t height, uint32_t width);
 	void				  Init();
+	void				  Close() const;
 	void				  Render() override;
 	void				  Update() override{};
 	void				  Cleanup() override{};
