@@ -9,7 +9,7 @@ namespace Haku
 namespace Renderer
 {
 D3D12PipelineState::D3D12PipelineState(
-	D3D12RenderDevice&	 Device,
+	D3D12RenderDevice*	 Device,
 	ID3D12RootSignature* RootSignature,
 	std::wstring		 VertexShader,
 	std::wstring		 PixelShader)
@@ -47,7 +47,7 @@ D3D12PipelineState::D3D12PipelineState(
 	psoDesc.NumRenderTargets				   = 1;
 	psoDesc.RTVFormats[0]					   = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.SampleDesc.Count				   = 1;
-	HAKU_SOK_ASSERT(Device.get()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineState)));
+	HAKU_SOK_ASSERT(Device->get()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineState)));
 }
 
 void D3D12PipelineState::ShutDown() noexcept
@@ -55,9 +55,9 @@ void D3D12PipelineState::ShutDown() noexcept
 	m_PipelineState.Reset();
 }
 
-void D3D12PipelineState::SetPipelineState(D3D12CommandQueue& Command)
+void D3D12PipelineState::SetPipelineState(D3D12CommandQueue* Command)
 {
-	Command.ResetCommandList(m_PipelineState.Get());
+	Command->Reset(m_PipelineState.Get());
 }
 
 } // namespace Renderer

@@ -1,6 +1,7 @@
 #pragma once
 
 /*MAKE THE EVENT SYSTEM AN COMMON CLASS WITH EXTRACTABLE PARAM AND BIT SET FOR APPICATION EVENT TYPE*/
+#include <queue>
 #include "HakuLog.hpp"
 #include "../macros.hpp"
 #include "../hakupch.hpp"
@@ -98,17 +99,17 @@ private:
 
 class EventDispatcher
 {
-	using EventQueue  = std::list<Event>;
+	using EventQueue  = std::queue<Event>;
 	using Routine	  = std::function<void(Event& e)>;
 	using CallBackMap = std::unordered_map<uint32_t, Routine>;
 
 public:
 	EventDispatcher() = default;
 	void   ServiceEvent();
+	void   OnEvent(Event& e) noexcept;
 	Event& peek() { return m_Queue.front(); }
 	bool   empty() { return m_Queue.empty(); }
 	void   RegisterRoutine(Routine r, uint32_t type);
-	void   OnEvent(Event& e) noexcept { m_Queue.push_back(e); }
 
 private:
 	EventQueue	m_Queue; /// Looks like std::queue is out

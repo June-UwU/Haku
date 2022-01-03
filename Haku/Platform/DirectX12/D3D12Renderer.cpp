@@ -1,6 +1,5 @@
 #include "directx/d3d12.h"
 #include "directx/D3dx12.h"
-#include <dxgidebug.h>
 #include "d3dcompiler.h"
 #include "D3D12Renderer.hpp"
 #include "../../Core/Exceptions.hpp"
@@ -10,7 +9,6 @@
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "D3DCompiler.lib")
-
 // TEMP
 #include "..\..\imgui\backends\imgui_impl_dx12.h"
 
@@ -71,18 +69,9 @@ void DX12Renderer::Close() const
 	m_Command->CloseFenceHandle();
 	m_Command->ShutDown();
 	m_Device->ShutDown();
-	m_RootSignature->Release();
 	UI_Desciptor->Release();
 	delete m_PipelineState;
 	delete m_Buffer;
-#if _DEBUG
-	// Check if there are still some graphics resources alive leaking.
-	// If that is the case, ReportLiveObjects will trigger a breakpoint and output details in the console
-	Microsoft::WRL::ComPtr<IDXGIDebug1> dxgiDebug;
-	HAKU_SOK_ASSERT(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug)));
-	dxgiDebug->ReportLiveObjects(
-		DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_SUMMARY | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
-#endif
 }
 
 void DX12Renderer::LoadAssets()
@@ -110,16 +99,17 @@ void DX12Renderer::LoadAssets()
 
 	const UINT vertexBufferSize = sizeof(triangleVertices);
 	m_PipelineState				= new D3D12PipelineState(
-		*m_Device,
+		m_Device,
 		m_RootSignature.Get(),
 		L"D:\\Haku\\Assets\\Shaders\\vertexshader.hlsl",
 		L"D:\\Haku\\Assets\\Shaders\\pixelshader.hlsl");
-	m_Buffer = new D3D12VertexBuffer(*m_Device, *m_Command, triangleVertices, vertexBufferSize);
+
+	m_Buffer = new D3D12VertexBuffer(m_Device, m_Command, triangleVertices, vertexBufferSize);
 }
 
 void DX12Renderer::Commands()
 {
-	m_PipelineState->SetPipelineState(*m_Command);
+	m_PipelineState->SetPipelineState(m_Command);
 	m_Command->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
 	ID3D12DescriptorHeap* ppHeaps[] = { UI_Desciptor.Get() };
 	m_Command->GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
@@ -130,7 +120,7 @@ void DX12Renderer::Commands()
 	m_Device->RenderTarget(m_Command->GetCommandList());
 
 	m_Command->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_Buffer->SetBuffer(*m_Command);
+	m_Buffer->SetBuffer(m_Command);
 	m_Command->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_Command->GetCommandList());

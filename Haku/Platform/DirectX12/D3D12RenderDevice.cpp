@@ -111,8 +111,8 @@ void D3D12RenderDevice::init(Haku::Windows* window, ID3D12CommandQueue* CommandQ
 }
 void D3D12RenderDevice::Resize(uint32_t height, uint32_t width, D3D12CommandQueue& Command)
 {
-	uint32_t ResizeHeight = std::max(1u, height);
-	uint32_t ResizeWidth  = std::max(1u, width);
+	uint32_t ResizeHeight = std::max(8u, height);
+	uint32_t ResizeWidth  = std::max(8u, width);
 	Command.Synchronize();
 	for (size_t i = 0; i < FrameCount; i++)
 	{

@@ -15,10 +15,10 @@ public:
 	void OnAttach() override
 	{
 		Haku::UI::CreateContext();
-		auto app		= Haku::Application::Get();
-		auto hwnd		= app->GetWindow()->GetHandle();
-		auto device		= app->GetRenderer()->GetDevice();
-		auto descriptor = app->GetRenderer()->GetDesciptor();
+		auto* app		 = Haku::Application::Get();
+		auto* hwnd		 = app->GetWindow()->GetHandle();
+		auto* device	 = app->GetRenderer()->GetDevice();
+		auto* descriptor = app->GetRenderer()->GetDesciptor();
 
 		Haku::UI::win32_Init(hwnd);
 		Haku::UI::DX12_Init(
@@ -51,15 +51,15 @@ int main(int argc, char** argv)
 {
 	try
 	{
-		char		  windowname[] = "Haku";
-		uint32_t	  height	   = 720;
-		uint32_t	  width		   = 1080;
-		uint32_t	  maximize	   = false;
-		Haku::Windows Window(height, width, maximize, windowname);
-		Editor*		  app = new Editor();
+		char					windowname[] = "Haku";
+		uint32_t				height		 = 720;
+		uint32_t				width		 = 1080;
+		uint32_t				maximize	 = false;
+		Haku::Windows			Window(height, width, maximize, windowname);
+		std::unique_ptr<Editor> app = std::make_unique<Editor>();
 		app->SetMainWindow(Window);
-		UI* ui = new UI();
-		app->SetUILayer(reinterpret_cast<Haku::UILayer*>(ui));
+		std::shared_ptr<UI> ui = std::make_shared<UI>();
+		app->SetUILayer(reinterpret_cast<Haku::UILayer*>(ui.get()));
 		app->ProcessMessage();
 		return 0;
 	}

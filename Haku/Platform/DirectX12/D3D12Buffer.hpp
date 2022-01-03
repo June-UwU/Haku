@@ -14,11 +14,11 @@ class D3D12VertexBuffer : public VertexBuffer
 {
 public:
 	D3D12VertexBuffer(
-		Haku::Renderer::D3D12RenderDevice& Device,
-		Haku::Renderer::D3D12CommandQueue& CommandQueue,
+		Haku::Renderer::D3D12RenderDevice* Device,
+		Haku::Renderer::D3D12CommandQueue* CommandQueue,
 		VertexData*						   ptr,
 		size_t							   size);
-	void SetBuffer(Haku::Renderer::D3D12CommandQueue& CommandQueue) noexcept;
+	void SetBuffer(Haku::Renderer::D3D12CommandQueue* CommandQueue) noexcept;
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_VertexBuffer;
