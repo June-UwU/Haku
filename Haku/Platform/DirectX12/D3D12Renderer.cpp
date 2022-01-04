@@ -69,7 +69,6 @@ void DX12Renderer::Close() const
 	m_Command->CloseFenceHandle();
 	m_Command->ShutDown();
 	m_Device->ShutDown();
-	UI_Desciptor->Release();
 	delete m_PipelineState;
 	delete m_Buffer;
 }

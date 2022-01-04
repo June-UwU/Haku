@@ -11,18 +11,20 @@ class HAKU_API Application
 {
 public:
 	Application();
+	virtual void			ClientInits(){};
+	virtual void			ClientUpdate(){};
 	void					ProcessMessage();
+	virtual void			ClientCleanUp(){};
 	void					OnEvent(Event Event);
-	void					SetUILayer(UILayer* ui);
 	static Application*		Get() { return s_Instance; }
 	Windows*				GetWindow() { return m_Window; }
 	Renderer::DX12Renderer* GetRenderer() { return &m_Renderer; }
 	void					SetMainWindow(Windows& window) noexcept;
 
 private:
-	void Onclose(Event& Close);
-	void OnResize(Event& Resize);
-	void OnMinimize(Event& Minimize);
+	void Onclose(Event& Event);
+	void OnResize(Event& Event);
+	void OnMinimize(Event& Event);
 	/*stud event to handle the unmapped event for the time being*/
 	bool return_true(Event& event)
 	{
@@ -34,7 +36,6 @@ private:
 	EventDispatcher		   Dispatcher;
 	Renderer::DX12Renderer m_Renderer;
 	bool				   m_Running = true;
-	UILayer*			   layer	 = nullptr;
 	Windows*			   m_Window	 = nullptr;
 
 private:

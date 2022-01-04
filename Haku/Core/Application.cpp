@@ -33,11 +33,11 @@ void Application::ProcessMessage()
 		Dispatcher.ServiceEvent();
 		if (!m_Window->GetMinimize())
 		{
-			layer->Render();
+			ClientUpdate();
 			m_Renderer.Render();
 		}
 	}
-	layer->OnDetach();
+	ClientCleanUp();
 	m_Renderer.Close();
 }
 void Application::OnEvent(Event Event)
@@ -45,38 +45,31 @@ void Application::OnEvent(Event Event)
 	Dispatcher.OnEvent(Event);
 }
 
-void Application::SetUILayer(UILayer* ui)
-{
-	HAKU_LOG_INFO("setting UI");
-	layer = ui;
-	layer->OnAttach();
-}
-
-void Application::Onclose(Event& Close)
+void Application::Onclose(Event& Event)
 {
 	HAKU_LOG_INFO();
 	m_Running	  = false;
-	Close.Handled = true;
+	Event.Handled = true;
 }
 
-void Application::OnResize(Event& Resize)
+void Application::OnResize(Event& Event)
 {
 	HAKU_LOG_INFO();
 	uint32_t width{};
 	uint32_t height{};
-	HAKU_DISPLAY_SIZE_EXTRACT(Resize.GetData(), height, width)
+	HAKU_DISPLAY_SIZE_EXTRACT(Event.GetData(), height, width)
 	m_Window->SetWidth(width);
 	m_Window->SetHeight(height);
 	m_Window->SetMinimize(false);
 	m_Renderer.Resize(height, width);
-	Resize.Handled = true;
+	Event.Handled = true;
 }
 
-void Application::OnMinimize(Event& Minimize)
+void Application::OnMinimize(Event& Event)
 {
 	HAKU_LOG_INFO();
 	HAKU_ASSERT(m_Window);
-	Minimize.Handled = true;
+	Event.Handled = true;
 	m_Window->SetMinimize(true);
 }
 

@@ -12,7 +12,15 @@ public:
 		Haku::UI::DemoWindow();
 		Haku::UI::render();
 	};
-	void OnAttach() override
+
+private:
+};
+
+class Editor : public Haku::Application
+{
+public:
+	void ClientUpdate() override { ui.Render(); }
+	void ClientInits() override
 	{
 		Haku::UI::CreateContext();
 		auto* app		 = Haku::Application::Get();
@@ -29,22 +37,16 @@ public:
 			descriptor->GetCPUDescriptorHandleForHeapStart(),
 			descriptor->GetGPUDescriptorHandleForHeapStart());
 		Haku::UI::DarkMode();
-		//	auto io		   = ImGui::GetIO();
-		//	io.DisplaySize = ImVec2(app->GetWindow()->GetWidth(), app->GetWindow()->GetHeight());
-	};
-	;
-	void OnDetach() override
+	}
+	void ClientCleanUp() override
 	{
 		Haku::UI::DX12_shutdown();
 		Haku::UI::win32_shutdown();
 		Haku::UI::DestroyContext();
-	};
+	}
 
 private:
-};
-
-class Editor : public Haku::Application
-{
+	UI ui;
 };
 
 int main(int argc, char** argv)
@@ -58,8 +60,7 @@ int main(int argc, char** argv)
 		Haku::Windows			Window(height, width, maximize, windowname);
 		std::unique_ptr<Editor> app = std::make_unique<Editor>();
 		app->SetMainWindow(Window);
-		std::shared_ptr<UI> ui = std::make_shared<UI>();
-		app->SetUILayer(reinterpret_cast<Haku::UILayer*>(ui.get()));
+		app->ClientInits();
 		app->ProcessMessage();
 		return 0;
 	}
