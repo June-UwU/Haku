@@ -1,16 +1,24 @@
 #pragma once
-#include "..\macros.hpp"
-#include "..\hakupch.hpp"
+#include "../macros.hpp"
+#include "../hakupch.hpp"
+#include "../../imgui/imgui.h"
+#include "../../imgui/imgui_impl_dx12.h"
+#include "../../imgui/imgui_impl_win32.h"
 
 class Event;
 namespace Haku
 {
-class HAKU_API UILayer
+namespace UI
+{
+HAKU_API void InitUI() noexcept;
+HAKU_API void CleanUp() noexcept;
+class HAKU_API		 DemoWindow
 {
 public:
-	UILayer()		   = default;
-	virtual ~UILayer() = default;
-	virtual void Render(){};
-	// virtual void OnEvent(Event& ref) = 0;
+	void Render();
+
+private:
 };
+} // namespace UI
+
 } // namespace Haku
