@@ -10,14 +10,22 @@ namespace Haku
 {
 namespace UI
 {
-HAKU_API void InitUI() noexcept;
-HAKU_API void CleanUp() noexcept;
-class HAKU_API		 DemoWindow
+HAKU_API void  InitUI() noexcept;
+HAKU_API void  CleanUp() noexcept;
+class HAKU_API DemoWindow
 {
 public:
 	void Render();
 
 private:
+};
+class HAKU_API Menubar
+{
+public:
+	void Render() noexcept;
+
+private:
+	void File() noexcept;
 };
 } // namespace UI
 

@@ -1,22 +1,16 @@
 #include "Haku.hpp"
 #include <iostream>
 
-
 class Editor : public Haku::Application
 {
 public:
-	void ClientUpdate() override { ui.Render(); }
-	void ClientInits() override
-	{
-		Haku::UI::InitUI();
-	}
-	void ClientCleanUp() override
-	{
-		Haku::UI::CleanUp();
-	}
+	void ClientUpdate() override { m_Menu.Render(); }
+	void ClientInits() override { Haku::UI::InitUI(); }
+	void ClientCleanUp() override { Haku::UI::CleanUp(); }
 
 private:
 	Haku::UI::DemoWindow ui;
+	Haku::UI::Menubar	 m_Menu;
 };
 
 int main(int argc, char** argv)
