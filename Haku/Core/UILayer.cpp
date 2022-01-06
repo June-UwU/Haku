@@ -28,13 +28,23 @@ void CleanUp() noexcept
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 }
+HAKU_API void EndFrame() noexcept
+{
+	ImGui::EndFrame();
+}
+HAKU_API void Begin() noexcept
+{
+	ImGui_ImplWin32_NewFrame();
+	ImGui_ImplDX12_NewFrame();
+}
+HAKU_API void Render() noexcept
+{
+	ImGui::Render();
+}
 void DemoWindow::Render()
 {
-	ImGui_ImplDX12_NewFrame();
-	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 	ImGui::ShowDemoWindow();
-	ImGui::Render();
 }
 void Menubar::File() noexcept
 {
@@ -91,14 +101,9 @@ void Menubar::File() noexcept
 		}
 		ImGui::EndMenu();
 	}
-	
 }
 void Menubar::Render() noexcept
 {
-
-	ImGui_ImplDX12_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
@@ -128,7 +133,17 @@ void Menubar::Render() noexcept
 		}
 		ImGui::EndMainMenuBar();
 	}
-	ImGui::Render();
+}
+void LeftMenu::Render() noexcept
+{
+	if (ImGui::Begin("Test Window", &open, ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar))
+	{
+		ImGui::ColorPicker3("Color", col, 0);
+		ImGui::SliderFloat("RotateX", &RotateX, -360.0f, 360.0f, "X");
+		ImGui::SliderFloat("RotateY", &RotateY, -360.0f, 360.0f, "Y");
+		ImGui::SliderFloat("RotateZ", &RotateZ, -360.0f, 360.0f, "Z");
+		ImGui::End();
+	}
 }
 } // namespace UI
 } // namespace Haku

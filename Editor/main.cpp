@@ -4,13 +4,22 @@
 class Editor : public Haku::Application
 {
 public:
-	void ClientUpdate() override { m_Menu.Render(); }
+	void ClientUpdate() override
+	{
+		Haku::UI::Begin();
+		ui.Render();
+		m_Menu.Render();
+		m_Left.Render();
+		Haku::UI::Render();
+		Haku::UI::EndFrame();
+	}
 	void ClientInits() override { Haku::UI::InitUI(); }
 	void ClientCleanUp() override { Haku::UI::CleanUp(); }
 
 private:
 	Haku::UI::DemoWindow ui;
 	Haku::UI::Menubar	 m_Menu;
+	Haku::UI::LeftMenu	 m_Left;
 };
 
 int main(int argc, char** argv)

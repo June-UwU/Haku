@@ -10,8 +10,11 @@ namespace Haku
 {
 namespace UI
 {
+HAKU_API void  Begin() noexcept;
+HAKU_API void  Render() noexcept;
 HAKU_API void  InitUI() noexcept;
 HAKU_API void  CleanUp() noexcept;
+HAKU_API void  EndFrame() noexcept;
 class HAKU_API DemoWindow
 {
 public:
@@ -26,6 +29,19 @@ public:
 
 private:
 	void File() noexcept;
+};
+class HAKU_API LeftMenu
+{
+public:
+	void Render() noexcept;
+
+private:
+	int	  i0{};
+	float col[3]{};
+	float RotateX{};
+	float RotateY{};
+	float RotateZ{};
+	bool  open = true;
 };
 } // namespace UI
 
