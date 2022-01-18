@@ -41,10 +41,10 @@ private:
 
 	// creating a desciptor for the directx shader resouce view (srv),unordered access view and constant buffers view
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> UI_Desciptor;
-
 	// pipeline state that is used to set the stages and shaders
 	D3D12VertexBuffer*	m_Buffer		= nullptr;
 	D3D12PipelineState* m_PipelineState = nullptr;
+	D3D12ConstBuffer*	m_Constant		= nullptr;
 };
 } // namespace Renderer
 } // namespace Haku

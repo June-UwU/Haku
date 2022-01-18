@@ -1,4 +1,8 @@
-
+cbuffer rotations : register(b0)
+{
+	matrix rotate;
+	float4 pad[12];
+}
 struct PixelData
 {
 	float4 p_pos : SV_POSITION;
@@ -15,7 +19,7 @@ struct VextexData
 PixelData VSMain(VextexData data)
 {
     PixelData ret;
-    ret.p_pos = float4(data.pos,1.0f);
+    ret.p_pos = mul(float4(data.pos,1.0f),rotate);
     ret.p_col = data.col;
     return ret;
 }

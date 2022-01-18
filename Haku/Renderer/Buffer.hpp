@@ -11,5 +11,12 @@ public:
 
 private:
 };
+class ConstBuffer
+{
+public:
+	ConstBuffer() = default;
+
+private:
+};
 } // namespace Renderer
 } // namespace Haku

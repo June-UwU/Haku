@@ -4,22 +4,23 @@ namespace Haku
 {
 namespace UI
 {
-void InitUI() noexcept
+float LeftMenu::RotateXYZ[3];
+void  InitUI() noexcept
 {
 	ImGui::CreateContext();
 	auto* app		 = Haku::Application::Get();
 	auto* hwnd		 = app->GetWindow()->GetHandle();
 	auto* device	 = app->GetRenderer()->GetDevice();
-	auto* descriptor = app->GetRenderer()->GetDesciptor();
+	auto* descriptorheap = app->GetRenderer()->GetDesciptor();
 
 	ImGui_ImplWin32_Init(hwnd);
 	ImGui_ImplDX12_Init(
 		device,
 		2,
 		DXGI_FORMAT_R8G8B8A8_UNORM,
-		descriptor,
-		descriptor->GetCPUDescriptorHandleForHeapStart(),
-		descriptor->GetGPUDescriptorHandleForHeapStart());
+		descriptorheap,
+		descriptorheap->GetCPUDescriptorHandleForHeapStart(),
+		descriptorheap->GetGPUDescriptorHandleForHeapStart());
 	ImGui::StyleColorsDark();
 }
 void CleanUp() noexcept
@@ -139,11 +140,15 @@ void LeftMenu::Render() noexcept
 	if (ImGui::Begin("Test Window", &open, ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar))
 	{
 		ImGui::ColorPicker3("Color", col, 0);
-		ImGui::SliderFloat("RotateX", &RotateX, -360.0f, 360.0f, "X");
-		ImGui::SliderFloat("RotateY", &RotateY, -360.0f, 360.0f, "Y");
-		ImGui::SliderFloat("RotateZ", &RotateZ, -360.0f, 360.0f, "Z");
+		ImGui::SliderFloat("RotateX", &RotateXYZ[0], -360.0f, 360.0f, "X");
+		ImGui::SliderFloat("RotateY", &RotateXYZ[1], -360.0f, 360.0f, "Y");
+		ImGui::SliderFloat("RotateZ", &RotateXYZ[2], -360.0f, 360.0f, "Z");
 		ImGui::End();
 	}
+}
+float* LeftMenu::RotateData() noexcept
+{
+	return RotateXYZ;
 }
 } // namespace UI
 } // namespace Haku

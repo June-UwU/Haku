@@ -31,14 +31,21 @@ WinError::WinError(HRESULT code)
 		LPSTR(&buffer),
 		0,
 		0);
+	std::ostringstream str;
+
+	str << "FILE : " << __FILE__ << "\n"
+		<< "FUNCION : " << __FUNCTION__ << "\n"
+		<< "LINE :" << __LINE__ << "\n"
+		<< "CODE : " << code << "\n";
 	if (buffer)
 	{
-		m_formatted_message = buffer;
+		str << buffer;
 	}
 	else
 	{
-		m_formatted_message = "unknown";
+		str << "unknown";
 	}
+	m_formatted_message = str.str();
 }
 const char* WinError::what() const noexcept
 {
