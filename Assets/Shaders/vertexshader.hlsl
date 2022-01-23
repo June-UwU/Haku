@@ -19,7 +19,7 @@ struct VextexData
 PixelData VSMain(VextexData data)
 {
     PixelData ret;
-    ret.p_pos = mul(float4(data.pos,1.0f),rotate);
+    ret.p_pos = mul(float4(data.pos,1.0f), 	rotate);
     ret.p_col = data.col;
     return ret;
 }

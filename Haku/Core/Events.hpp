@@ -19,17 +19,17 @@ namespace Haku
 /*MACROS TO CREATE ,PACK AND EXRACT HAKU EVENTS*/
 #define HAKU_EVENT_TYPE(x)	(x & 0xFFFFFFF0)
 /*mouse event pack macro*/
-#define HAKU_MOUSE_PACK(x, y, z)                                                                                       \
+#define HAKU_PACK(x, y, z)                                                                                             \
 	x = y;                                                                                                             \
 	x = (x << 32) | z;
 
 /*mouse event extract macro*/
 #define HAKU_MOUSE_EXTRACT(x, y, z)                                                                                    \
-	y = 0xFFFF & (x >> 32);                                                                                            \
-	z = 0xFFFF & x;
+	z = 0xFFFFFFFF & x;                                                                                                \
+	y = 0xFFFFFFFF & (x >> 32);
 #define HAKU_DISPLAY_SIZE_EXTRACT(param, height, width)                                                                \
-	width  = 0xFFFF & param;                                                                                           \
-	height = 0xFFFF & (param >> 32);
+	width  = 0xFFFFFFFF & param;                                                                                       \
+	height = (param >> 32) & 0xFFFFFFFF;
 
 #define HAKU_EVENT(x, y, z)		Event(static_cast<uint32_t>(x) | static_cast<uint32_t>(y), z)
 #define HAKU_APP_EVENT(x, y)	Event(static_cast<uint32_t>(EventCatagory::ApplicationEvent) | static_cast<uint32_t>(x), y)

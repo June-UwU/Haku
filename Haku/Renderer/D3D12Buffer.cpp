@@ -1,5 +1,5 @@
 #include "D3D12Buffer.hpp"
-#include "../../Core/Exceptions.hpp"
+#include "../Core/Exceptions.hpp"
 
 namespace Haku
 {
@@ -10,8 +10,8 @@ D3D12VertexBuffer::D3D12VertexBuffer(
 	D3D12CommandQueue* CommandQueue,
 	VertexData*		   ptr,
 	size_t			   size)
-	: VertexBuffer()
 {
+	HAKU_LOG_INFO("creating vertex buffer");
 	auto								   uploadheapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	auto								   defheapprop	  = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 	auto								   resdesc		  = CD3DX12_RESOURCE_DESC::Buffer(size);
@@ -54,13 +54,18 @@ D3D12VertexBuffer::D3D12VertexBuffer(
 	CommandQueue->Execute();
 	CommandQueue->Synchronize();
 }
+D3D12VertexBuffer::~D3D12VertexBuffer()
+{
+	m_VertexBuffer.Reset();
+}
 void D3D12VertexBuffer::SetBuffer(Haku::Renderer::D3D12CommandQueue* CommandQueue) noexcept
 {
+	HAKU_LOG_INFO("setting vertex buffer");
 	CommandQueue->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBufferView);
 }
 D3D12ConstBuffer::D3D12ConstBuffer(Haku::Renderer::D3D12RenderDevice* Device, ID3D12DescriptorHeap* Heap)
 {
-	Data.Rotate = DirectX::XMMatrixIdentity();
+	Data.Rotate	  = DirectX::XMMatrixIdentity();
 	auto heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	auto resdesc  = CD3DX12_RESOURCE_DESC::Buffer(sizeof(ConstData));
 	auto size	  = sizeof(ConstData);
@@ -84,16 +89,19 @@ D3D12ConstBuffer::D3D12ConstBuffer(Haku::Renderer::D3D12RenderDevice* Device, ID
 	CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU.
 	HAKU_SOK_ASSERT(m_ConstBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_ptr)));
 	memcpy(m_ptr, &Data, sizeof(Data));
+	HAKU_LOG_INFO("creating const buffer");
 }
 
 D3D12ConstBuffer::~D3D12ConstBuffer()
 {
+	HAKU_LOG_INFO("deleted const buffer");
+	m_ConstBuffer.Reset();
 	m_ptr = nullptr;
 }
 
 void D3D12ConstBuffer::Update(float* rotate) noexcept
 {
-	HAKU_LOG_INFO("ROTATE : X : ", rotate[0], "Y : ", rotate[1], "Z : ", rotate[2]);
+	// HAKU_LOG_INFO("ROTATE : X : ", rotate[0], "Y : ", rotate[1], "Z : ", rotate[2]);
 	Data.Rotate = DirectX::XMMatrixRotationX(rotate[0]) * DirectX::XMMatrixRotationY(rotate[1]) *
 				  DirectX::XMMatrixRotationZ(rotate[2]);
 	memcpy(m_ptr, &Data, sizeof(Data));
@@ -101,8 +109,9 @@ void D3D12ConstBuffer::Update(float* rotate) noexcept
 
 void D3D12ConstBuffer::SetBuffer(D3D12CommandQueue* CommandQueue, ID3D12DescriptorHeap* Heap)
 {
+	HAKU_LOG_INFO("setting const buffer");
+	//ConstBuffer view must be auto postion.
 	CommandQueue->GetCommandList()->SetGraphicsRootConstantBufferView(1, m_ConstBuffer->GetGPUVirtualAddress());
-	//CommandQueue->GetCommandList()->SetGraphicsRootDescriptorTable(1, Heap->GetGPUDescriptorHandleForHeapStart());
 }
 
 } // namespace Renderer

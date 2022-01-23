@@ -1,21 +1,20 @@
 #pragma once
 #include "wil/wrl.h"
 #include "D3D12RenderDevice.hpp"
-#include "../../Renderer/RenderCommandQueue.hpp"
 #include <d3d12.h>
 namespace Haku
 {
 namespace Renderer
 {
-class D3D12CommandQueue : public RenderCommandQueue
+class D3D12CommandQueue
 {
 public:
 	D3D12CommandQueue(D3D12RenderDevice& Device);
 	// this will change with the development of PSO class development
-	void					   Close() override;
-	void					   Execute() override;
+	void					   Close();
+	void					   Execute();
+	void					   Synchronize();
 	void					   ShutDown() noexcept;
-	void					   Synchronize() override;
 	void					   ResetCommandAllocator();
 	void					   CloseFenceHandle() noexcept;
 	void					   Reset(ID3D12PipelineState* PipelineState);

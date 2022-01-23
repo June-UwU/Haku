@@ -1,17 +1,15 @@
 #pragma once
 #include "directx/d3d12.h"
 #include "directx/d3dx12.h"
+#include "VertexStruct.hpp"
 #include "D3D12RenderDevice.hpp"
 #include "D3D12CommandQueue.hpp"
-#include "../../Renderer/Buffer.hpp"
-#include "../../Renderer/VertexStruct.hpp"
-#include "../../Renderer/VertexStruct.hpp"
 
 namespace Haku
 {
 namespace Renderer
 {
-class D3D12VertexBuffer : public VertexBuffer
+class D3D12VertexBuffer
 {
 public:
 	D3D12VertexBuffer(
@@ -19,14 +17,14 @@ public:
 		Haku::Renderer::D3D12CommandQueue* CommandQueue,
 		VertexData*						   ptr,
 		size_t							   size);
+	~D3D12VertexBuffer();
 	void SetBuffer(Haku::Renderer::D3D12CommandQueue* CommandQueue) noexcept;
-
 private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_VertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW			   m_VertexBufferView;
 };
 
-class D3D12ConstBuffer : public ConstBuffer
+class D3D12ConstBuffer
 {
 public:
 	D3D12ConstBuffer(Haku::Renderer::D3D12RenderDevice* Device, ID3D12DescriptorHeap* UI_Desciptor);

@@ -11,7 +11,7 @@ void  InitUI() noexcept
 	auto* app		 = Haku::Application::Get();
 	auto* hwnd		 = app->GetWindow()->GetHandle();
 	auto* device	 = app->GetRenderer()->GetDevice();
-	auto* descriptorheap = app->GetRenderer()->GetDesciptor();
+	auto* descriptorheap = app->GetRenderer()->GetSRVDesciptor();
 
 	ImGui_ImplWin32_Init(hwnd);
 	ImGui_ImplDX12_Init(
@@ -140,9 +140,9 @@ void LeftMenu::Render() noexcept
 	if (ImGui::Begin("Test Window", &open, ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar))
 	{
 		ImGui::ColorPicker3("Color", col, 0);
-		ImGui::SliderFloat("RotateX", &RotateXYZ[0], -360.0f, 360.0f, "X");
-		ImGui::SliderFloat("RotateY", &RotateXYZ[1], -360.0f, 360.0f, "Y");
-		ImGui::SliderFloat("RotateZ", &RotateXYZ[2], -360.0f, 360.0f, "Z");
+		ImGui::SliderFloat("RotateX", &RotateXYZ[0], -180.0f, 180.0f, "X");
+		ImGui::SliderFloat("RotateZ", &RotateXYZ[2], -180.0f, 180.0f, "Z");
+		ImGui::SliderFloat("RotateY", &RotateXYZ[1], -180.0f, 180.0f, "Y");
 		ImGui::End();
 	}
 }

@@ -5,6 +5,11 @@
 #else
 #define HAKU_API __declspec(dllimport)
 #endif
+#define KiB	 1024
+#define MiB	 KiB * 1024
+#define GiB	 MiB * 1024
+
+const int FrameCount{ 3 };
 
 #define BIT(x) (1 << x)
 

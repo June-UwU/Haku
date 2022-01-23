@@ -15,8 +15,7 @@ file(GLOB_RECURSE r_src ${CMAKE_CURRENT_SOURCE_DIR}/Renderer/*.cpp)
 
 file(GLOB_RECURSE w_inc ${CMAKE_CURRENT_SOURCE_DIR}/platform/Windows/*.hpp)
 file(GLOB_RECURSE w_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/Windows/*.cpp)
-file(GLOB_RECURSE a_inc ${CMAKE_CURRENT_SOURCE_DIR}/platform/DirectX12/*.hpp)
-file(GLOB_RECURSE a_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/DirectX12/*.cpp)
+
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${g_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${g_src})
@@ -34,8 +33,6 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${w_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${w_src})
 
 
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${a_inc})
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${a_src})
 set(DEPEND_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../vendor)
 
 set(im_gui 
@@ -68,8 +65,6 @@ add_library(${PROJECT_NAME}
 	${r_src}
 	${p_inc}
 	${p_src}
-	${a_inc}
-	${a_src}
 	${im_gui} )
 message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/")
 message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/")
