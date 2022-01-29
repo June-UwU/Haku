@@ -21,12 +21,17 @@ public:
 	D3D12_GPU_DESCRIPTOR_HANDLE GetRTVGPUHandle() noexcept;
 	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUHandle() noexcept;
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUHandle() noexcept;
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCPUHandle() noexcept;
+	D3D12_GPU_DESCRIPTOR_HANDLE GetDSVGPUHandle() noexcept;
 	ID3D12DescriptorHeap*		GetSRVDescriptorHeap() noexcept;
+	ID3D12DescriptorHeap*		GetRTVDescriptorHeap() noexcept;
+	ID3D12DescriptorHeap*		GetDSVDescriptorHeap() noexcept;
 	void						SetDescriptorHeaps(D3D12CommandQueue& Command) noexcept;
 
 private:
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_RtvHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_RTVHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_SRVHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DSVHeap;
 };
 } // namespace Renderer
 } // namespace Haku

@@ -27,9 +27,13 @@ DX12Renderer::DX12Renderer(uint32_t height, uint32_t width)
 	m_Command		 = new D3D12CommandQueue(*m_Device);
 	m_DescriptorHeap = new D3D12DescriptorHeap(*m_Device);
 }
+DX12Renderer::~DX12Renderer() noexcept
+{
+	Close();
+}
 void DX12Renderer::Render()
 {
-	m_Constant->Update(Haku::UI::LeftMenu::RotateData());
+	m_Constant->Update(Haku::UI::LeftMenu::RotateData(), Haku::UI::LeftMenu::TranslateData(), m_width, m_height);
 	Commands();
 	m_Command->Execute();
 	m_SwapChain->Render();
@@ -38,7 +42,14 @@ void DX12Renderer::Render()
 }
 void DX12Renderer::Resize(uint32_t height, uint32_t width)
 {
+	m_width	 = width;
+	m_height = height;
 	m_SwapChain->Resize(height, width, *m_Device, *m_Command, *m_DescriptorHeap);
+}
+void DX12Renderer::SetDimensions(uint32_t height, uint32_t width) noexcept
+{
+	m_width	 = width;
+	m_height = height;
 }
 void DX12Renderer::Init()
 {
@@ -46,15 +57,6 @@ void DX12Renderer::Init()
 	m_width		= window->GetWidth();
 	m_height	= window->GetHeight();
 	m_SwapChain->Init(window, *m_Device, *m_Command, *m_DescriptorHeap);
-
-	///	{
-	///		D3D12_DESCRIPTOR_HEAP_DESC srvdesc{};
-	///		srvdesc.Type		   = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	///		srvdesc.Flags		   = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	///		srvdesc.NumDescriptors = 6600;
-	///		HAKU_SOK_ASSERT(m_Device->get()->CreateDescriptorHeap(&srvdesc, IID_PPV_ARGS(&UI_Desciptor)))
-	///	}
-
 	LoadAssets();
 }
 

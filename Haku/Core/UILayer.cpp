@@ -5,12 +5,13 @@ namespace Haku
 namespace UI
 {
 float LeftMenu::RotateXYZ[3];
+float LeftMenu::TranslationData[3];
 void  InitUI() noexcept
 {
 	ImGui::CreateContext();
-	auto* app		 = Haku::Application::Get();
-	auto* hwnd		 = app->GetWindow()->GetHandle();
-	auto* device	 = app->GetRenderer()->GetDevice();
+	auto* app			 = Haku::Application::Get();
+	auto* hwnd			 = app->GetWindow()->GetHandle();
+	auto* device		 = app->GetRenderer()->GetDevice();
 	auto* descriptorheap = app->GetRenderer()->GetSRVDesciptor();
 
 	ImGui_ImplWin32_Init(hwnd);
@@ -140,15 +141,22 @@ void LeftMenu::Render() noexcept
 	if (ImGui::Begin("Test Window", &open, ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar))
 	{
 		ImGui::ColorPicker3("Color", col, 0);
-		ImGui::SliderFloat("RotateX", &RotateXYZ[0], -180.0f, 180.0f, "X");
-		ImGui::SliderFloat("RotateZ", &RotateXYZ[2], -180.0f, 180.0f, "Z");
-		ImGui::SliderFloat("RotateY", &RotateXYZ[1], -180.0f, 180.0f, "Y");
+		ImGui::SliderFloat("RotateX", &RotateXYZ[0], -1800.0f, 1800.0f, "X");
+		ImGui::SliderFloat("RotateZ", &RotateXYZ[2], -1800.0f, 1800.0f, "Z");
+		ImGui::SliderFloat("RotateY", &RotateXYZ[1], -1800.0f, 1800.0f, "Y");
+		ImGui::SliderFloat("TranslationX", &this->TranslationData[0], 1.0f, 100.0f, "X");
+		ImGui::SliderFloat("TranslationY", &this->TranslationData[1], 1.0f, 100.0f, "Y");
+		ImGui::SliderFloat("TranslationZ", &this->TranslationData[2], 1.0f, 100.0f, "Z");
 		ImGui::End();
 	}
 }
 float* LeftMenu::RotateData() noexcept
 {
 	return RotateXYZ;
+}
+float* LeftMenu::TranslateData() noexcept
+{
+	return TranslationData;
 }
 } // namespace UI
 } // namespace Haku

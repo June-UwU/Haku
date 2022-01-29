@@ -33,13 +33,16 @@ private:
 class HAKU_API LeftMenu
 {
 public:
-	void Render() noexcept;
+	void		  Render() noexcept;
 	static float* RotateData() noexcept;
+	static float* TranslateData() noexcept;
+
 private:
-	int	  i0{};
-	float col[3]{};
-	bool  open = true;
+	int			 i0{};
+	float		 col[3]{};
+	bool		 open = true;
 	static float RotateXYZ[3];
+	static float TranslationData[3];
 };
 } // namespace UI
 

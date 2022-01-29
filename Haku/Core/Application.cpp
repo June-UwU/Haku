@@ -38,7 +38,6 @@ void Application::ProcessMessage()
 		}
 	}
 	ClientCleanUp();
-	m_Renderer.Close();
 }
 void Application::OnEvent(Event Event)
 {

@@ -14,6 +14,7 @@ class DX12Renderer
 {
 public:
 	DX12Renderer(uint32_t height, uint32_t width);
+	~DX12Renderer() noexcept;
 	void				  Init();
 	void				  Close() const;
 	void				  Render();
@@ -21,6 +22,7 @@ public:
 	void				  Cleanup(){};
 	ID3D12Device*		  GetDevice() { return m_Device->get(); }
 	void				  Resize(uint32_t height, uint32_t width);
+	void				  SetDimensions(uint32_t height, uint32_t width) noexcept;
 	ID3D12DescriptorHeap* GetSRVDesciptor() { return m_DescriptorHeap->GetSRVDescriptorHeap(); }
 
 private:
@@ -37,11 +39,14 @@ private:
 	D3D12SwapChain*		 m_SwapChain;
 	CD3DX12_RECT		 m_ScissorRect;
 	D3D12DescriptorHeap* m_DescriptorHeap;
+
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_RootSignature;
 
 	D3D12VertexBuffer*	m_Buffer		= nullptr;
 	D3D12PipelineState* m_PipelineState = nullptr;
 	D3D12ConstBuffer*	m_Constant		= nullptr;
+
+	
 };
 } // namespace Renderer
 } // namespace Haku
