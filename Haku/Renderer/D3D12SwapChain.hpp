@@ -36,6 +36,7 @@ public:
 
 private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain3> m_SwapChain;
+	Microsoft::WRL::ComPtr<ID3D12Resource>	m_DSVResource;
 	uint32_t								m_FrameIndex		= 0;
 	uint32_t								m_RtvDescriptorSize = 0;
 	Microsoft::WRL::ComPtr<ID3D12Resource>	m_RenderTargets[FrameCount];
