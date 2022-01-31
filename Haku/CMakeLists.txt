@@ -36,21 +36,21 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${w_src})
 set(DEPEND_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../vendor)
 
 set(im_gui 
-	${DEPEND_DIR}/imgui/imgui.h
-	${DEPEND_DIR}/imgui/imgui.cpp	
-	${DEPEND_DIR}/imgui/imconfig.h
-	${DEPEND_DIR}/imgui/imgui_demo.cpp
-	${DEPEND_DIR}/imgui/imgui_draw.cpp
-	${DEPEND_DIR}/imgui/imgui_internal.h
-	${DEPEND_DIR}/imgui/imgui_tables.cpp
-	${DEPEND_DIR}/imgui/imgui_widgets.cpp
-	${DEPEND_DIR}/imgui/imstb_rectpack.h
-	${DEPEND_DIR}/imgui/imstb_textedit.h
-	${DEPEND_DIR}/imgui/imstb_truetype.h
-	${DEPEND_DIR}/imgui/backends/imgui_impl_win32.h
-	${DEPEND_DIR}/imgui/backends/imgui_impl_win32.cpp
-	${DEPEND_DIR}/imgui/backends/imgui_impl_dx12.h
-	${DEPEND_DIR}/imgui/backends/imgui_impl_dx12.cpp)
+	${DEPEND_DIR}/ImGui/imgui.h
+	${DEPEND_DIR}/ImGui/imgui.cpp	
+	${DEPEND_DIR}/ImGui/imconfig.h
+	${DEPEND_DIR}/ImGui/imgui_demo.cpp
+	${DEPEND_DIR}/ImGui/imgui_draw.cpp
+	${DEPEND_DIR}/ImGui/imgui_internal.h
+	${DEPEND_DIR}/ImGui/imgui_tables.cpp
+	${DEPEND_DIR}/ImGui/imgui_widgets.cpp
+	${DEPEND_DIR}/ImGui/imstb_rectpack.h
+	${DEPEND_DIR}/ImGui/imstb_textedit.h
+	${DEPEND_DIR}/ImGui/imstb_truetype.h
+	${DEPEND_DIR}/ImGui/backends/imgui_impl_win32.h
+	${DEPEND_DIR}/ImGui/backends/imgui_impl_win32.cpp
+	${DEPEND_DIR}/ImGui/backends/imgui_impl_dx12.h
+	${DEPEND_DIR}/ImGui/backends/imgui_impl_dx12.cpp)
 
 
 
@@ -73,6 +73,7 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE hakupch.hpp)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/ImGui/)
 target_link_libraries(${PROJECT_NAME} DirectXMath)
 target_link_libraries(${PROJECT_NAME} DirectX-Headers)
 

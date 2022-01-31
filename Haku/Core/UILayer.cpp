@@ -23,6 +23,7 @@ void  InitUI() noexcept
 		descriptorheap->GetCPUDescriptorHandleForHeapStart(),
 		descriptorheap->GetGPUDescriptorHandleForHeapStart());
 	ImGui::StyleColorsDark();
+	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 }
 void CleanUp() noexcept
 {
