@@ -9,7 +9,7 @@ namespace Errors
 class HAKU_API Error : public std::exception
 {
 public:
-	Error(std::string message) noexcept;
+	Error(std::string message = "Unknown Error") noexcept;
 	~Error() = default;
 	const char* what() const noexcept;
 
@@ -20,7 +20,7 @@ private:
 class HAKU_API WinError : public std::exception
 {
 public:
-	WinError(HRESULT code);
+	WinError(HRESULT code, std::string message = "Unknown Error");
 	const char* what() const noexcept;
 
 private:

@@ -141,13 +141,8 @@ void LeftMenu::Render() noexcept
 {
 	if (ImGui::Begin("Test Window", &open, ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar))
 	{
-		ImGui::ColorPicker3("Color", col, 0);
-		ImGui::SliderFloat("RotateX", &RotateXYZ[0], -1800.0f, 1800.0f, "X");
-		ImGui::SliderFloat("RotateZ", &RotateXYZ[2], -1800.0f, 1800.0f, "Z");
-		ImGui::SliderFloat("RotateY", &RotateXYZ[1], -1800.0f, 1800.0f, "Y");
-		ImGui::SliderFloat("TranslationX", &this->TranslationData[0], 1.0f, 100.0f, "X");
-		ImGui::SliderFloat("TranslationY", &this->TranslationData[1], 1.0f, 100.0f, "Y");
-		ImGui::SliderFloat("TranslationZ", &this->TranslationData[2], 1.0f, 100.0f, "Z");
+		ImGui::InputFloat3("Rotation", RotateXYZ);
+		ImGui::InputFloat3("Translation", TranslationData);
 		ImGui::End();
 	}
 }

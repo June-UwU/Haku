@@ -38,8 +38,8 @@ public:
 	static float* TranslateData() noexcept;
 
 private:
+	//float		 col[3]{};
 	int			 i0{};
-	float		 col[3]{};
 	bool		 open = true;
 	static float RotateXYZ[3];
 	static float TranslationData[3];

@@ -20,7 +20,7 @@ const char* Error::what() const noexcept
 {
 	return m_formatted_message.c_str();
 }
-WinError::WinError(HRESULT code)
+WinError::WinError(HRESULT code, std::string message)
 {
 	char* buffer{};
 	FormatMessageA(
@@ -36,7 +36,8 @@ WinError::WinError(HRESULT code)
 	str << "FILE : " << __FILE__ << "\n"
 		<< "FUNCION : " << __FUNCTION__ << "\n"
 		<< "LINE :" << __LINE__ << "\n"
-		<< "CODE : " << code << "\n";
+		<< "CODE : " << code << "\n"
+		<< "MESSAGE :" << message << "\n";
 	if (buffer)
 	{
 		str << buffer;
