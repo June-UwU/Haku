@@ -17,8 +17,8 @@ public:
 		std::wstring		 VertexShader,
 		std::wstring		 PixelShader);
 	void				 ShutDown() noexcept;
-	void				 SetPipelineState(D3D12CommandQueue* Command);
 	ID3D12PipelineState* get() { return m_PipelineState.Get(); }
+	void				 SetPipelineState(D3D12CommandQueue& Command);
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;

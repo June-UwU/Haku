@@ -60,7 +60,6 @@ D3D12VertexBuffer::~D3D12VertexBuffer()
 }
 void D3D12VertexBuffer::SetBuffer(Haku::Renderer::D3D12CommandQueue* CommandQueue) noexcept
 {
-	HAKU_LOG_INFO("setting vertex buffer");
 	CommandQueue->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBufferView);
 }
 D3D12ConstBuffer::D3D12ConstBuffer(Haku::Renderer::D3D12RenderDevice* Device, ID3D12DescriptorHeap* Heap)

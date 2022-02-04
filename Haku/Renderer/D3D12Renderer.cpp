@@ -76,59 +76,68 @@ void DX12Renderer::Close() const
 void DX12Renderer::LoadAssets()
 {
 	// Create a root signature consisting of a descriptor table with a single CBV.
-	{
-		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData{};
-		// This is the highest version the sample supports. If CheckFeatureSupport succeeds, the HighestVersion returned
-		// will not be greater than this.
-		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+	//{
+	//	D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData{};
+	//	// This is the highest version the sample supports. If CheckFeatureSupport succeeds, the HighestVersion returned
+	//	// will not be greater than this.
+	//	featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+	//
+	//	if (m_Device->get()->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData)) !=
+	//		S_OK)
+	//	{
+	//		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+	//	}
+	//
+	//
+	//	// Allow input layout and deny uneccessary access to certain pipeline stages.
+	//	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+	//													D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+	//													D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+	//													D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+	//													D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+	//
+	//	D3D12_DESCRIPTOR_RANGE1 ranges{};
+	//	ranges.NumDescriptors					 = 1;
+	//	ranges.BaseShaderRegister				 = 0;
+	//	ranges.RangeType						 = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	//	ranges.RegisterSpace					 = 0;
+	//	ranges.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	//
+	//	D3D12_ROOT_DESCRIPTOR_TABLE1 cbv_table{};
+	//	cbv_table.NumDescriptorRanges = 1;
+	//	cbv_table.pDescriptorRanges	  = &ranges;
+	//
+	//	D3D12_ROOT_PARAMETER1 param1[2]{};
+	//	param1[0].ParameterType				= D3D12_ROOT_PARAMETER_TYPE_SRV;
+	//	param1[1].ParameterType				= D3D12_ROOT_PARAMETER_TYPE_CBV;
+	//	param1[1].Descriptor.RegisterSpace	= 0;
+	//	param1[1].Descriptor.ShaderRegister = 0;
+	//	D3D12_VERSIONED_ROOT_SIGNATURE_DESC sigdesc{};
+	//	sigdesc.Version					   = featureData.HighestVersion;
+	//	sigdesc.Desc_1_1.NumParameters	   = 2;
+	//	sigdesc.Desc_1_1.Flags			   = rootSignatureFlags;
+	//	sigdesc.Desc_1_1.NumStaticSamplers = 0;
+	//	sigdesc.Desc_1_1.pParameters	   = param1;
+	//	sigdesc.Desc_1_1.pStaticSamplers   = 0;
+	//
+	//	Microsoft::WRL::ComPtr<ID3DBlob> signature;
+	//	Microsoft::WRL::ComPtr<ID3DBlob> error;
+	//	HAKU_SOK_ASSERT(
+	//		D3DX12SerializeVersionedRootSignature(&sigdesc, featureData.HighestVersion, &signature, &error));
+	//	HAKU_SOK_ASSERT(m_Device->get()->CreateRootSignature(
+	//		0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
+	//	m_RootSignature->SetName(L"Root descriptor");
+	//}
+	std::shared_ptr<D3D12RootSignatureDesc> desc = std::make_shared<D3D12RootSignatureDesc>();
+	desc->AddSRV<0u, 0u>(D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
+	desc->AddCBV<0, 0>();
+	desc->AllowInputLayout();
+	desc->DenyDomainShader();
+	desc->DenyHullShader();
+	desc->DenyPixelShader();
+	m_Signature = std::make_unique<D3D12RootSignature>(*desc, *m_Device);
 
-		if (m_Device->get()->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData)) !=
-			S_OK)
-		{
-			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-		}
-
-		// Allow input layout and deny uneccessary access to certain pipeline stages.
-		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-														D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-														D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-														D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-														D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
-
-		D3D12_DESCRIPTOR_RANGE1 ranges{};
-		ranges.NumDescriptors					 = 1;
-		ranges.BaseShaderRegister				 = 0;
-		ranges.RangeType						 = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-		ranges.RegisterSpace					 = 0;
-		ranges.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-		D3D12_ROOT_DESCRIPTOR_TABLE1 cbv_table{};
-		cbv_table.NumDescriptorRanges = 1;
-		cbv_table.pDescriptorRanges	  = &ranges;
-
-		D3D12_ROOT_PARAMETER1 param1[2]{};
-		param1[0].ParameterType				= D3D12_ROOT_PARAMETER_TYPE_SRV;
-		param1[1].ParameterType				= D3D12_ROOT_PARAMETER_TYPE_CBV;
-		param1[1].Descriptor.RegisterSpace	= 0;
-		param1[1].Descriptor.ShaderRegister = 0;
-		D3D12_VERSIONED_ROOT_SIGNATURE_DESC sigdesc{};
-		sigdesc.Version					   = featureData.HighestVersion;
-		sigdesc.Desc_1_1.NumParameters	   = 2;
-		sigdesc.Desc_1_1.Flags			   = rootSignatureFlags;
-		sigdesc.Desc_1_1.NumStaticSamplers = 0;
-		sigdesc.Desc_1_1.pParameters	   = param1;
-		sigdesc.Desc_1_1.pStaticSamplers   = 0;
-
-		Microsoft::WRL::ComPtr<ID3DBlob> signature;
-		Microsoft::WRL::ComPtr<ID3DBlob> error;
-		HAKU_SOK_ASSERT(
-			D3DX12SerializeVersionedRootSignature(&sigdesc, featureData.HighestVersion, &signature, &error));
-		HAKU_SOK_ASSERT(m_Device->get()->CreateRootSignature(
-			0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
-		m_RootSignature->SetName(L"Root descriptor");
-	}
 	m_Command->CommandListCreate(*m_Device, nullptr);
-	// Create the vertex buffer.
 
 	// Define the geometry for a triangle.
 	VertexData triangleVertices[] = { { { 0.0f, 0.25f, 0.0f }, { 0.2f, 0.0f, 0.0f, 0.4f } },
@@ -138,7 +147,7 @@ void DX12Renderer::LoadAssets()
 	const UINT vertexBufferSize = sizeof(triangleVertices);
 	m_PipelineState				= new D3D12PipelineState(
 		m_Device,
-		m_RootSignature.Get(),
+		m_Signature->Get(),
 		L"D:\\Haku\\Assets\\Shaders\\vertexshader.hlsl",
 		L"D:\\Haku\\Assets\\Shaders\\pixelshader.hlsl");
 
@@ -148,8 +157,9 @@ void DX12Renderer::LoadAssets()
 
 void DX12Renderer::Commands()
 {
-	m_PipelineState->SetPipelineState(m_Command);
-	m_Command->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
+	m_PipelineState->SetPipelineState(*m_Command);
+	// m_Command->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
+	m_Signature->SetSignature(*m_Command);
 	m_DescriptorHeap->SetDescriptorHeaps(*m_Command);
 
 	m_Command->GetCommandList()->RSSetViewports(1, &m_Viewport);

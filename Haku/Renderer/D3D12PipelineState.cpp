@@ -59,9 +59,9 @@ void D3D12PipelineState::ShutDown() noexcept
 	m_PipelineState.Reset();
 }
 
-void D3D12PipelineState::SetPipelineState(D3D12CommandQueue* Command)
+void D3D12PipelineState::SetPipelineState(D3D12CommandQueue& Command)
 {
-	Command->Reset(m_PipelineState.Get());
+	Command.Reset(m_PipelineState.Get());
 }
 
 } // namespace Renderer

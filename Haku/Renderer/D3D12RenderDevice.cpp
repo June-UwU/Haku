@@ -33,6 +33,7 @@ D3D12RenderDevice::D3D12RenderDevice()
 		D3D_FEATURE_LEVEL_12_0,
 		IID_PPV_ARGS(&m_Device))) // the support and request needs checking
 }
+
 void D3D12RenderDevice::ShutDown() noexcept
 {
 	m_Device.Reset();

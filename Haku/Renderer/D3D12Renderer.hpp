@@ -2,6 +2,7 @@
 #include "D3D12SwapChain.hpp"
 #include "D3D12RenderDevice.hpp"
 #include "D3D12CommandQueue.hpp"
+#include "D3D12RootSignature.hpp"
 #include "D3D12PipelineState.hpp"
 #include "../Platform/Windows/MainWindow.hpp"
 // this will be part of the ECS
@@ -39,8 +40,8 @@ private:
 	D3D12SwapChain*		 m_SwapChain;
 	CD3DX12_RECT		 m_ScissorRect;
 	D3D12DescriptorHeap* m_DescriptorHeap;
-
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_RootSignature;
+	std::unique_ptr<D3D12RootSignature> m_Signature;
+	
 
 	D3D12VertexBuffer*	m_Buffer		= nullptr;
 	D3D12PipelineState* m_PipelineState = nullptr;
