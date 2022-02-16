@@ -64,9 +64,9 @@ void D3D12VertexBuffer::SetBuffer(Haku::Renderer::D3D12CommandQueue* CommandQueu
 }
 D3D12ConstBuffer::D3D12ConstBuffer(Haku::Renderer::D3D12RenderDevice* Device, ID3D12DescriptorHeap* Heap)
 {
-	Data.Rotate = DirectX::XMMatrixTranspose(
-		DirectX::XMMatrixIdentity() * DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.6f) *
-		DirectX::XMMatrixPerspectiveLH(1.0f, 720.0f / 1080.0f, 0.1f, 10.00f));
+	Data.Matrix = DirectX::XMMatrixTranspose(
+		DirectX::XMMatrixIdentity() * DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.6f) /*
+		DirectX::XMMatrixPerspectiveLH(1.0f, 720.0f / 1080.0f, 0.1f, 10.00f)*/);
 	auto heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	auto resdesc  = CD3DX12_RESOURCE_DESC::Buffer(sizeof(ConstData));
 	auto size	  = sizeof(ConstData);
@@ -100,9 +100,15 @@ D3D12ConstBuffer::~D3D12ConstBuffer()
 	m_ptr = nullptr;
 }
 
+void D3D12ConstBuffer::Update(DirectX::XMMATRIX& ref) noexcept
+{
+	Data.Matrix = ref;
+	memcpy(m_ptr, &Data, sizeof(Data));
+}
+
 void D3D12ConstBuffer::Update(float* rotate, float* translate, float width, float height) noexcept
 {
-	Data.Rotate = DirectX::XMMatrixTranspose(
+	Data.Matrix = DirectX::XMMatrixTranspose(
 		DirectX::XMMatrixRotationX(rotate[0]) * DirectX::XMMatrixRotationY(rotate[1]) *
 		DirectX::XMMatrixRotationZ(rotate[2]) *
 		DirectX::XMMatrixTranslation(translate[0], translate[1], translate[2] + 0.5f) *
@@ -110,10 +116,10 @@ void D3D12ConstBuffer::Update(float* rotate, float* translate, float width, floa
 	memcpy(m_ptr, &Data, sizeof(Data));
 }
 
-void D3D12ConstBuffer::SetBuffer(D3D12CommandQueue* CommandQueue, ID3D12DescriptorHeap* Heap)
+void D3D12ConstBuffer::SetBuffer(D3D12CommandQueue* CommandQueue, ID3D12DescriptorHeap* Heap, UINT slot)
 {
 	// ConstBuffer view must be auto postion.
-	CommandQueue->GetCommandList()->SetGraphicsRootConstantBufferView(1, m_ConstBuffer->GetGPUVirtualAddress());
+	CommandQueue->GetCommandList()->SetGraphicsRootConstantBufferView(slot, m_ConstBuffer->GetGPUVirtualAddress());
 }
 
 } // namespace Renderer

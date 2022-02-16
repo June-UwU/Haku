@@ -26,6 +26,10 @@ DX12Renderer::DX12Renderer(uint32_t height, uint32_t width)
 	m_Device		 = new D3D12RenderDevice();
 	m_Command		 = new D3D12CommandQueue(*m_Device);
 	m_DescriptorHeap = new D3D12DescriptorHeap(*m_Device);
+	Haku::UI::LeftMenu::SetFOV(60.0f);
+	Haku::UI::LeftMenu::SetFarZ(100.0f);
+	Haku::UI::LeftMenu::SetNearZ(0.01f);
+	Haku::UI::LeftMenu::SetAspectRatio(1.0f);
 }
 DX12Renderer::~DX12Renderer() noexcept
 {
@@ -33,7 +37,20 @@ DX12Renderer::~DX12Renderer() noexcept
 }
 void DX12Renderer::Render()
 {
-	m_Constant->Update(Haku::UI::LeftMenu::RotateData(), Haku::UI::LeftMenu::TranslateData(), m_width, m_height);
+	auto rotate	   = Haku::UI::LeftMenu::GetRotateData();
+	auto translate = Haku::UI::LeftMenu::GetTranslateData();
+	auto Data	   = DirectX::XMMatrixTranspose(
+		 DirectX::XMMatrixRotationX(rotate[0]) * DirectX::XMMatrixRotationY(rotate[1]) *
+		 DirectX::XMMatrixRotationZ(rotate[2]) *
+		 DirectX::XMMatrixTranslation(translate[0], translate[1], translate[2] + 0.5f));
+	m_Constant->Update(Data);
+	m_Camera_Constants.SetFOV(Haku::UI::LeftMenu::GetFOV());
+	m_Camera_Constants.SetFarZ(Haku::UI::LeftMenu::GetFarZ());
+	m_Camera_Constants.SetNearZ(Haku::UI::LeftMenu::GetNearZ());
+	m_Camera_Constants.SetAspectRatio(Haku::UI::LeftMenu::GetAspectRatio());
+
+	auto camera = m_Camera_Constants.GetCamera();
+	m_Camera->Update(camera);
 	Commands();
 	m_Command->Execute();
 	m_SwapChain->Render();
@@ -71,66 +88,15 @@ void DX12Renderer::Close() const
 	delete m_PipelineState;
 	delete m_Constant;
 	delete m_Buffer;
+	delete m_Camera;
 }
 
 void DX12Renderer::LoadAssets()
 {
-	// Create a root signature consisting of a descriptor table with a single CBV.
-	//{
-	//	D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData{};
-	//	// This is the highest version the sample supports. If CheckFeatureSupport succeeds, the HighestVersion returned
-	//	// will not be greater than this.
-	//	featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-	//
-	//	if (m_Device->get()->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData)) !=
-	//		S_OK)
-	//	{
-	//		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-	//	}
-	//
-	//
-	//	// Allow input layout and deny uneccessary access to certain pipeline stages.
-	//	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-	//													D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-	//													D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-	//													D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-	//													D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
-	//
-	//	D3D12_DESCRIPTOR_RANGE1 ranges{};
-	//	ranges.NumDescriptors					 = 1;
-	//	ranges.BaseShaderRegister				 = 0;
-	//	ranges.RangeType						 = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	//	ranges.RegisterSpace					 = 0;
-	//	ranges.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-	//
-	//	D3D12_ROOT_DESCRIPTOR_TABLE1 cbv_table{};
-	//	cbv_table.NumDescriptorRanges = 1;
-	//	cbv_table.pDescriptorRanges	  = &ranges;
-	//
-	//	D3D12_ROOT_PARAMETER1 param1[2]{};
-	//	param1[0].ParameterType				= D3D12_ROOT_PARAMETER_TYPE_SRV;
-	//	param1[1].ParameterType				= D3D12_ROOT_PARAMETER_TYPE_CBV;
-	//	param1[1].Descriptor.RegisterSpace	= 0;
-	//	param1[1].Descriptor.ShaderRegister = 0;
-	//	D3D12_VERSIONED_ROOT_SIGNATURE_DESC sigdesc{};
-	//	sigdesc.Version					   = featureData.HighestVersion;
-	//	sigdesc.Desc_1_1.NumParameters	   = 2;
-	//	sigdesc.Desc_1_1.Flags			   = rootSignatureFlags;
-	//	sigdesc.Desc_1_1.NumStaticSamplers = 0;
-	//	sigdesc.Desc_1_1.pParameters	   = param1;
-	//	sigdesc.Desc_1_1.pStaticSamplers   = 0;
-	//
-	//	Microsoft::WRL::ComPtr<ID3DBlob> signature;
-	//	Microsoft::WRL::ComPtr<ID3DBlob> error;
-	//	HAKU_SOK_ASSERT(
-	//		D3DX12SerializeVersionedRootSignature(&sigdesc, featureData.HighestVersion, &signature, &error));
-	//	HAKU_SOK_ASSERT(m_Device->get()->CreateRootSignature(
-	//		0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
-	//	m_RootSignature->SetName(L"Root descriptor");
-	//}
 	std::shared_ptr<D3D12RootSignatureDesc> desc = std::make_shared<D3D12RootSignatureDesc>();
 	desc->AddSRV<0u, 0u>(D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
 	desc->AddCBV<0, 0>();
+	desc->AddCBV<1, 0>();
 	desc->AllowInputLayout();
 	desc->DenyDomainShader();
 	desc->DenyHullShader();
@@ -151,14 +117,14 @@ void DX12Renderer::LoadAssets()
 		L"D:\\Haku\\Assets\\Shaders\\vertexshader.hlsl",
 		L"D:\\Haku\\Assets\\Shaders\\pixelshader.hlsl");
 
-	m_Constant = new D3D12ConstBuffer(m_Device, m_DescriptorHeap->GetSRVDescriptorHeap());
+	m_Camera   = new D3D12ConstBuffer(m_Device, m_DescriptorHeap->GetSRVDescriptorHeap());
 	m_Buffer   = new D3D12VertexBuffer(m_Device, m_Command, triangleVertices, vertexBufferSize);
+	m_Constant = new D3D12ConstBuffer(m_Device, m_DescriptorHeap->GetSRVDescriptorHeap());
 }
 
 void DX12Renderer::Commands()
 {
 	m_PipelineState->SetPipelineState(*m_Command);
-	// m_Command->GetCommandList()->SetGraphicsRootSignature(m_RootSignature.Get());
 	m_Signature->SetSignature(*m_Command);
 	m_DescriptorHeap->SetDescriptorHeaps(*m_Command);
 
@@ -166,7 +132,8 @@ void DX12Renderer::Commands()
 	m_Command->GetCommandList()->RSSetScissorRects(1, &m_ScissorRect);
 	m_SwapChain->SetAndClearRenderTarget(*m_Command, *m_DescriptorHeap);
 	m_Command->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_Constant->SetBuffer(m_Command, m_DescriptorHeap->GetSRVDescriptorHeap());
+	m_Constant->SetBuffer(m_Command, m_DescriptorHeap->GetSRVDescriptorHeap(), 1);
+	m_Camera->SetBuffer(m_Command, m_DescriptorHeap->GetSRVDescriptorHeap(), 2);
 	m_Buffer->SetBuffer(m_Command);
 	m_Command->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 

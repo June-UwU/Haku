@@ -5,8 +5,9 @@
 #include "D3D12RootSignature.hpp"
 #include "D3D12PipelineState.hpp"
 #include "../Platform/Windows/MainWindow.hpp"
-// this will be part of the ECS
+// NOTE : this will be part of the ECS..?
 #include "D3D12Buffer.hpp"
+#include "PerspectiveCamera.hpp"
 namespace Haku
 {
 namespace Renderer
@@ -32,22 +33,22 @@ private:
 	void LoadAssets();
 
 private:
-	uint32_t			 m_width;
-	uint32_t			 m_height;
+	float				 m_width;
+	float				 m_height;
 	D3D12RenderDevice*	 m_Device;
 	D3D12CommandQueue*	 m_Command;
 	CD3DX12_VIEWPORT	 m_Viewport;
 	D3D12SwapChain*		 m_SwapChain;
 	CD3DX12_RECT		 m_ScissorRect;
 	D3D12DescriptorHeap* m_DescriptorHeap;
+
 	std::unique_ptr<D3D12RootSignature> m_Signature;
-	
+	PerspectiveCamera					m_Camera_Constants;
 
 	D3D12VertexBuffer*	m_Buffer		= nullptr;
-	D3D12PipelineState* m_PipelineState = nullptr;
+	D3D12ConstBuffer*	m_Camera		= nullptr;
 	D3D12ConstBuffer*	m_Constant		= nullptr;
-
-	
+	D3D12PipelineState* m_PipelineState = nullptr;
 };
 } // namespace Renderer
 } // namespace Haku

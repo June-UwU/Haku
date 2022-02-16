@@ -26,7 +26,6 @@ D3D12PipelineState::D3D12PipelineState(
 
 	HAKU_SOK_ASSERT(D3DCompileFromFile(
 		VertexShader.c_str(), nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, &error));
-
 	HAKU_SOK_ASSERT(D3DCompileFromFile(
 		PixelShader.c_str(), nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, &error));
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {

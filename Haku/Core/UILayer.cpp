@@ -4,9 +4,14 @@ namespace Haku
 {
 namespace UI
 {
+float LeftMenu::FOV;
+float LeftMenu::FarZ;
+float LeftMenu::NearZ;
+float LeftMenu::Aspect_Ratio;
 float LeftMenu::RotateXYZ[3];
 float LeftMenu::TranslationData[3];
-void  InitUI() noexcept
+
+void InitUI() noexcept
 {
 	ImGui::CreateContext();
 	auto* app			 = Haku::Application::Get();
@@ -139,20 +144,57 @@ void Menubar::Render() noexcept
 }
 void LeftMenu::Render() noexcept
 {
-	if (ImGui::Begin("Test Window", &open, ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar))
+	if (ImGui::Begin("Parameters", &open, ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar))
 	{
 		ImGui::InputFloat3("Rotation", RotateXYZ);
 		ImGui::InputFloat3("Translation", TranslationData);
+		ImGui::Text("Camera Parameters");
+		ImGui::InputFloat("FOV", &FOV);
+		ImGui::InputFloat("FarZ", &FarZ);
+		ImGui::InputFloat("NearZ", &NearZ);
+		ImGui::InputFloat("Aspect Ratio", &Aspect_Ratio);
 		ImGui::End();
 	}
 }
-float* LeftMenu::RotateData() noexcept
+float* LeftMenu::GetRotateData() noexcept
 {
 	return RotateXYZ;
 }
-float* LeftMenu::TranslateData() noexcept
+float* LeftMenu::GetTranslateData() noexcept
 {
 	return TranslationData;
+}
+void LeftMenu::SetFOV(float val) noexcept
+{
+	FOV = val;
+}
+void LeftMenu::SetFarZ(float val) noexcept
+{
+	FarZ = val;
+}
+void LeftMenu::SetNearZ(float val) noexcept
+{
+	NearZ = val;
+}
+void LeftMenu::SetAspectRatio(float val) noexcept
+{
+	Aspect_Ratio = val;
+}
+float& LeftMenu::GetAspectRatio() noexcept
+{
+	return Aspect_Ratio;
+}
+float& LeftMenu::GetFOV() noexcept
+{
+	return FOV;
+}
+float& LeftMenu::GetFarZ() noexcept
+{
+	return FarZ;
+}
+float& LeftMenu::GetNearZ() noexcept
+{
+	return NearZ;
 }
 } // namespace UI
 } // namespace Haku
