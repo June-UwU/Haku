@@ -1,13 +1,17 @@
 #pragma once
 #include <cstdint>
+#include <numbers>
 #ifdef HAKU_API_BUILD
 #define HAKU_API __declspec(dllexport)
 #else
 #define HAKU_API __declspec(dllimport)
 #endif
-#define KiB	 1024
-#define MiB	 KiB * 1024
-#define GiB	 MiB * 1024
+#define KiB			  1024
+#define MiB			  KiB * 1024
+#define GiB			  MiB * 1024
+
+#define RADS_32BIT(x) x*(std::numbers::pi_v<float> / 180.00f)
+#define RADS_64BIT(x) x*(std::numbers::pi_v<double> / 180.00)
 
 const int FrameCount{ 3 };
 

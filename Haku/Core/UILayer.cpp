@@ -180,19 +180,19 @@ void LeftMenu::SetAspectRatio(float val) noexcept
 {
 	Aspect_Ratio = val;
 }
-float& LeftMenu::GetAspectRatio() noexcept
+float LeftMenu::GetAspectRatio() noexcept
 {
-	return Aspect_Ratio;
+	return std::max(0.1f, Aspect_Ratio);
 }
-float& LeftMenu::GetFOV() noexcept
+float LeftMenu::GetFOV() noexcept
 {
 	return FOV;
 }
-float& LeftMenu::GetFarZ() noexcept
+float LeftMenu::GetFarZ() noexcept
 {
 	return FarZ;
 }
-float& LeftMenu::GetNearZ() noexcept
+float LeftMenu::GetNearZ() noexcept
 {
 	return NearZ;
 }

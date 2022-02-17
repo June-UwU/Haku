@@ -1,5 +1,6 @@
+#include <numbers>
+#include "../macros.hpp"
 #include "PerspectiveCamera.hpp"
-
 namespace Haku
 {
 namespace Renderer
@@ -10,28 +11,32 @@ PerspectiveCamera::PerspectiveCamera(float Aspect_ratio, float FOV, float NearZ,
 	, m_NearZ(NearZ)
 	, m_Aspect_ratio(Aspect_ratio)
 {
-	m_Camera = DirectX::XMMatrixPerspectiveFovLH(FOV, Aspect_ratio, NearZ, FarZ);
+	m_Camera = DirectX::XMMatrixPerspectiveFovLH(RADS_32BIT(FOV), Aspect_ratio, NearZ, FarZ);
 }
-void PerspectiveCamera::SetFarZ(float& Z) noexcept
+void PerspectiveCamera::SetFarZ(float Z) noexcept
 {
 	m_FarZ	 = Z;
-	m_Camera = DirectX::XMMatrixPerspectiveFovLH(m_FOV, m_Aspect_ratio, m_NearZ, m_FarZ);
+	m_Camera = DirectX::XMMatrixPerspectiveFovLH(RADS_32BIT(m_FOV), m_Aspect_ratio, m_NearZ, m_FarZ);
 }
-void PerspectiveCamera::SetNearZ(float& Z) noexcept
+
+void PerspectiveCamera::SetNearZ(float Z) noexcept
 {
 	m_NearZ	 = Z;
-	m_Camera = DirectX::XMMatrixPerspectiveFovLH(m_FOV, m_Aspect_ratio, m_NearZ, m_FarZ);
+	m_Camera = DirectX::XMMatrixPerspectiveFovLH(RADS_32BIT(m_FOV), m_Aspect_ratio, m_NearZ, m_FarZ);
 }
-void PerspectiveCamera::SetFOV(float& FOV) noexcept
+
+void PerspectiveCamera::SetFOV(float FOV) noexcept
 {
 	m_FOV	 = FOV;
-	m_Camera = DirectX::XMMatrixPerspectiveFovLH(m_FOV, m_Aspect_ratio, m_NearZ, m_FarZ);
+	m_Camera = DirectX::XMMatrixPerspectiveFovLH(RADS_32BIT(m_FOV), m_Aspect_ratio, m_NearZ, m_FarZ);
 }
-void PerspectiveCamera::SetAspectRatio(float& ratio) noexcept
+
+void PerspectiveCamera::SetAspectRatio(float ratio) noexcept
 {
 	m_Aspect_ratio = ratio;
-	m_Camera	   = DirectX::XMMatrixPerspectiveFovLH(m_FOV, m_Aspect_ratio, m_NearZ, m_FarZ);
+	m_Camera	   = DirectX::XMMatrixPerspectiveFovLH(RADS_32BIT(m_FOV), m_Aspect_ratio, m_NearZ, m_FarZ);
 }
+
 void PerspectiveCamera::RotateCamera(float ptr[3]) noexcept
 {
 	m_Rotation = DirectX::XMMatrixTranspose(

@@ -2,6 +2,7 @@
 #include "DirectXMath.h"
 
 // NOTES : the translation matrix is multiplied with -1(for the obvious reflection behaviour seen)
+// NOTES : the FOV is in taken in and stored in degrees and calculated to radians for matrix
 // TODO  : check and seen if the transformations can be extracted in a sensible manner
 // void TakeTransform(DirectX::XMMATRIX& ref) noexcept;
 
@@ -25,10 +26,10 @@ class PerspectiveCamera
 {
 public:
 	PerspectiveCamera(float Aspect_ratio = 0.75, float FOV = 60.0f, float NearZ = 0.01f, float FarZ = 100.0f);
-	void SetFarZ(float& Z) noexcept;
-	void SetNearZ(float& Z) noexcept;
-	void SetFOV(float& FOV) noexcept;
-	void SetAspectRatio(float& ratio) noexcept;
+	void SetFarZ(float Z) noexcept;
+	void SetNearZ(float Z) noexcept;
+	void SetFOV(float FOV) noexcept;
+	void SetAspectRatio(float ratio) noexcept;
 
 	// general rotation functions
 	void RotateCamera(float ptr[3]) noexcept;

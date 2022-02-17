@@ -40,8 +40,8 @@ void DX12Renderer::Render()
 	auto rotate	   = Haku::UI::LeftMenu::GetRotateData();
 	auto translate = Haku::UI::LeftMenu::GetTranslateData();
 	auto Data	   = DirectX::XMMatrixTranspose(
-		 DirectX::XMMatrixRotationX(rotate[0]) * DirectX::XMMatrixRotationY(rotate[1]) *
-		 DirectX::XMMatrixRotationZ(rotate[2]) *
+		DirectX::XMMatrixRotationX(RADS_32BIT(rotate[0])) * DirectX::XMMatrixRotationY(RADS_32BIT(rotate[1])) *
+		 DirectX::XMMatrixRotationZ(RADS_32BIT(rotate[2])) *
 		 DirectX::XMMatrixTranslation(translate[0], translate[1], translate[2] + 0.5f));
 	m_Constant->Update(Data);
 	m_Camera_Constants.SetFOV(Haku::UI::LeftMenu::GetFOV());

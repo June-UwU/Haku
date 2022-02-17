@@ -34,11 +34,11 @@ class HAKU_API LeftMenu
 {
 public:
 	void		  Render() noexcept;
-	static float& GetFOV() noexcept;
-	static float& GetFarZ() noexcept;
-	static float& GetNearZ() noexcept;
+	static float  GetFOV() noexcept;
+	static float  GetFarZ() noexcept;
+	static float  GetNearZ() noexcept;
 	static float* GetRotateData() noexcept;
-	static float& GetAspectRatio() noexcept;
+	static float  GetAspectRatio() noexcept;
 	static void	  SetFOV(float val) noexcept;
 	static float* GetTranslateData() noexcept;
 	static void	  SetFarZ(float val) noexcept;
