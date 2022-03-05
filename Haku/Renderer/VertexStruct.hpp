@@ -4,7 +4,7 @@
 struct VertexData
 {
 	DirectX::XMFLOAT3 pos;
-	DirectX::XMFLOAT4 RGBA;
+	DirectX::XMFLOAT2 uv;
 };
 
 struct ConstData

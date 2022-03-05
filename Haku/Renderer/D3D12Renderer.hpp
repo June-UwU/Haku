@@ -32,6 +32,9 @@ private:
 	void Commands();
 	void LoadAssets();
 
+	//throw away section
+private:
+	std::vector<UINT8> GenerateTextureData();
 private:
 	float				 m_width;
 	float				 m_height;
@@ -41,6 +44,10 @@ private:
 	D3D12SwapChain*		 m_SwapChain;
 	CD3DX12_RECT		 m_ScissorRect;
 	D3D12DescriptorHeap* m_DescriptorHeap;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_Texture;
+	Microsoft::WRL::ComPtr<ID3D12Resource> texture_uploadheap;
+
 
 	std::unique_ptr<D3D12RootSignature> m_Signature;
 	PerspectiveCamera					m_Camera_Constants;

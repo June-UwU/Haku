@@ -42,13 +42,23 @@ const int FrameCount{ 3 };
 		throw err;                                                                                                     \
 	}
 
-#define HAKU_SOK_ASSERT(x)                                                                                             \
-	if (x != S_OK)                                                                                                     \
+#define HAKU_SOK_ASSERT(code)                                                                                          \
+	if (code != S_OK)                                                                                                  \
 	{                                                                                                                  \
 		std::string line(std::to_string(__LINE__));                                                                    \
 		HAKU_LOG_CRIT("FILE: ", __FILE__, " FUNCTION: ", __FUNCTION__, " LINE: ", line);                               \
 		__debugbreak();                                                                                                \
-		Haku::Errors::WinError err(x);                                                                                 \
+		Haku::Errors::WinError err(code);                                                                              \
+		throw err;                                                                                                     \
+	}
+#define HAKU_SOK_ASSERT_CHAR_PTR(code, char_ptr)                                                                       \
+	if (code != S_OK)                                                                                                     \
+	{                                                                                                                  \
+		std::string line(std::to_string(__LINE__));                                                                    \
+		HAKU_LOG_CRIT("FILE: ", __FILE__, " FUNCTION: ", __FUNCTION__, " LINE: ", line);                               \
+		OutputDebugStringW((wchar_t*)char_ptr.Get());                                                                             \
+		__debugbreak();                                                                                                \
+		Haku::Errors::WinError err(code);                                                                                 \
 		throw err;                                                                                                     \
 	}
 #else
@@ -63,6 +73,13 @@ const int FrameCount{ 3 };
 	if (x != S_OK)                                                                                                     \
 	{                                                                                                                  \
 		Haku::Errors::WinError err(x);                                                                                 \
+		throw err;                                                                                                     \
+	}
+#define HAKU_SOK_ASSERT_CHAR_PTR(code, char_ptr)                                                                       \
+	if (code != S_OK)                                                                                                  \
+	{                                                                                                                  \
+		std::string			   line(std::to_string(__LINE__));                                                         \
+		Haku::Errors::WinError err(code);                                                                              \
 		throw err;                                                                                                     \
 	}
 #endif

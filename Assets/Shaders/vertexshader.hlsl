@@ -13,13 +13,13 @@ cbuffer camera : register(b1)
 struct PixelData
 {
 	float4 p_pos : SV_POSITION;
-	float4 p_col : COLOR;
+	float2 p_uv : TEXCORRD;
 };
 
 struct VextexData
 {
 	float3 pos : POSITION; 
-	float4 col : COLOR;
+	float2 uv : TEXCORRD;
 };
 
 
@@ -28,7 +28,6 @@ PixelData VSMain(VextexData data)
     PixelData ret;
 	matrix result = mul(transform, camera);
     ret.p_pos = mul(float4(data.pos,1.0f), 	result);
-    //ret.p_pos = mul(ret.p_pos,camera);
-    ret.p_col = data.col;
+    ret.p_uv = data.uv;
     return ret;
 }
