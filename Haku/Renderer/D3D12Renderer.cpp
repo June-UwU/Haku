@@ -95,21 +95,20 @@ void DX12Renderer::LoadAssets()
 {
 	// TODO
 	// test the descriptor_table after this is working
-	std::shared_ptr<D3D12DescriptorTable > textable = std::make_shared< D3D12DescriptorTable>();
+	std::shared_ptr<D3D12DescriptorTable> textable = std::make_shared<D3D12DescriptorTable>();
 	textable->AddSRV<1, 0>();
 	std::shared_ptr<D3D12RootSignatureDesc> desc = std::make_shared<D3D12RootSignatureDesc>();
-	desc->AddSRV<0u, 0u>(D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
-	desc->AddCBV<0, 0>();
-	desc->AddCBV<1, 0>();
-	desc->AddDescriptorTable(*(textable.get()));
-	//desc->AddSRV<1, 0>();
+	desc->AddSRV<0u, 0u>();						 // 0
+	desc->AddCBV<0, 0>();						 // 1
+	desc->AddCBV<1, 0>();						 // 2
+	desc->AddDescriptorTable(*(textable.get())); // 3
+
 	desc->AddSampler<0, 0>(HAKU_TEXTURE_FILTER::POINT);
+
 	desc->AllowInputLayout();
 	desc->DenyDomainShader();
 	desc->DenyHullShader();
 	m_Signature = std::make_unique<D3D12RootSignature>(*desc, *m_Device);
-
-	m_Command->CommandListCreate(*m_Device, nullptr);
 
 	// Define the geometry for a triangle.
 	VertexData triangleVertices[] = { { { 0.0f, 0.25f, 0.0f }, { 0.5f, 0.0f } },
@@ -137,7 +136,7 @@ void DX12Renderer::LoadAssets()
 	auto heap_prop			   = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 	HAKU_SOK_ASSERT(m_Device->get()->CreateCommittedResource(
 		&heap_prop, D3D12_HEAP_FLAG_NONE, &TexDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m_Texture)))
-	const uint32_t uploadBuffersize = GetRequiredIntermediateSize(m_Texture.Get(), 0, 1);
+	const uint32_t uploadBuffersize = GetRequiredIntermediateSize(m_Texture, 0, 1);
 
 	auto upload_heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	auto uploadresdesc	 = CD3DX12_RESOURCE_DESC::Buffer(uploadBuffersize);
@@ -149,37 +148,48 @@ void DX12Renderer::LoadAssets()
 		nullptr,
 		IID_PPV_ARGS(&texture_uploadheap)))
 
-	std::vector<uint8_t>   texture	   = GenerateTextureData();
+	std::vector<UINT8>	   texture	   = GenerateTextureData();
 	D3D12_SUBRESOURCE_DATA textureData = {};
-	textureData.pData				   = &texture[0];
-	textureData.RowPitch			   = 256 * 256;
+	textureData.pData				   = texture.data();
+	textureData.RowPitch			   = 256 * 4;
 	textureData.SlicePitch			   = textureData.RowPitch * 256;
-	UpdateSubresources(m_Command->GetCommandList(), m_Texture.Get(), texture_uploadheap.Get(), 0, 0, 1, &textureData);
+	UpdateSubresources(m_Command->GetCommandList(), m_Texture, texture_uploadheap, 0, 0, 1, &textureData);
 	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_Texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		m_Texture,
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	m_Command->GetCommandList()->ResourceBarrier(1, &barrier);
 
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping			= D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format							= TexDesc.Format;
-	srvDesc.ViewDimension					= D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels				= 1;
-	m_Device->get()->CreateShaderResourceView(m_Texture.Get(), &srvDesc, m_DescriptorHeap->GetSRVCPUHandle());
+	srvDesc.Texture2D.MipLevels		= 1;
+	srvDesc.Format					= TexDesc.Format;
+	srvDesc.ViewDimension			= D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	m_Device->get()->CreateShaderResourceView(m_Texture, &srvDesc, m_DescriptorHeap->GetSRVCPUHandle());
 
 	m_Texture->SetName(L"actual texture");
 	texture_uploadheap->SetName(L"upload heap");
+	Microsoft::WRL::ComPtr<ID3D12DebugCommandList> Check;
+	m_Command->GetCommandList()->QueryInterface(IID_PPV_ARGS(&Check));
+	if (Check)
+	{
+		auto ret = Check->AssertResourceState(m_Texture, 0, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		if (ret)
+		{
+			HAKU_LOG_WARN("Transition was Done");
+		}
+	}
 
-	m_Camera   = new D3D12ConstBuffer(m_Device, m_DescriptorHeap->GetSRVDescriptorHeap());
+	m_Command->Close();
+	m_Command->Execute();
+	m_Command->Synchronize();
 	m_Buffer   = new D3D12VertexBuffer(m_Device, m_Command, triangleVertices, vertexBufferSize);
+	m_Camera   = new D3D12ConstBuffer(m_Device, m_DescriptorHeap->GetSRVDescriptorHeap());
 	m_Constant = new D3D12ConstBuffer(m_Device, m_DescriptorHeap->GetSRVDescriptorHeap());
-
-	// m_Command->Execute();
-	// m_Command->Synchronize();
 }
 
 std::vector<UINT8> DX12Renderer::GenerateTextureData()
 {
-	const UINT rowPitch	   = 256 * 256;
+	const UINT rowPitch	   = 256 * 4;
 	const UINT cellPitch   = rowPitch >> 3; // The width of a cell in the checkboard texture.
 	const UINT cellHeight  = 256 >> 3;		// The height of a cell in the checkerboard texture.
 	const UINT textureSize = rowPitch * 256;
@@ -187,7 +197,7 @@ std::vector<UINT8> DX12Renderer::GenerateTextureData()
 	std::vector<UINT8> data(textureSize);
 	UINT8*			   pData = &data[0];
 
-	for (UINT n = 0; n < textureSize; n += 256)
+	for (UINT n = 0; n < textureSize; n += 4)
 	{
 		UINT x = n % rowPitch;
 		UINT y = n / rowPitch;
@@ -223,6 +233,8 @@ void DX12Renderer::Commands()
 	m_Command->GetCommandList()->RSSetScissorRects(1, &m_ScissorRect);
 	m_SwapChain->SetAndClearRenderTarget(*m_Command, *m_DescriptorHeap);
 	m_Command->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	m_Command->GetCommandList()->SetGraphicsRootDescriptorTable(3, m_DescriptorHeap->GetSRVGPUHandle());
 	m_Constant->SetBuffer(m_Command, m_DescriptorHeap->GetSRVDescriptorHeap(), 1);
 	m_Camera->SetBuffer(m_Command, m_DescriptorHeap->GetSRVDescriptorHeap(), 2);
 	m_Buffer->SetBuffer(m_Command);

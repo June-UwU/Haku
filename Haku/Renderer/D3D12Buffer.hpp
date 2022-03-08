@@ -1,10 +1,10 @@
 #pragma once
+#include "../macros.hpp"
 #include "directx/d3d12.h"
 #include "directx/d3dx12.h"
 #include "VertexStruct.hpp"
 #include "D3D12RenderDevice.hpp"
 #include "D3D12CommandQueue.hpp"
-
 namespace Haku
 {
 namespace Renderer

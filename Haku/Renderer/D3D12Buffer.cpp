@@ -11,11 +11,14 @@ D3D12VertexBuffer::D3D12VertexBuffer(
 	VertexData*		   ptr,
 	size_t			   size)
 {
+	Microsoft::WRL::ComPtr<ID3D12Resource> uploadbuffer;
+	CommandQueue->Reset(nullptr);
 	HAKU_LOG_INFO("creating vertex buffer");
 	auto								   uploadheapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	auto								   defheapprop	  = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 	auto								   resdesc		  = CD3DX12_RESOURCE_DESC::Buffer(size);
-	Microsoft::WRL::ComPtr<ID3D12Resource> uploadbuffer;
+
+
 	HAKU_SOK_ASSERT(Device->get()->CreateCommittedResource(
 		&uploadheapprop,
 		D3D12_HEAP_FLAG_NONE,
@@ -23,6 +26,8 @@ D3D12VertexBuffer::D3D12VertexBuffer(
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(&uploadbuffer)));
+	
+	HAKU_DXNAME(uploadbuffer,L"Vertex Upload Buffer")
 
 	HAKU_SOK_ASSERT(Device->get()->CreateCommittedResource(
 		&defheapprop,
@@ -49,6 +54,7 @@ D3D12VertexBuffer::D3D12VertexBuffer(
 	m_VertexBufferView.StrideInBytes  = sizeof(VertexData);
 	m_VertexBufferView.SizeInBytes	  = size;
 	uploadbuffer->Unmap(0, nullptr);
+	HAKU_DXNAME(m_VertexBuffer, L"Vertex_Buffer")
 
 	CommandQueue->Close();
 	CommandQueue->Execute();
@@ -56,6 +62,7 @@ D3D12VertexBuffer::D3D12VertexBuffer(
 }
 D3D12VertexBuffer::~D3D12VertexBuffer()
 {
+	HAKU_LOG_INFO("Deleting constant buffer");
 	m_VertexBuffer.Reset();
 }
 void D3D12VertexBuffer::SetBuffer(Haku::Renderer::D3D12CommandQueue* CommandQueue) noexcept
@@ -64,9 +71,8 @@ void D3D12VertexBuffer::SetBuffer(Haku::Renderer::D3D12CommandQueue* CommandQueu
 }
 D3D12ConstBuffer::D3D12ConstBuffer(Haku::Renderer::D3D12RenderDevice* Device, ID3D12DescriptorHeap* Heap)
 {
-	Data.Matrix = DirectX::XMMatrixTranspose(
-		DirectX::XMMatrixIdentity() * DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.6f) /*
-		DirectX::XMMatrixPerspectiveLH(1.0f, 720.0f / 1080.0f, 0.1f, 10.00f)*/);
+	Data.Matrix =
+		DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity() * DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.6f));
 	auto heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	auto resdesc  = CD3DX12_RESOURCE_DESC::Buffer(sizeof(ConstData));
 	auto size	  = sizeof(ConstData);
@@ -82,15 +88,16 @@ D3D12ConstBuffer::D3D12ConstBuffer(Haku::Renderer::D3D12RenderDevice* Device, ID
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
 	cbvDesc.BufferLocation					= m_ConstBuffer->GetGPUVirtualAddress();
 	cbvDesc.SizeInBytes						= size;
-	D3D12_CPU_DESCRIPTOR_HANDLE cpuhandle{};
-	cpuhandle = Heap->GetCPUDescriptorHandleForHeapStart();
+	auto cpuhandle = Heap->GetCPUDescriptorHandleForHeapStart();
 	Device->get()->CreateConstantBufferView(&cbvDesc, cpuhandle);
 	// Map and initialize the constant buffer. We don't unmap this until the
 	// app closes. Keeping things mapped for the lifetime of the resource is okay.
 	CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU.
 	HAKU_SOK_ASSERT(m_ConstBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_ptr)));
 	memcpy(m_ptr, &Data, sizeof(Data));
+	m_ConstBuffer->SetName(L"Constant buffer");
 	HAKU_LOG_INFO("creating const buffer");
+	HAKU_DXNAME(m_ConstBuffer, L"Constant buffer")
 }
 
 D3D12ConstBuffer::~D3D12ConstBuffer()

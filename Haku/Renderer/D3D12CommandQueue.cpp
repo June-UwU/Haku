@@ -28,13 +28,15 @@ D3D12CommandQueue::D3D12CommandQueue(D3D12RenderDevice& Device)
 			HAKU_SOK_ASSERT(HRESULT_FROM_WIN32(GetLastError()));
 		}
 	}
-}
-void D3D12CommandQueue::CommandListCreate(D3D12RenderDevice& Device, ID3D12PipelineState* PipelineState)
-{
-	// Create the command list.
+
 	HAKU_SOK_ASSERT(Device.get()->CreateCommandList(
-		0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocator.Get(), PipelineState, IID_PPV_ARGS(&m_CommandList)));
+		0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_CommandList)));
+	HAKU_DXNAME(m_CommandList,L"Command List")
+	HAKU_DXNAME(m_CommandQueue,L"CommandQueue")
+	HAKU_DXNAME(m_CommandAllocator,L"Allocator")
+
 }
+
 void D3D12CommandQueue::Reset(ID3D12PipelineState* PipelineState)
 {
 	ResetCommandAllocator();

@@ -105,7 +105,7 @@ D3D12RootSignature::D3D12RootSignature(D3D12RootSignatureDesc& Desc, D3D12Render
 		error)
 	HAKU_SOK_ASSERT(Device.get()->CreateRootSignature(
 		0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_Signature)));
-	m_Signature->SetName(L"Root descriptor");
+	HAKU_DXNAME(m_Signature,L"Root descriptor")
 }
 void D3D12RootSignature::SetSignature(D3D12CommandQueue& Command) noexcept
 {

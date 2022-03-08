@@ -1,3 +1,6 @@
+// TODO : Create and make the texture class work then convert this into a Interface that provides functions for
+// everything
+
 #pragma once
 #include "D3D12SwapChain.hpp"
 #include "D3D12RenderDevice.hpp"
@@ -32,9 +35,10 @@ private:
 	void Commands();
 	void LoadAssets();
 
-	//throw away section
+	// throw away section
 private:
 	std::vector<UINT8> GenerateTextureData();
+
 private:
 	float				 m_width;
 	float				 m_height;
@@ -45,9 +49,14 @@ private:
 	CD3DX12_RECT		 m_ScissorRect;
 	D3D12DescriptorHeap* m_DescriptorHeap;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_Texture;
-	Microsoft::WRL::ComPtr<ID3D12Resource> texture_uploadheap;
-
+	
+	
+	
+	
+	
+	ID3D12Resource*					m_Texture;
+	ID3D12Resource*					texture_uploadheap;
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
 
 	std::unique_ptr<D3D12RootSignature> m_Signature;
 	PerspectiveCamera					m_Camera_Constants;

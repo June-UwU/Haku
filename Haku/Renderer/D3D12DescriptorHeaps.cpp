@@ -24,6 +24,9 @@ D3D12DescriptorHeap::D3D12DescriptorHeap(Haku::Renderer::D3D12RenderDevice& Devi
 	DSVdesc.Flags		   = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 	HAKU_SOK_ASSERT(Device.get()->CreateDescriptorHeap(&DSVdesc, IID_PPV_ARGS(&m_DSVHeap)))
+	HAKU_DXNAME(m_RTVHeap,L"RTV Heap")
+	HAKU_DXNAME(m_SRVHeap,L"SRV Heap")
+	HAKU_DXNAME(m_DSVHeap,L"DSV Heap")
 }
 void D3D12DescriptorHeap::ShutDown() noexcept
 {

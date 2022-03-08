@@ -22,7 +22,6 @@ public:
 	ID3D12CommandQueue*		   GetCommandQueue() { return m_CommandQueue.Get(); }
 	void					   ResetCommandList(ID3D12PipelineState* PipelineState);
 	ID3D12CommandAllocator*	   GetCommandAllocator() { return m_CommandAllocator.Get(); }
-	void					   CommandListCreate(D3D12RenderDevice& Device, ID3D12PipelineState* PipelineState);
 
 private:
 	// Synchronization objects.

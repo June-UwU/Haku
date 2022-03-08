@@ -27,22 +27,6 @@ void D3D12SwapChain::Resize(
 		m_RenderTargets[i].Reset();
 	}
 
-	// D3D12_CLEAR_VALUE optimizedClearValue = {};
-	// optimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
-	// optimizedClearValue.DepthStencil = { 1.0f, 0 };
-	//
-	// auto heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	// auto texdesc = CD3DX12_RESOURCE_DESC::Tex2D(
-	//	DXGI_FORMAT_D32_FLOAT, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-	//
-	// HAKU_SOK_ASSERT(Device.get()->CreateCommittedResource(
-	//	&heapprop,
-	//	D3D12_HEAP_FLAG_NONE,
-	//	&texdesc,
-	//	D3D12_RESOURCE_STATE_DEPTH_WRITE,
-	//	&optimizedClearValue,
-	//	IID_PPV_ARGS(&m_DSVResource)));
-
 	DXGI_SWAP_CHAIN_DESC desc{};
 	HAKU_SOK_ASSERT(m_SwapChain->GetDesc(&desc))
 	HAKU_SOK_ASSERT(
@@ -60,7 +44,10 @@ void D3D12SwapChain::Resize(
 
 		Device.get()->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
 
+		HAKU_DXNAME(backBuffer,L"Render Target Resource")
+
 		m_RenderTargets[i] = backBuffer;
+
 
 		rtvHandle.Offset(rtvDescriptorSize);
 	}
@@ -157,6 +144,7 @@ void D3D12SwapChain::Init(
 		IID_PPV_ARGS(&m_DSVResource)));
 
 	Device.get()->CreateDepthStencilView(m_DSVResource.Get(), &depthStencilDesc, Heap.GetDSVCPUHandle());
+	HAKU_DXNAME(m_DSVResource, L"Depth Stencil Resource");
 }
 
 void D3D12SwapChain::SetBackBufferIndex() noexcept

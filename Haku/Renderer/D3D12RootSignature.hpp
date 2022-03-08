@@ -155,7 +155,7 @@ public:
 		// TODO
 		// look into max anistropy
 		D3D12_STATIC_SAMPLER_DESC sampler{};
-		sampler.MaxAnisotropy	 = 1;
+		sampler.MaxAnisotropy	 = 0;
 		sampler.MinLOD			 = 0.0f;
 		sampler.MipLODBias		 = MIPBias;
 		sampler.ShaderRegister	 = basereg;
