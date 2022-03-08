@@ -15,10 +15,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 message("Cmake runtime dir : ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 set(CMAKE_CXX_STANDARD 20)
-message("Cmake C++ standard : ${CMAKE_CXX_STANDARD}")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+message("Cmake C++ standard : ${CMAKE_CXX_STANDARD}")
 
 add_subdirectory("Haku")
 add_subdirectory("Editor")
+add_subdirectory("vendor/DirectXTex")
 add_subdirectory("vendor/DirectXMath")
 add_subdirectory("vendor/DirectX-Headers")

@@ -52,15 +52,17 @@ const int FrameCount{ 3 };
 		throw err;                                                                                                     \
 	}
 #define HAKU_SOK_ASSERT_CHAR_PTR(code, char_ptr)                                                                       \
-	if (code != S_OK)                                                                                                     \
+	if (code != S_OK)                                                                                                  \
 	{                                                                                                                  \
 		std::string line(std::to_string(__LINE__));                                                                    \
 		HAKU_LOG_CRIT("FILE: ", __FILE__, " FUNCTION: ", __FUNCTION__, " LINE: ", line);                               \
-		OutputDebugStringW((wchar_t*)char_ptr.Get());                                                                             \
+		OutputDebugStringW((wchar_t*)char_ptr.Get());                                                                  \
 		__debugbreak();                                                                                                \
-		Haku::Errors::WinError err(code);                                                                                 \
+		Haku::Errors::WinError err(code);                                                                              \
 		throw err;                                                                                                     \
 	}
+
+#define HAKU_DXNAME(DXObjPtr, name) DXObjPtr->SetName(name);
 #else
 
 #define HAKU_IF_CHECK_ASSERT(x)                                                                                        \
@@ -82,4 +84,5 @@ const int FrameCount{ 3 };
 		Haku::Errors::WinError err(code);                                                                              \
 		throw err;                                                                                                     \
 	}
+#define HAKU_DXNAME(DXObjPtr, name)
 #endif

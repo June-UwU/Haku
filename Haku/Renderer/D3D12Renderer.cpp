@@ -12,6 +12,12 @@
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 
+
+//TEST VALUES
+const uint32_t TextureHeight	= 256u;
+const uint32_t TextureWidth		= 256u;
+const uint32_t TexturePixelSize = 4u;
+
 namespace Haku
 {
 namespace Renderer
@@ -128,8 +134,8 @@ void DX12Renderer::LoadAssets()
 	TexDesc.DepthOrArraySize   = 1;
 	TexDesc.SampleDesc.Count   = 1;
 	TexDesc.SampleDesc.Quality = 0;
-	TexDesc.Width			   = 256;
-	TexDesc.Height			   = 256;
+	TexDesc.Width			   = TextureWidth;
+	TexDesc.Height			   = TextureWidth;
 	TexDesc.Flags			   = D3D12_RESOURCE_FLAG_NONE;
 	TexDesc.Format			   = DXGI_FORMAT_B8G8R8A8_UNORM;
 	TexDesc.Dimension		   = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -151,13 +157,11 @@ void DX12Renderer::LoadAssets()
 	std::vector<UINT8>	   texture	   = GenerateTextureData();
 	D3D12_SUBRESOURCE_DATA textureData = {};
 	textureData.pData				   = texture.data();
-	textureData.RowPitch			   = 256 * 4;
-	textureData.SlicePitch			   = textureData.RowPitch * 256;
+	textureData.RowPitch			   = TextureWidth * TexturePixelSize;
+	textureData.SlicePitch			   = textureData.RowPitch * TextureWidth;
 	UpdateSubresources(m_Command->GetCommandList(), m_Texture, texture_uploadheap, 0, 0, 1, &textureData);
 	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_Texture,
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		m_Texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	m_Command->GetCommandList()->ResourceBarrier(1, &barrier);
 
 	srvDesc.Texture2D.MipLevels		= 1;
@@ -189,15 +193,15 @@ void DX12Renderer::LoadAssets()
 
 std::vector<UINT8> DX12Renderer::GenerateTextureData()
 {
-	const UINT rowPitch	   = 256 * 4;
-	const UINT cellPitch   = rowPitch >> 3; // The width of a cell in the checkboard texture.
-	const UINT cellHeight  = 256 >> 3;		// The height of a cell in the checkerboard texture.
-	const UINT textureSize = rowPitch * 256;
+	const UINT rowPitch	   = TextureWidth * TexturePixelSize;
+	const UINT cellPitch   = rowPitch >> 3;		// The width of a cell in the checkboard texture.
+	const UINT cellHeight  = TextureWidth >> 3; // The height of a cell in the checkerboard texture.
+	const UINT textureSize = rowPitch * TextureHeight;
 
 	std::vector<UINT8> data(textureSize);
 	UINT8*			   pData = &data[0];
 
-	for (UINT n = 0; n < textureSize; n += 4)
+	for (UINT n = 0; n < textureSize; n += TexturePixelSize)
 	{
 		UINT x = n % rowPitch;
 		UINT y = n / rowPitch;

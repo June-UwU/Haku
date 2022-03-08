@@ -43,14 +43,14 @@ set(im_gui
 	${DEPEND_DIR}/ImGui/imgui_draw.cpp
 	${DEPEND_DIR}/ImGui/imgui_internal.h
 	${DEPEND_DIR}/ImGui/imgui_tables.cpp
-	${DEPEND_DIR}/ImGui/imgui_widgets.cpp
 	${DEPEND_DIR}/ImGui/imstb_rectpack.h
 	${DEPEND_DIR}/ImGui/imstb_textedit.h
 	${DEPEND_DIR}/ImGui/imstb_truetype.h
-	${DEPEND_DIR}/ImGui/backends/imgui_impl_win32.h
-	${DEPEND_DIR}/ImGui/backends/imgui_impl_win32.cpp
+	${DEPEND_DIR}/ImGui/imgui_widgets.cpp
 	${DEPEND_DIR}/ImGui/backends/imgui_impl_dx12.h
-	${DEPEND_DIR}/ImGui/backends/imgui_impl_dx12.cpp)
+	${DEPEND_DIR}/ImGui/backends/imgui_impl_win32.h
+	${DEPEND_DIR}/ImGui/backends/imgui_impl_dx12.cpp
+	${DEPEND_DIR}/ImGui/backends/imgui_impl_win32.cpp)
 
 
 
@@ -71,9 +71,11 @@ message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/incl
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE hakupch.hpp)
 
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/ImGui/)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/DirectXTex/)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/ImGui/)
+target_link_libraries(${PROJECT_NAME} DirectXTex)
 target_link_libraries(${PROJECT_NAME} DirectXMath)
 target_link_libraries(${PROJECT_NAME} DirectX-Headers)
 
