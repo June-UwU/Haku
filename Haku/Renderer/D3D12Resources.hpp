@@ -9,7 +9,23 @@ namespace Haku
 {
 namespace Renderer
 {
-class D3D12VertexBuffer
+class D3D12Resource
+{
+
+//should I need to make this public and constructable
+protected:
+	D3D12Resource(
+		Haku::Renderer::D3D12RenderDevice* Device,
+		D3D12_RESOURCE_STATES			   state,
+		D3D12_HEAP_TYPE					   type,
+		size_t							   size,
+		D3D12_HEAP_FLAGS				   flags = D3D12_HEAP_FLAG_NONE);
+	~D3D12Resource();
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_Resource;
+};
+
+class D3D12VertexBuffer : public D3D12Resource
 {
 public:
 	D3D12VertexBuffer(
@@ -21,23 +37,21 @@ public:
 	void SetBuffer(Haku::Renderer::D3D12CommandQueue* CommandQueue) noexcept;
 
 private:
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_VertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW			   m_VertexBufferView;
+	D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
 };
 
-class D3D12ConstBuffer
+class D3D12ConstBuffer : public D3D12Resource
 {
 public:
 	D3D12ConstBuffer(Haku::Renderer::D3D12RenderDevice* Device, ID3D12DescriptorHeap* UI_Desciptor);
 	~D3D12ConstBuffer();
 	void Update(DirectX::XMMATRIX& ref) noexcept;
 	void Update(float* rotate, float* translate, float width, float height) noexcept;
-	void SetBuffer(D3D12CommandQueue* CommandQueue, ID3D12DescriptorHeap* Heap, UINT slot);
+	void SetBuffer(D3D12CommandQueue* CommandQueue, UINT slot);
 
 private:
-	uint8_t*							   m_ptr;
-	ConstData							   Data{};
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_ConstBuffer;
+	uint8_t*  m_ptr;
+	ConstData Data{};
 };
 
 } // namespace Renderer

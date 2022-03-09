@@ -13,8 +13,12 @@ D3D12CommandQueue::D3D12CommandQueue(D3D12RenderDevice& Device)
 	Queue_desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
 	HAKU_SOK_ASSERT(Device.get()->CreateCommandQueue(&Queue_desc, IID_PPV_ARGS(&m_CommandQueue)))
-	HAKU_SOK_ASSERT(
-		Device.get()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocator)))
+	for (size_t i = 0; i < FrameCount; i++)
+	{
+		HAKU_SOK_ASSERT(
+			Device.get()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocator[i])))
+		HAKU_DXNAME(m_CommandAllocator[i], L"Allocator")
+	}
 
 	// Create synchronization objects and wait until assets have been uploaded to the GPU.
 	{
@@ -30,11 +34,10 @@ D3D12CommandQueue::D3D12CommandQueue(D3D12RenderDevice& Device)
 	}
 
 	HAKU_SOK_ASSERT(Device.get()->CreateCommandList(
-		0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_CommandList)));
-	HAKU_DXNAME(m_CommandList,L"Command List")
-	HAKU_DXNAME(m_CommandQueue,L"CommandQueue")
-	HAKU_DXNAME(m_CommandAllocator,L"Allocator")
+		0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocator[0].Get(), nullptr, IID_PPV_ARGS(&m_CommandList)));
 
+	HAKU_DXNAME(m_CommandList, L"Command List")
+	HAKU_DXNAME(m_CommandQueue, L"CommandQueue")
 }
 
 void D3D12CommandQueue::Reset(ID3D12PipelineState* PipelineState)
@@ -57,7 +60,10 @@ void D3D12CommandQueue::ShutDown() noexcept
 	m_Fence.Reset();
 	m_CommandList.Reset();
 	m_CommandQueue.Reset();
-	m_CommandAllocator.Reset();
+	for (size_t i = 0; i < FrameCount; i++)
+	{
+		m_CommandAllocator[i].Reset();
+	}
 }
 void D3D12CommandQueue::Synchronize()
 {
@@ -72,7 +78,7 @@ void D3D12CommandQueue::Synchronize()
 }
 void D3D12CommandQueue::ResetCommandAllocator()
 {
-	HAKU_SOK_ASSERT(m_CommandAllocator->Reset())
+	HAKU_SOK_ASSERT(m_CommandAllocator[m_FenceValue % FrameCount]->Reset())
 }
 void D3D12CommandQueue::CloseFenceHandle() noexcept
 {
@@ -80,7 +86,7 @@ void D3D12CommandQueue::CloseFenceHandle() noexcept
 }
 void D3D12CommandQueue::ResetCommandList(ID3D12PipelineState* PipelineState)
 {
-	HAKU_SOK_ASSERT(m_CommandList->Reset(m_CommandAllocator.Get(), PipelineState))
+	HAKU_SOK_ASSERT(m_CommandList->Reset(m_CommandAllocator[m_FenceValue % FrameCount].Get(), PipelineState))
 }
 } // namespace Renderer
 } // namespace Haku

@@ -1,5 +1,6 @@
 #pragma once
 #include "wil/wrl.h"
+#include "../macros.hpp"
 #include "D3D12RenderDevice.hpp"
 #include <d3d12.h>
 namespace Haku
@@ -21,7 +22,7 @@ public:
 	ID3D12GraphicsCommandList* GetCommandList() { return m_CommandList.Get(); }
 	ID3D12CommandQueue*		   GetCommandQueue() { return m_CommandQueue.Get(); }
 	void					   ResetCommandList(ID3D12PipelineState* PipelineState);
-	ID3D12CommandAllocator*	   GetCommandAllocator() { return m_CommandAllocator.Get(); }
+	ID3D12CommandAllocator*	   GetCommandAllocator() { return m_CommandAllocator[m_FenceValue % FrameCount].Get(); }
 
 private:
 	// Synchronization objects.
@@ -31,7 +32,7 @@ private:
 	// Render and GPU commands helpers for command list
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_CommandList;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue>		  m_CommandQueue;
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator>	  m_CommandAllocator;
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator>	  m_CommandAllocator[FrameCount];
 };
 } // namespace Renderer
 } // namespace Haku

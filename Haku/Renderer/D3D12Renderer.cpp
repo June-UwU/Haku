@@ -12,8 +12,7 @@
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 
-
-//TEST VALUES
+// TEST VALUES
 const uint32_t TextureHeight	= 256u;
 const uint32_t TextureWidth		= 256u;
 const uint32_t TexturePixelSize = 4u;
@@ -185,7 +184,6 @@ void DX12Renderer::LoadAssets()
 		}
 	}
 
-
 	m_Command->Close();
 	m_Command->Execute();
 	m_Command->Synchronize();
@@ -243,11 +241,11 @@ void DX12Renderer::Commands()
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE rtvHandle(m_DescriptorHeap->GetSRVGPUHandle());
 
-	rtvHandle.Offset(1,m_Device->get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+	rtvHandle.Offset(1, m_Device->get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
 
 	m_Command->GetCommandList()->SetGraphicsRootDescriptorTable(3, rtvHandle);
-	m_Constant->SetBuffer(m_Command, m_DescriptorHeap->GetSRVDescriptorHeap(), 1);
-	m_Camera->SetBuffer(m_Command, m_DescriptorHeap->GetSRVDescriptorHeap(), 2);
+	m_Constant->SetBuffer(m_Command, 1);
+	m_Camera->SetBuffer(m_Command, 2);
 	m_Buffer->SetBuffer(m_Command);
 	m_Command->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 

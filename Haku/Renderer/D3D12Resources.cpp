@@ -1,4 +1,4 @@
-#include "D3D12Buffer.hpp"
+#include "D3D12Resources.hpp"
 #include "../Core/Exceptions.hpp"
 
 namespace Haku
@@ -10,14 +10,14 @@ D3D12VertexBuffer::D3D12VertexBuffer(
 	D3D12CommandQueue* CommandQueue,
 	VertexData*		   ptr,
 	size_t			   size)
+	: D3D12Resource(Device, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_HEAP_TYPE_DEFAULT, size)
 {
 	Microsoft::WRL::ComPtr<ID3D12Resource> uploadbuffer;
 	CommandQueue->Reset(nullptr);
 	HAKU_LOG_INFO("creating vertex buffer");
-	auto								   uploadheapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	auto								   defheapprop	  = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	auto								   resdesc		  = CD3DX12_RESOURCE_DESC::Buffer(size);
-
+	auto uploadheapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	auto defheapprop	= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	auto resdesc		= CD3DX12_RESOURCE_DESC::Buffer(size);
 
 	HAKU_SOK_ASSERT(Device->get()->CreateCommittedResource(
 		&uploadheapprop,
@@ -26,16 +26,9 @@ D3D12VertexBuffer::D3D12VertexBuffer(
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(&uploadbuffer)));
-	
-	HAKU_DXNAME(uploadbuffer,L"Vertex Upload Buffer")
 
-	HAKU_SOK_ASSERT(Device->get()->CreateCommittedResource(
-		&defheapprop,
-		D3D12_HEAP_FLAG_NONE,
-		&resdesc,
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		nullptr,
-		IID_PPV_ARGS(&m_VertexBuffer)));
+	HAKU_DXNAME(uploadbuffer, L"Vertex Upload Buffer")
+
 	UINT8*		  pVertexDataBegin;
 	CD3DX12_RANGE readRange(0, 0);
 	HAKU_SOK_ASSERT(uploadbuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
@@ -45,16 +38,16 @@ D3D12VertexBuffer::D3D12VertexBuffer(
 	bufferData.pData	  = pVertexDataBegin;
 	bufferData.RowPitch	  = size;
 	bufferData.SlicePitch = size;
-	UpdateSubresources(CommandQueue->GetCommandList(), m_VertexBuffer.Get(), uploadbuffer.Get(), 0, 0, 1, &bufferData);
+	UpdateSubresources(CommandQueue->GetCommandList(), m_Resource.Get(), uploadbuffer.Get(), 0, 0, 1, &bufferData);
 	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_VertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		m_Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 	CommandQueue->GetCommandList()->ResourceBarrier(1, &barrier);
+	uploadbuffer->Unmap(0, nullptr);
 
-	m_VertexBufferView.BufferLocation = m_VertexBuffer->GetGPUVirtualAddress();
+	m_VertexBufferView.BufferLocation = m_Resource->GetGPUVirtualAddress();
 	m_VertexBufferView.StrideInBytes  = sizeof(VertexData);
 	m_VertexBufferView.SizeInBytes	  = size;
-	uploadbuffer->Unmap(0, nullptr);
-	HAKU_DXNAME(m_VertexBuffer, L"Vertex_Buffer")
+	HAKU_DXNAME(m_Resource, L"Vertex_Buffer")
 
 	CommandQueue->Close();
 	CommandQueue->Execute();
@@ -63,47 +56,38 @@ D3D12VertexBuffer::D3D12VertexBuffer(
 D3D12VertexBuffer::~D3D12VertexBuffer()
 {
 	HAKU_LOG_INFO("Deleting constant buffer");
-	m_VertexBuffer.Reset();
 }
 void D3D12VertexBuffer::SetBuffer(Haku::Renderer::D3D12CommandQueue* CommandQueue) noexcept
 {
 	CommandQueue->GetCommandList()->IASetVertexBuffers(0, 1, &m_VertexBufferView);
 }
 D3D12ConstBuffer::D3D12ConstBuffer(Haku::Renderer::D3D12RenderDevice* Device, ID3D12DescriptorHeap* Heap)
+	: D3D12Resource(Device, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_HEAP_TYPE_UPLOAD, sizeof(ConstData))
 {
 	Data.Matrix =
 		DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity() * DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.6f));
 	auto heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	auto resdesc  = CD3DX12_RESOURCE_DESC::Buffer(sizeof(ConstData));
 	auto size	  = sizeof(ConstData);
-	Device->get()->CreateCommittedResource(
-		&heapprop,
-		D3D12_HEAP_FLAG_NONE,
-		&resdesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&m_ConstBuffer));
-
 	// Describe and create a constant buffer view.
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-	cbvDesc.BufferLocation					= m_ConstBuffer->GetGPUVirtualAddress();
+	cbvDesc.BufferLocation					= m_Resource->GetGPUVirtualAddress();
 	cbvDesc.SizeInBytes						= size;
-	auto cpuhandle = Heap->GetCPUDescriptorHandleForHeapStart();
+	auto cpuhandle							= Heap->GetCPUDescriptorHandleForHeapStart();
 	Device->get()->CreateConstantBufferView(&cbvDesc, cpuhandle);
 	// Map and initialize the constant buffer. We don't unmap this until the
 	// app closes. Keeping things mapped for the lifetime of the resource is okay.
 	CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU.
-	HAKU_SOK_ASSERT(m_ConstBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_ptr)));
+	HAKU_SOK_ASSERT(m_Resource->Map(0, &readRange, reinterpret_cast<void**>(&m_ptr)));
 	memcpy(m_ptr, &Data, sizeof(Data));
-	m_ConstBuffer->SetName(L"Constant buffer");
+	m_Resource->SetName(L"Constant buffer");
 	HAKU_LOG_INFO("creating const buffer");
-	HAKU_DXNAME(m_ConstBuffer, L"Constant buffer")
+	HAKU_DXNAME(m_Resource, L"Constant buffer")
 }
 
 D3D12ConstBuffer::~D3D12ConstBuffer()
 {
 	HAKU_LOG_INFO("deleted const buffer");
-	m_ConstBuffer.Reset();
 	m_ptr = nullptr;
 }
 
@@ -123,10 +107,28 @@ void D3D12ConstBuffer::Update(float* rotate, float* translate, float width, floa
 	memcpy(m_ptr, &Data, sizeof(Data));
 }
 
-void D3D12ConstBuffer::SetBuffer(D3D12CommandQueue* CommandQueue, ID3D12DescriptorHeap* Heap, UINT slot)
+void D3D12ConstBuffer::SetBuffer(D3D12CommandQueue* CommandQueue, UINT slot)
 {
 	// ConstBuffer view must be auto postion.
-	CommandQueue->GetCommandList()->SetGraphicsRootConstantBufferView(slot, m_ConstBuffer->GetGPUVirtualAddress());
+	CommandQueue->GetCommandList()->SetGraphicsRootConstantBufferView(slot, m_Resource->GetGPUVirtualAddress());
+}
+
+D3D12Resource::D3D12Resource(
+	Haku::Renderer::D3D12RenderDevice* Device,
+	D3D12_RESOURCE_STATES			   state,
+	D3D12_HEAP_TYPE					   type,
+	size_t							   size,
+	D3D12_HEAP_FLAGS				   flags)
+{
+	auto defheapprop = CD3DX12_HEAP_PROPERTIES(type);
+	auto resdesc	 = CD3DX12_RESOURCE_DESC::Buffer(size);
+	HAKU_SOK_ASSERT(Device->get()->CreateCommittedResource(
+		&defheapprop, flags, &resdesc, state, nullptr, IID_PPV_ARGS(&m_Resource)));
+}
+
+D3D12Resource::~D3D12Resource()
+{
+	m_Resource.Reset();
 }
 
 } // namespace Renderer

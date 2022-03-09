@@ -9,7 +9,7 @@
 #include "D3D12PipelineState.hpp"
 #include "../Platform/Windows/MainWindow.hpp"
 // NOTE : this will be part of the ECS..?
-#include "D3D12Buffer.hpp"
+#include "D3D12Resources.hpp"
 #include "PerspectiveCamera.hpp"
 namespace Haku
 {
