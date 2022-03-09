@@ -1,3 +1,6 @@
+Texture2D g_texture : register(t0);
+SamplerState g_sampler : register(s0);
+
 cbuffer transformations : register(b0)
 {
 	matrix transform;

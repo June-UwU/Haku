@@ -38,7 +38,6 @@ private:
 	// throw away section
 private:
 	std::vector<UINT8> GenerateTextureData();
-
 private:
 	float				 m_width;
 	float				 m_height;
@@ -49,11 +48,7 @@ private:
 	CD3DX12_RECT		 m_ScissorRect;
 	D3D12DescriptorHeap* m_DescriptorHeap;
 
-	
-	
-	
-	
-	
+	uint32_t uploadBuffersize;
 	ID3D12Resource*					m_Texture;
 	ID3D12Resource*					texture_uploadheap;
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;

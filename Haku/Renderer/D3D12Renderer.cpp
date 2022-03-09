@@ -99,8 +99,6 @@ void DX12Renderer::Close() const
 
 void DX12Renderer::LoadAssets()
 {
-	// TODO
-	// test the descriptor_table after this is working
 	std::shared_ptr<D3D12DescriptorTable> textable = std::make_shared<D3D12DescriptorTable>();
 	textable->AddSRV<1, 0>();
 	std::shared_ptr<D3D12RootSignatureDesc> desc = std::make_shared<D3D12RootSignatureDesc>();
@@ -135,14 +133,14 @@ void DX12Renderer::LoadAssets()
 	TexDesc.SampleDesc.Count   = 1;
 	TexDesc.SampleDesc.Quality = 0;
 	TexDesc.Width			   = TextureWidth;
-	TexDesc.Height			   = TextureWidth;
+	TexDesc.Height			   = TextureHeight;
 	TexDesc.Flags			   = D3D12_RESOURCE_FLAG_NONE;
 	TexDesc.Format			   = DXGI_FORMAT_B8G8R8A8_UNORM;
 	TexDesc.Dimension		   = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	auto heap_prop			   = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 	HAKU_SOK_ASSERT(m_Device->get()->CreateCommittedResource(
 		&heap_prop, D3D12_HEAP_FLAG_NONE, &TexDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m_Texture)))
-	const uint32_t uploadBuffersize = GetRequiredIntermediateSize(m_Texture, 0, 1);
+	uploadBuffersize = GetRequiredIntermediateSize(m_Texture, 0, 1);
 
 	auto upload_heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	auto uploadresdesc	 = CD3DX12_RESOURCE_DESC::Buffer(uploadBuffersize);
@@ -158,17 +156,21 @@ void DX12Renderer::LoadAssets()
 	D3D12_SUBRESOURCE_DATA textureData = {};
 	textureData.pData				   = texture.data();
 	textureData.RowPitch			   = TextureWidth * TexturePixelSize;
-	textureData.SlicePitch			   = textureData.RowPitch * TextureWidth;
+	textureData.SlicePitch			   = textureData.RowPitch * TextureHeight;
 	UpdateSubresources(m_Command->GetCommandList(), m_Texture, texture_uploadheap, 0, 0, 1, &textureData);
 	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_Texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		m_Texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 	m_Command->GetCommandList()->ResourceBarrier(1, &barrier);
 
 	srvDesc.Texture2D.MipLevels		= 1;
 	srvDesc.Format					= TexDesc.Format;
 	srvDesc.ViewDimension			= D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	m_Device->get()->CreateShaderResourceView(m_Texture, &srvDesc, m_DescriptorHeap->GetSRVCPUHandle());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_DescriptorHeap->GetSRVCPUHandle());
+
+	rtvHandle.Offset(1, m_Device->get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+
+	m_Device->get()->CreateShaderResourceView(m_Texture, &srvDesc, rtvHandle);
 
 	m_Texture->SetName(L"actual texture");
 	texture_uploadheap->SetName(L"upload heap");
@@ -182,6 +184,7 @@ void DX12Renderer::LoadAssets()
 			HAKU_LOG_WARN("Transition was Done");
 		}
 	}
+
 
 	m_Command->Close();
 	m_Command->Execute();
@@ -238,7 +241,11 @@ void DX12Renderer::Commands()
 	m_SwapChain->SetAndClearRenderTarget(*m_Command, *m_DescriptorHeap);
 	m_Command->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	m_Command->GetCommandList()->SetGraphicsRootDescriptorTable(3, m_DescriptorHeap->GetSRVGPUHandle());
+	CD3DX12_GPU_DESCRIPTOR_HANDLE rtvHandle(m_DescriptorHeap->GetSRVGPUHandle());
+
+	rtvHandle.Offset(1,m_Device->get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+
+	m_Command->GetCommandList()->SetGraphicsRootDescriptorTable(3, rtvHandle);
 	m_Constant->SetBuffer(m_Command, m_DescriptorHeap->GetSRVDescriptorHeap(), 1);
 	m_Camera->SetBuffer(m_Command, m_DescriptorHeap->GetSRVDescriptorHeap(), 2);
 	m_Buffer->SetBuffer(m_Command);
