@@ -1,12 +1,32 @@
 #pragma once
 #include "wil/wrl.h"
-#include "../macros.hpp"
+#include "../../macros.hpp"
 #include "D3D12RenderDevice.hpp"
 #include <d3d12.h>
 namespace Haku
 {
 namespace Renderer
 {
+class CommandQueue
+{
+public:
+	CommandQueue(
+		RenderDevice&			  device,
+		D3D12_COMMAND_LIST_TYPE	  type,
+		D3D12_COMMAND_QUEUE_FLAGS flags	   = D3D12_COMMAND_QUEUE_FLAG_NONE,
+		INT						  priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL);
+	~CommandQueue();
+	void					Reset();
+	void					Shutdown() noexcept;
+	ID3D12CommandQueue*		Get() noexcept { return m_CommandQueue; };
+	ID3D12CommandAllocator* GetAllocator() noexcept { return m_CommandAllocator[m_CurrentIndex]; }
+
+private:
+	uint32_t				m_CurrentIndex;
+	ID3D12CommandQueue*		m_CommandQueue;
+	ID3D12CommandAllocator* m_CommandAllocator[FrameCount];
+};
+
 class D3D12CommandQueue
 {
 public:

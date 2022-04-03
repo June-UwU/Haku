@@ -2,9 +2,9 @@
 #include "directx/D3dx12.h"
 #include "d3dcompiler.h"
 #include "D3D12Renderer.hpp"
-#include "../Core/UILayer.hpp"
-#include "../Core/Exceptions.hpp"
-#include "../Core/Application.hpp"
+#include "../../Core/UILayer.hpp"
+#include "../../Core/Exceptions.hpp"
+#include "../../Core/Application.hpp"
 #include "..\..\imgui\backends\imgui_impl_dx12.h"
 
 #pragma comment(lib, "DXGI.lib")
@@ -21,6 +21,11 @@ namespace Haku
 {
 namespace Renderer
 {
+std::unique_ptr<RenderDevice> RenderEngine::m_Device;
+std::unique_ptr<CommandQueue> RenderEngine::m_CopyQueue;
+std::unique_ptr<CommandQueue> RenderEngine::m_CommandQueue;
+std::unique_ptr<CommandQueue> RenderEngine::m_ComputeQueue;
+
 DX12Renderer::DX12Renderer(uint32_t height, uint32_t width)
 	: m_width(width)
 	, m_height(height)
@@ -165,6 +170,7 @@ void DX12Renderer::LoadAssets()
 	srvDesc.Format					= TexDesc.Format;
 	srvDesc.ViewDimension			= D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_DescriptorHeap->GetSRVCPUHandle());
 
 	rtvHandle.Offset(1, m_Device->get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
@@ -252,6 +258,53 @@ void DX12Renderer::Commands()
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_Command->GetCommandList());
 	m_SwapChain->TransitionPresent(*m_Command);
 	m_Command->Close();
+}
+
+void RenderEngine::Render()
+{
+}
+
+void RenderEngine::ShutDown()
+{
+	m_Device.reset();
+}
+
+void RenderEngine::Initialize()
+{
+	m_Device	   = std::make_unique<RenderDevice>();
+	m_CopyQueue	   = std::make_unique<CommandQueue>(*m_Device.get(), D3D12_COMMAND_LIST_TYPE_COPY);
+	m_CommandQueue = std::make_unique<CommandQueue>(*m_Device.get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+	m_ComputeQueue = std::make_unique<CommandQueue>(*m_Device.get(), D3D12_COMMAND_LIST_TYPE_COMPUTE);
+}
+
+//* ()
+ID3D12Device* RenderEngine::GetDeviceD3D() noexcept
+{
+	return m_Device->Get();
+}
+
+CommandQueue* RenderEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE type) 
+{
+	switch (type)
+	{
+	case D3D12_COMMAND_LIST_TYPE_DIRECT:
+	{
+		return m_CommandQueue.get();
+	}
+	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
+	{
+		return m_ComputeQueue.get();
+	}
+	case D3D12_COMMAND_LIST_TYPE_COPY:
+	{
+		return m_CopyQueue.get();
+	}
+	default:
+	{
+		HAKU_LOG_CRIT("UnKnown Command Queue Request", type);
+		throw Haku::Errors::Error("Unknown Command Queue type");
+	}
+	}
 }
 
 } // namespace Renderer

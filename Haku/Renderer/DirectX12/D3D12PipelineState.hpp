@@ -1,8 +1,11 @@
 #pragma once
-#include "../hakupch.hpp"
+#include "../../hakupch.hpp"
 #include "directx/d3d12.h"
 #include "D3D12CommandQueue.hpp"
 #include "D3D12RenderDevice.hpp"
+
+//TODO : Rework this and abstract the shader code and compilers
+
 
 namespace Haku
 {
@@ -17,7 +20,7 @@ public:
 		std::wstring		 VertexShader,
 		std::wstring		 PixelShader);
 	void				 ShutDown() noexcept;
-	ID3D12PipelineState* get() { return m_PipelineState.Get(); }
+	ID3D12PipelineState* Get() { return m_PipelineState.Get(); }
 	void				 SetPipelineState(D3D12CommandQueue& Command);
 
 private:

@@ -1,5 +1,6 @@
+#include "directx/d3dx12.h"
 #include "D3D12Resources.hpp"
-#include "../Core/Exceptions.hpp"
+#include "../../Core/Exceptions.hpp"
 
 namespace Haku
 {
@@ -12,6 +13,7 @@ D3D12VertexBuffer::D3D12VertexBuffer(
 	size_t			   size)
 	: D3D12Resource(Device, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_HEAP_TYPE_DEFAULT, size)
 {
+	m_Type = D3D12RESOURCE_TYPE::VERTEX_RESOURCE;
 	Microsoft::WRL::ComPtr<ID3D12Resource> uploadbuffer;
 	CommandQueue->Reset(nullptr);
 	HAKU_LOG_INFO("creating vertex buffer");
@@ -64,6 +66,7 @@ void D3D12VertexBuffer::SetBuffer(Haku::Renderer::D3D12CommandQueue* CommandQueu
 D3D12ConstBuffer::D3D12ConstBuffer(Haku::Renderer::D3D12RenderDevice* Device, ID3D12DescriptorHeap* Heap)
 	: D3D12Resource(Device, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_HEAP_TYPE_UPLOAD, sizeof(ConstData))
 {
+	m_Type = D3D12RESOURCE_TYPE::CONSTANT_RESOURCE;
 	Data.Matrix =
 		DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity() * DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.6f));
 	auto heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
@@ -129,6 +132,75 @@ D3D12Resource::D3D12Resource(
 D3D12Resource::~D3D12Resource()
 {
 	m_Resource.Reset();
+}
+
+D3D12TextureBuffer::D3D12TextureBuffer(
+	D3D12RenderDevice*		 Device,
+	D3D12CommandQueue*		 CommandQueue,
+	D3D12DescriptorHeap*	 Heap,
+	uint8_t*				 resource_ptr,
+	uint64_t				 slot,
+	D3D12_RESOURCE_DIMENSION dimension,
+	uint64_t				 num_subresource,
+	uint64_t				 height,
+	uint64_t				 width,
+	uint64_t				 depth,
+	D3D12_RESOURCE_FLAGS	 flags)
+	:D3D12Resource(Device, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_HEAP_TYPE_DEFAULT, 1)
+{
+	Microsoft::WRL::ComPtr<ID3D12Resource> texture_uploadheap;
+
+	m_Type = D3D12RESOURCE_TYPE::TEXTURE_RESOURCE;
+	D3D12_RESOURCE_DESC TexDesc{};
+	TexDesc.MipLevels		   = 1;
+	TexDesc.DepthOrArraySize   = 1;
+	TexDesc.SampleDesc.Count   = 1;
+	TexDesc.SampleDesc.Quality = 0;
+	TexDesc.Width			   = width;
+	TexDesc.Height			   = height;
+	TexDesc.Flags			   = flags;
+	TexDesc.Format			   = DXGI_FORMAT_B8G8R8A8_UNORM;
+	TexDesc.Dimension		   = dimension;
+
+	auto heap_prop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+
+	//HAKU_SOK_ASSERT(Device->get()->CreateCommittedResource(
+	//	&heap_prop, D3D12_HEAP_FLAG_NONE, &TexDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m_Resource)))
+	auto uploadBuffersize = GetRequiredIntermediateSize(m_Resource.Get(), 0, num_subresource);
+
+	auto upload_heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	auto uploadresdesc	 = CD3DX12_RESOURCE_DESC::Buffer(uploadBuffersize);
+	HAKU_SOK_ASSERT(Device->get()->CreateCommittedResource(
+		&upload_heapprop,
+		D3D12_HEAP_FLAG_NONE,
+		&uploadresdesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&texture_uploadheap)))
+
+	D3D12_SUBRESOURCE_DATA textureData = {};
+	textureData.pData				   = resource_ptr;
+	textureData.RowPitch			   = width;
+	textureData.SlicePitch			   = textureData.RowPitch * height;
+	//UpdateSubresources(CommandQueue->GetCommandList(), m_Resource, texture_uploadheap, 0, 0, 1, &textureData);
+	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		m_Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+	CommandQueue->GetCommandList()->ResourceBarrier(1, &barrier);
+	
+	m_TextureView.Texture2D.MipLevels	  = 1;
+	m_TextureView.Format				  = TexDesc.Format;
+	m_TextureView.ViewDimension			  = D3D12_SRV_DIMENSION_TEXTURE2D;
+	m_TextureView.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(Heap->GetSRVCPUHandle());
+
+	rtvHandle.Offset(slot, Device->get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+
+	Device->get()->CreateShaderResourceView(m_Resource.Get(), &m_TextureView, rtvHandle);
+
+	HAKU_DXNAME(m_Resource, L"Texture Resource")
+	Microsoft::WRL::ComPtr<ID3D12DebugCommandList> Check;
+	CommandQueue->GetCommandList()->QueryInterface(IID_PPV_ARGS(&Check));
 }
 
 } // namespace Renderer

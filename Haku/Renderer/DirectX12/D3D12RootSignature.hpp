@@ -1,6 +1,5 @@
 #include "wil/wrl.h"
-#include "../macros.hpp"
-#include "../hakupch.hpp"
+#include "../../macros.hpp"
 #include "D3D12RenderDevice.hpp"
 #include "D3D12CommandQueue.hpp"
 

@@ -1,5 +1,5 @@
 #include "D3D12RootSignature.hpp"
-#include "../Core/Exceptions.hpp"
+#include "../../Core/Exceptions.hpp"
 
 //PRESENT : redacting texture binding for testing descriptor table
 

@@ -2,19 +2,42 @@
 // everything
 
 #pragma once
+#include "macros.hpp"
+#include "hakupch.hpp"
+#include "Core/Exceptions.hpp"
+
 #include "D3D12SwapChain.hpp"
 #include "D3D12RenderDevice.hpp"
 #include "D3D12CommandQueue.hpp"
 #include "D3D12RootSignature.hpp"
 #include "D3D12PipelineState.hpp"
-#include "../Platform/Windows/MainWindow.hpp"
+#include "../../Platform/Windows/MainWindow.hpp"
 // NOTE : this will be part of the ECS..?
 #include "D3D12Resources.hpp"
 #include "PerspectiveCamera.hpp"
+
 namespace Haku
 {
 namespace Renderer
 {
+class RenderEngine
+{
+public:
+	static void			 Render();
+	static void			 ShutDown();
+	static void			 EndScene(){};
+	static void			 Initialize();
+	static void			 BeginScene(){};
+	static ID3D12Device* GetDeviceD3D() noexcept;
+	static CommandQueue* GetCommandQueue(D3D12_COMMAND_LIST_TYPE type);
+
+private:
+	static std::unique_ptr<RenderDevice> m_Device;
+	static std::unique_ptr<CommandQueue> m_CopyQueue;
+	static std::unique_ptr<CommandQueue> m_CommandQueue;
+	static std::unique_ptr<CommandQueue> m_ComputeQueue;
+};
+
 class DX12Renderer
 {
 public:
@@ -38,6 +61,7 @@ private:
 	// throw away section
 private:
 	std::vector<UINT8> GenerateTextureData();
+
 private:
 	float				 m_width;
 	float				 m_height;
@@ -48,7 +72,7 @@ private:
 	CD3DX12_RECT		 m_ScissorRect;
 	D3D12DescriptorHeap* m_DescriptorHeap;
 
-	uint32_t uploadBuffersize;
+	uint32_t						uploadBuffersize;
 	ID3D12Resource*					m_Texture;
 	ID3D12Resource*					texture_uploadheap;
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;

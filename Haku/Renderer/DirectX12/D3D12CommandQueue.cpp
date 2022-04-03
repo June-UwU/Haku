@@ -1,5 +1,5 @@
 #include "D3D12CommandQueue.hpp"
-#include "../Core/Exceptions.hpp"
+#include "../../Core/Exceptions.hpp"
 
 namespace Haku
 {
@@ -84,9 +84,87 @@ void D3D12CommandQueue::CloseFenceHandle() noexcept
 {
 	CloseHandle(m_FenceEvent);
 }
-void D3D12CommandQueue::ResetCommandList(ID3D12PipelineState* PipelineState)
-{
+void D3D12CommandQueue::ResetCommandList(ID3D12PipelineState* PipelineState){
 	HAKU_SOK_ASSERT(m_CommandList->Reset(m_CommandAllocator[m_FenceValue % FrameCount].Get(), PipelineState))
+}
+
+CommandQueue::CommandQueue(
+	RenderDevice&			  device,
+	D3D12_COMMAND_LIST_TYPE	  type,
+	D3D12_COMMAND_QUEUE_FLAGS flags,
+	INT						  priority)
+	: m_CurrentIndex(0u)
+{
+	// Command Queue Creations
+	D3D12_COMMAND_QUEUE_DESC Queue_desc{};
+	Queue_desc.Type	 = type;
+	Queue_desc.Flags = flags;
+
+	HAKU_SOK_ASSERT(device.Get()->CreateCommandQueue(&Queue_desc, IID_PPV_ARGS(&m_CommandQueue)))
+	// may expand the naming in the future
+	switch (type)
+	{
+	case D3D12_COMMAND_LIST_TYPE_DIRECT:
+	{
+		HAKU_DXNAME(m_CommandQueue, L"Direct Command Queue")
+		break;
+	}
+	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
+	{
+		HAKU_DXNAME(m_CommandQueue, L"Compute Command Queue")
+		break;
+	}
+	case D3D12_COMMAND_LIST_TYPE_COPY:
+	{
+		HAKU_DXNAME(m_CommandQueue, L"Copy Command Queue")
+		break;
+	}
+	}
+
+	for (size_t i = 0; i < FrameCount; i++)
+	{
+		HAKU_SOK_ASSERT(device.Get()->CreateCommandAllocator(type, IID_PPV_ARGS(&m_CommandAllocator[i])))
+		switch (type)
+		{
+		case D3D12_COMMAND_LIST_TYPE_DIRECT:
+		{
+			wchar_t array[100]{};
+			_snwprintf(array, 100, L"Direct Command Allocator : %d", i);
+			HAKU_DXNAME(m_CommandQueue, array)
+			break;
+		}
+		case D3D12_COMMAND_LIST_TYPE_COMPUTE:
+		{
+			wchar_t array[100]{};
+			_snwprintf(array, 100, L"Compute Command Allocator : %d", i);
+			HAKU_DXNAME(m_CommandQueue, array)
+			break;
+		}
+		case D3D12_COMMAND_LIST_TYPE_COPY:
+		{
+			wchar_t array[100]{};
+			_snwprintf(array, 100, L"Copy Command Allocator : %d", i);
+			HAKU_DXNAME(m_CommandQueue, array)
+			break;
+		}
+		}
+	}
+}
+CommandQueue::~CommandQueue()
+{
+	Shutdown();
+}
+void CommandQueue::Reset()
+{
+	HAKU_SOK_ASSERT(m_CommandAllocator[m_CurrentIndex % FrameCount]->Reset())
+}
+void CommandQueue::Shutdown() noexcept
+{
+	m_CommandQueue->Release();
+	for (size_t i = 0; i < FrameCount; i++)
+	{
+		m_CommandAllocator[i]->Release();
+	}
 }
 } // namespace Renderer
 } // namespace Haku

@@ -2,16 +2,16 @@
 #include "wil/com.h"
 #include "wil/wrl.h"
 #include <dxgi1_4.h>
-#include "../macros.hpp"
-#include "../hakupch.hpp"
+#include "../../macros.hpp"
+#include "../../hakupch.hpp"
 #include "directx/d3d12.h"
 #include "directx/d3dx12.h"
-#include "../Core/HakuLog.hpp"
+#include "../../Core/HakuLog.hpp"
 #include "D3D12CommandQueue.hpp"
 #include "D3D12RenderDevice.hpp"
-#include "../Core/Exceptions.hpp"
+#include "../../Core/Exceptions.hpp"
 #include "D3D12DescriptorHeaps.hpp"
-#include "../Platform/Windows/MainWindow.hpp"
+#include "../../Platform/Windows/MainWindow.hpp"
 
 namespace Haku
 {

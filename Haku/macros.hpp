@@ -1,5 +1,7 @@
 #pragma once
 #include <cstdint>
+#include <wchar.h>
+#include <stdio.h>
 #include <numbers>
 #ifdef HAKU_API_BUILD
 #define HAKU_API __declspec(dllexport)

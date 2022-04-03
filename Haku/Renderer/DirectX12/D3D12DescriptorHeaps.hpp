@@ -1,10 +1,10 @@
 #pragma once
-#include "../macros.hpp"
+#include "../../macros.hpp"
 #include "directx/d3d12.h"
 #include "directx/d3dx12.h"
 #include "D3D12RenderDevice.hpp"
 #include "D3D12CommandQueue.hpp"
-#include "../Core/Exceptions.hpp"
+#include "../../Core/Exceptions.hpp"
 
 /// moving only the Rtv heap at first...we get triangle we add srv_cbv and eventually dsv
 
