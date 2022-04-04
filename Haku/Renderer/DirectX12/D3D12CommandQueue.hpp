@@ -27,6 +27,10 @@ private:
 	ID3D12CommandAllocator* m_CommandAllocator[FrameCount];
 };
 
+
+//DEPRECIATING CLASS
+
+
 class D3D12CommandQueue
 {
 public:

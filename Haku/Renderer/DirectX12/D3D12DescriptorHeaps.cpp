@@ -1,3 +1,4 @@
+#include "D3D12Renderer.hpp"
 #include "D3D12DescriptorHeaps.hpp"
 
 namespace Haku
@@ -24,9 +25,9 @@ D3D12DescriptorHeap::D3D12DescriptorHeap(Haku::Renderer::D3D12RenderDevice& Devi
 	DSVdesc.Flags		   = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 	HAKU_SOK_ASSERT(Device.get()->CreateDescriptorHeap(&DSVdesc, IID_PPV_ARGS(&m_DSVHeap)))
-	HAKU_DXNAME(m_RTVHeap,L"RTV Heap")
-	HAKU_DXNAME(m_SRVHeap,L"SRV Heap")
-	HAKU_DXNAME(m_DSVHeap,L"DSV Heap")
+	HAKU_DXNAME(m_RTVHeap, L"RTV Heap")
+	HAKU_DXNAME(m_SRVHeap, L"SRV Heap")
+	HAKU_DXNAME(m_DSVHeap, L"DSV Heap")
 }
 void D3D12DescriptorHeap::ShutDown() noexcept
 {
@@ -74,6 +75,34 @@ ID3D12DescriptorHeap* D3D12DescriptorHeap::GetRTVDescriptorHeap() noexcept
 ID3D12DescriptorHeap* D3D12DescriptorHeap::GetDSVDescriptorHeap() noexcept
 {
 	return m_DSVHeap.Get();
+}
+DescriptorHeap::DescriptorHeap(
+	D3D12_DESCRIPTOR_HEAP_TYPE	type,
+	uint64_t					number_of_descriptors,
+	D3D12_DESCRIPTOR_HEAP_FLAGS flags)
+{
+	D3D12_DESCRIPTOR_HEAP_DESC desc{};
+	desc.NodeMask		= 0;
+	desc.Type			= type;
+	desc.Flags			= flags;
+	desc.NumDescriptors = number_of_descriptors;
+
+	auto Device = RenderEngine::GetDeviceD3D();
+
+	HAKU_LOG_INFO("Creating Desriptor Heap", type , "Descriptor Count : ",number_of_descriptors);
+	HAKU_SOK_ASSERT(Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_Heap)));
+}
+DescriptorHeap::~DescriptorHeap() noexcept
+{
+	ShutDown();
+}
+const ID3D12DescriptorHeap* DescriptorHeap::Get() noexcept
+{
+	return m_Heap;
+}
+void DescriptorHeap::ShutDown() noexcept
+{
+	m_Heap->Release();
 }
 } // namespace Renderer
 } // namespace Haku

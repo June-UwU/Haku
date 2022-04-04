@@ -1,17 +1,40 @@
 #pragma once
-#include "../../macros.hpp"
+#include "macros.hpp"
+#include "hakupch.hpp"
 #include "directx/d3d12.h"
 #include "directx/d3dx12.h"
-#include "D3D12RenderDevice.hpp"
-#include "D3D12CommandQueue.hpp"
-#include "../../Core/Exceptions.hpp"
+#include "Core/Exceptions.hpp"
 
 /// moving only the Rtv heap at first...we get triangle we add srv_cbv and eventually dsv
+
+#include "D3D12RenderDevice.hpp"
+#include "D3D12CommandQueue.hpp"
+
 
 namespace Haku
 {
 namespace Renderer
 {
+class DescriptorHeap
+{
+public:
+	DescriptorHeap(
+		D3D12_DESCRIPTOR_HEAP_TYPE	type,
+		uint64_t					number_of_descriptors,
+		D3D12_DESCRIPTOR_HEAP_FLAGS flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+	~DescriptorHeap() noexcept;
+	
+
+	const ID3D12DescriptorHeap* Get() noexcept;
+private:
+	void ShutDown() noexcept;
+
+private:
+	ID3D12DescriptorHeap* m_Heap;
+};
+
+// DEPRECIATING CLASSES
+
 class D3D12DescriptorHeap
 {
 public:
