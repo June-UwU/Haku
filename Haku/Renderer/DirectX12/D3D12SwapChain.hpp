@@ -1,22 +1,50 @@
 #pragma once
-#include "wil/com.h"
-#include "wil/wrl.h"
+
+#include "macros.hpp"
 #include <dxgi1_4.h>
-#include "../../macros.hpp"
-#include "../../hakupch.hpp"
+#include "hakupch.hpp"
 #include "directx/d3d12.h"
 #include "directx/d3dx12.h"
-#include "../../Core/HakuLog.hpp"
+#include "Core/HakuLog.hpp"
+#include "Core/Exceptions.hpp"
+#include "D3D12DescriptorHeaps.hpp"
+
+#include "wil/com.h"
+#include "wil/wrl.h"
 #include "D3D12CommandQueue.hpp"
 #include "D3D12RenderDevice.hpp"
-#include "../../Core/Exceptions.hpp"
-#include "D3D12DescriptorHeaps.hpp"
-#include "../../Platform/Windows/MainWindow.hpp"
+#include "Platform/Windows/MainWindow.hpp"
 
 namespace Haku
 {
 namespace Renderer
 {
+class SwapChain
+{
+public:
+	SwapChain();
+	void Present();
+	void Init(Windows* window);
+	void Resize(uint64_t height, uint64_t width);
+	// These two are probably commandlist methods
+	// void ClearRenderTargets() noexcept;
+	/// would probably thanos this function
+	// void TransitionPresent();
+
+private:
+	void ShutDown() noexcept;
+
+private:
+	DescriptorHeap							m_DSVHeap;
+	DescriptorHeap							m_RTVHeap;
+	Microsoft::WRL::ComPtr<IDXGISwapChain3> m_SwapChain;
+	uint64_t								m_FrameIndex;
+	ID3D12Resource*							m_DSVResource;
+	ID3D12Resource*							m_RenderTargets[FrameCount];
+	uint64_t								m_RTVDescriptorHeapIncrementSize;
+};
+
+/// DEPRECIATING CLASS
 class D3D12SwapChain
 {
 public:

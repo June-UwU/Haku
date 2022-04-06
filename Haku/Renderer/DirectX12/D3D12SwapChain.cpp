@@ -1,3 +1,4 @@
+#include "D3D12Renderer.hpp"
 #include "D3D12SwapChain.hpp"
 
 namespace Haku
@@ -19,8 +20,8 @@ void D3D12SwapChain::Resize(
 	D3D12CommandQueue&	 Command,
 	D3D12DescriptorHeap& Heap)
 {
-	uint32_t ResizeHeight = std::max(8u, height);
-	uint32_t ResizeWidth  = std::max(8u, width);
+	uint32_t ResizeHeight = math::max(8u, height);
+	uint32_t ResizeWidth  = math::max(8u, width);
 	Command.Synchronize();
 	for (size_t i = 0; i < FrameCount; i++)
 	{
@@ -44,10 +45,9 @@ void D3D12SwapChain::Resize(
 
 		Device.get()->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
 
-		HAKU_DXNAME(backBuffer,L"Render Target Resource")
+		HAKU_DXNAME(backBuffer, L"Render Target Resource")
 
 		m_RenderTargets[i] = backBuffer;
-
 
 		rtvHandle.Offset(rtvDescriptorSize);
 	}
@@ -167,6 +167,148 @@ void D3D12SwapChain::TransitionPresent(D3D12CommandQueue& Command)
 	auto resbarpres = CD3DX12_RESOURCE_BARRIER::Transition(
 		m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	Command.GetCommandList()->ResourceBarrier(1, &resbarpres);
+}
+
+SwapChain::SwapChain()
+	: m_DSVHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1)
+	, m_RTVHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, FrameCount)
+{
+}
+
+void SwapChain::Present()
+{
+	m_SwapChain->Present(1, 0);
+}
+
+void SwapChain::Init(Windows* window)
+{
+	HAKU_LOG_INFO("Initializing Render SwapChain");
+	auto								  Device = RenderEngine::GetDeviceD3D();
+	auto								  Cmd	 = RenderEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT);
+	Microsoft::WRL::ComPtr<IDXGIFactory6> DxgiFactory;
+	HAKU_SOK_ASSERT(CreateDXGIFactory2(0, IID_PPV_ARGS(&DxgiFactory)))
+	// Create Swapchain
+	DXGI_SWAP_CHAIN_DESC1 Swap_desc{};
+	Swap_desc.SampleDesc.Count	 = 1;
+	Swap_desc.SampleDesc.Quality = 0;
+	Swap_desc.BufferCount		 = FrameCount;
+	Swap_desc.Scaling			 = DXGI_SCALING_NONE; // contrevesial movement
+	Swap_desc.Width				 = window->GetWidth();
+	Swap_desc.Height			 = window->GetHeight();
+	Swap_desc.Format			 = DXGI_FORMAT_R8G8B8A8_UNORM;
+	Swap_desc.AlphaMode			 = DXGI_ALPHA_MODE_UNSPECIFIED; // mess around with the alpha
+	Swap_desc.SwapEffect		 = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	Swap_desc.BufferUsage		 = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	Microsoft::WRL::ComPtr<IDXGISwapChain1> swap_chain1;
+	HAKU_SOK_ASSERT(DxgiFactory->CreateSwapChainForHwnd(
+		Cmd->Get(), window->GetHandle(), &Swap_desc, nullptr, nullptr, &swap_chain1))
+
+	auto ret	 = swap_chain1.As(&m_SwapChain);
+	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
+
+	m_RTVDescriptorHeapIncrementSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	///
+	{
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cpu_handle(m_RTVHeap.GetCPUBaseHandle());
+		// Creating a render target view(RTV)
+		for (size_t i = 0; i < FrameCount; i++)
+		{
+			HAKU_SOK_ASSERT(m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&m_RenderTargets[i])))
+			Device->CreateRenderTargetView(m_RenderTargets[i], nullptr, cpu_handle);
+			cpu_handle.Offset(1, m_RTVDescriptorHeapIncrementSize);
+
+			wchar_t array[100]{};
+			_snwprintf(array, 100, L"Back Buffer: %zd", i);
+			HAKU_DXNAME(m_RenderTargets[i], array)
+		}
+	}
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
+	depthStencilDesc.Texture2DArray.ArraySize	   = 2;
+	depthStencilDesc.Flags						   = D3D12_DSV_FLAG_NONE;
+	depthStencilDesc.Format						   = DXGI_FORMAT_D32_FLOAT;
+	depthStencilDesc.ViewDimension				   = D3D12_DSV_DIMENSION_TEXTURE2D;
+
+	D3D12_CLEAR_VALUE depthOptimizedClearValue	  = {};
+	depthOptimizedClearValue.DepthStencil.Stencil = 0;
+	depthOptimizedClearValue.DepthStencil.Depth	  = 1.0f;
+	depthOptimizedClearValue.Format				  = DXGI_FORMAT_D32_FLOAT;
+
+	auto				heapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	D3D12_RESOURCE_DESC texdesc{};
+	texdesc.Alignment		   = 0;
+	texdesc.SampleDesc.Quality = 0;
+	texdesc.DepthOrArraySize   = 2;
+	texdesc.MipLevels		   = 0;
+	texdesc.SampleDesc.Count   = 1;
+	texdesc.Format			   = DXGI_FORMAT_D32_FLOAT;
+	texdesc.Width			   = 4 * window->GetWidth();
+	texdesc.Height			   = 4 * window->GetHeight();
+	texdesc.Dimension		   = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	texdesc.Flags			   = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+	HAKU_SOK_ASSERT(Device->CreateCommittedResource(
+		&heapprop,
+		D3D12_HEAP_FLAG_NONE,
+		&texdesc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&depthOptimizedClearValue,
+		IID_PPV_ARGS(&m_DSVResource)));
+
+	Device->CreateDepthStencilView(m_DSVResource, &depthStencilDesc, m_DSVHeap.GetCPUBaseHandle());
+	HAKU_DXNAME(m_DSVResource, L"Depth Stencil Resource");
+}
+
+void SwapChain::Resize(uint64_t height, uint64_t width)
+{
+	auto	 Fence		  = RenderEngine::GetFence();
+	auto	 Device		  = RenderEngine::GetDeviceD3D();
+	uint32_t ResizeHeight = math::max(8u, height);
+	uint32_t ResizeWidth  = math::max(8u, width);
+	
+	// Command.Synchronize();
+	//making fence a independant class
+	Fence->Synchronize();
+	for (size_t i = 0; i < FrameCount; i++)
+	{
+		m_RenderTargets[i]->Release();
+	}
+
+	DXGI_SWAP_CHAIN_DESC desc{};
+	HAKU_SOK_ASSERT(m_SwapChain->GetDesc(&desc))
+	HAKU_SOK_ASSERT(
+		m_SwapChain->ResizeBuffers(FrameCount, ResizeWidth, ResizeHeight, desc.BufferDesc.Format, desc.Flags))
+	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
+
+	auto rtvDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_RTVHeap.GetCPUBaseHandle());
+
+	for (int i = 0; i < FrameCount; ++i)
+	{
+		ID3D12Resource* backBuffer;
+		HAKU_SOK_ASSERT(m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer)))
+
+		Device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
+
+		wchar_t array[100]{};
+		_snwprintf(array, 100, L"Back Buffer: %d", i);
+		HAKU_DXNAME(m_RenderTargets[i], array)
+
+		m_RenderTargets[i] = backBuffer;
+
+		rtvHandle.Offset(rtvDescriptorSize);
+	}
+}
+
+void SwapChain::ShutDown() noexcept
+{
+	m_SwapChain->Release();
+	for (size_t i = 0; i < FrameCount; i++)
+	{
+		m_RenderTargets[i]->Release();
+	}
+	m_DSVResource->Release();
 }
 
 } // namespace Renderer
