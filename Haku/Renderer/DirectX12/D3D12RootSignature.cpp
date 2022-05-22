@@ -1,115 +1,164 @@
+#include "directx/d3dx12.h"
+#include "Core/Exceptions.hpp"
 #include "D3D12RootSignature.hpp"
-#include "../../Core/Exceptions.hpp"
+#include "Renderer/DirectX12/D3D12Renderer.hpp"
 
-//PRESENT : redacting texture binding for testing descriptor table
-
+// PRESENT : redacting texture binding for testing descriptor table
 
 namespace Haku
 {
 namespace Renderer
 {
-D3D12DescriptorTable::D3D12DescriptorTable(uint32_t range_size) noexcept
-{
-	m_Table.reserve(range_size);
-}
-void D3D12RootSignatureDesc::AddDescriptorTable(D3D12DescriptorTable& table) noexcept
-{
-	D3D12_ROOT_PARAMETER1 parameter{};
-	parameter.DescriptorTable.NumDescriptorRanges = table.size();
-	parameter.DescriptorTable.pDescriptorRanges	  = table.data();
-	parameter.ParameterType						  = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	m_Parameter.push_back(parameter);
-}
-D3D12_VERSIONED_ROOT_SIGNATURE_DESC D3D12RootSignatureDesc::Build() noexcept
-{
-	D3D12_VERSIONED_ROOT_SIGNATURE_DESC sigdesc{};
-	sigdesc.Desc_1_1.Flags			   = m_Flags;
-	sigdesc.Desc_1_1.NumStaticSamplers = m_Samplers.size();
-	sigdesc.Desc_1_1.pStaticSamplers   = m_Samplers.data();
-	sigdesc.Desc_1_1.NumParameters	   = m_Parameter.size();
-	sigdesc.Desc_1_1.pParameters	   = m_Parameter.data();
-	sigdesc.Version					   = D3D_ROOT_SIGNATURE_VERSION_1_1;
 
-	return sigdesc;
-}
-
-void D3D12RootSignatureDesc::LocalRootSig() noexcept
+RootSignature::RootSignature(const D3D12_ROOT_SIGNATURE_DESC& desc, D3D_ROOT_SIGNATURE_VERSION version)
+	: m_Sampler(0)
+	, m_DescriptorTable(0)
 {
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
+	Initialize(desc, version);
 }
-void D3D12RootSignatureDesc::DenyMeshShader() noexcept
+RootSignature::~RootSignature()
 {
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS;
+	Destroy();
+	m_Signature->Release();
 }
-void D3D12RootSignatureDesc::DenyHullShader() noexcept
+void RootSignature::Destroy()
 {
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
-}
-void D3D12RootSignatureDesc::DenyPixelShader() noexcept
-{
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
-}
-void D3D12RootSignatureDesc::AllowInputLayout() noexcept
-{
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-}
-void D3D12RootSignatureDesc::DenyVertexShader() noexcept
-{
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
-}
-void D3D12RootSignatureDesc::DenyDomainShader() noexcept
-{
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS;
-}
-void D3D12RootSignatureDesc::AllowStreamOutput() noexcept
-{
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT;
-}
-void D3D12RootSignatureDesc::DenyGeometryShader() noexcept
-{
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-}
-void D3D12RootSignatureDesc::DirectIndexSamplerHeap() noexcept
-{
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
-}
-void D3D12RootSignatureDesc::DirectIndexCBV_SRV_UAV() noexcept
-{
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED;
-}
-void D3D12RootSignatureDesc::DenyAmplicificationShader() noexcept
-{
-	m_Flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS;
-}
-void D3D12RootSignatureDesc::AddParameter(D3D12_ROOT_PARAMETER1& Parameter)
-{
-	m_Parameter.push_back(Parameter);
-}
-D3D12RootSignature::D3D12RootSignature(D3D12RootSignatureDesc& Desc, D3D12RenderDevice& Device)
-{
-	D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData{};
-	// This is the highest version the sample supports. If CheckFeatureSupport succeeds, the HighestVersion returned
-	// will not be greater than this.
-	featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-
-	if (Device.get()->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData)) != S_OK)
+	for (uint32_t i = 0; i < m_Descriptor.NumParameters; i++)
 	{
-		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+		const auto& RootParameter = m_Descriptor.pParameters[i];
+		if (RootParameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE)
+		{
+			delete[] RootParameter.DescriptorTable.pDescriptorRanges;
+		}
 	}
-	auto							 sigdesc = Desc.Build();
-	Microsoft::WRL::ComPtr<ID3DBlob> signature;
-	Microsoft::WRL::ComPtr<ID3DBlob> error;
-	HAKU_SOK_ASSERT_CHAR_PTR(
-		D3DX12SerializeVersionedRootSignature(
-			&sigdesc, featureData.HighestVersion, signature.GetAddressOf(), error.GetAddressOf()),
-		error)
-	HAKU_SOK_ASSERT(Device.get()->CreateRootSignature(
-		0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_Signature)));
-	HAKU_DXNAME(m_Signature,L"Root descriptor")
+
+	// deleting the root parameters
+	delete[] m_Descriptor.pParameters;
+	m_Descriptor.NumParameters = 0;
+	m_Descriptor.pParameters   = nullptr;
+
+	// deleting the static params
+	delete[] m_Descriptor.pStaticSamplers;
+	m_Descriptor.NumStaticSamplers = 0;
+	m_Descriptor.pStaticSamplers   = nullptr;
+
+	// resetting the bit masks
+	m_DescriptorTable = 0;
+	m_Sampler		  = 0;
 }
-void D3D12RootSignature::SetSignature(D3D12CommandQueue& Command) noexcept
+
+uint64_t RootSignature::GetDescriptorCount(uint64_t pos) noexcept
 {
-	Command.GetCommandList()->SetGraphicsRootSignature(m_Signature.Get());
+	return m_DescriptorCount[pos];
+}
+
+D3D12_ROOT_SIGNATURE_DESC RootSignature::GetRootDescriptor() noexcept
+{
+	return m_Descriptor;
+}
+
+uint64_t RootSignature::GetBitMask(D3D12_DESCRIPTOR_HEAP_TYPE type) noexcept
+{
+	uint64_t retval{ 0 };
+	switch (type)
+	{
+	case D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER:
+		retval = m_Sampler;
+		break;
+	case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
+		retval = m_DescriptorTable;
+		break;
+	}
+	return retval;
+}
+
+void RootSignature::Initialize(const D3D12_ROOT_SIGNATURE_DESC& desc, D3D_ROOT_SIGNATURE_VERSION version)
+{
+	Destroy();
+	auto	   Device			   = RenderEngine::GetDeviceD3D();
+	const auto NumberOfDescriptors = desc.NumParameters;
+
+	D3D12_ROOT_PARAMETER* ParameterPtr =
+		NumberOfDescriptors > 0 ? new D3D12_ROOT_PARAMETER[NumberOfDescriptors] : nullptr;
+
+	for (uint32_t i = 0; i < NumberOfDescriptors; i++)
+	{
+		const D3D12_ROOT_PARAMETER& ParameterRefIter = desc.pParameters[i];
+		ParameterPtr[i]								 = ParameterRefIter;
+
+		if (ParameterRefIter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE)
+		{
+			auto NumberOfRanges = ParameterRefIter.DescriptorTable.NumDescriptorRanges;
+			// if there is any range make space for them
+			D3D12_DESCRIPTOR_RANGE* DescriptorRangePtr =
+				NumberOfRanges ? new D3D12_DESCRIPTOR_RANGE[NumberOfRanges] : nullptr;
+
+			// copy the parameter to our ptr
+			memcpy(
+				DescriptorRangePtr,
+				ParameterRefIter.DescriptorTable.pDescriptorRanges,
+				(sizeof(D3D12_DESCRIPTOR_RANGE) * NumberOfRanges));
+
+			ParameterPtr[i].DescriptorTable.NumDescriptorRanges = NumberOfRanges;
+			ParameterPtr[i].DescriptorTable.pDescriptorRanges	= DescriptorRangePtr;
+
+			// if there are ranges check for the type and set the approiate bit mask
+			if (NumberOfRanges)
+			{
+				switch (ParameterRefIter.ParameterType)
+				{
+				case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+				case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+				case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
+					m_DescriptorTable |= (1 << i);
+					break;
+				case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
+					m_Sampler |= (1 << i);
+					break;
+				}
+			}
+
+			for (uint32_t j = 0; i < NumberOfDescriptors; i++)
+			{
+				m_DescriptorCount[i] += DescriptorRangePtr[j].NumDescriptors;
+			}
+		}
+	}
+
+	m_Descriptor.NumParameters = NumberOfDescriptors;
+	m_Descriptor.pParameters   = ParameterPtr;
+
+	auto NumberOfStaticSampler = desc.NumStaticSamplers;
+
+	D3D12_STATIC_SAMPLER_DESC* StaticSamplerPtr =
+		NumberOfStaticSampler ? new D3D12_STATIC_SAMPLER_DESC[NumberOfStaticSampler] : nullptr;
+
+	if (NumberOfStaticSampler)
+	{
+		memcpy(StaticSamplerPtr, desc.pStaticSamplers, (sizeof(D3D12_STATIC_SAMPLER_DESC) * NumberOfStaticSampler));
+	}
+
+	m_Descriptor.NumStaticSamplers = NumberOfStaticSampler;
+	m_Descriptor.pStaticSamplers   = StaticSamplerPtr;
+
+	auto Flags		   = desc.Flags;
+	m_Descriptor.Flags = Flags;
+
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC VersionedRootSigDesc;
+	VersionedRootSigDesc.Init_1_0(NumberOfDescriptors, ParameterPtr, NumberOfStaticSampler, StaticSamplerPtr, Flags);
+
+	Microsoft::WRL::ComPtr<ID3DBlob> Blob;
+	Microsoft::WRL::ComPtr<ID3DBlob> ErrorBlob;
+
+	HAKU_SOK_ASSERT_CHAR_PTR_ERROR_BLOB(
+		D3DX12SerializeVersionedRootSignature(&VersionedRootSigDesc, version, &Blob, &ErrorBlob), ErrorBlob);
+
+	HAKU_SOK_ASSERT(Device->CreateRootSignature(
+		0,
+		Blob->GetBufferPointer(),
+		Blob->GetBufferSize(),
+		__uuidof(ID3D12RootSignature),
+		reinterpret_cast<void**>(&m_Signature)))
 }
 } // namespace Renderer
 } // namespace Haku
