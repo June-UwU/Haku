@@ -14,9 +14,9 @@ public:
 	Fence(D3D12_FENCE_FLAGS flags = D3D12_FENCE_FLAG_NONE);
 	~Fence() noexcept;
 
-	const ID3D12Fence* Get() noexcept;
-	void			   Close() noexcept;
-	void			   Synchronize();
+	ID3D12Fence* Get() noexcept;
+	void		 Close() noexcept;
+	HANDLE&		 GetEvent() noexcept;
 
 private:
 	void ShutDown() noexcept;

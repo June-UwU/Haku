@@ -24,26 +24,31 @@ Fence::~Fence() noexcept
 	Close();
 	ShutDown();
 }
-const ID3D12Fence* Fence::Get() noexcept
+HANDLE& Fence::GetEvent() noexcept
+{
+	return m_FenceEvent;
+}
+ID3D12Fence* Fence::Get() noexcept
 {
 	return m_Fence;
 }
-void Fence::Synchronize()
-{
-	// Get the device and synchronizing value
-	auto fencevalue	 = RenderEngine::GetFenceValue();
-	auto DirectQueue = RenderEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT);
-
-	const uint64_t fence_value = fencevalue;
-	HAKU_SOK_ASSERT(DirectQueue->Get()->Signal(m_Fence, fence_value))
-	// updating fence value
-	RenderEngine::FenceValueAdd();
-	if (m_Fence->GetCompletedValue() < fence_value)
-	{
-		HAKU_SOK_ASSERT(m_Fence->SetEventOnCompletion(fence_value, m_FenceEvent))
-		WaitForSingleObject(m_FenceEvent, INFINITE);
-	}
-}
+//void Fence::Synchronize()
+//{
+//	// Get the device and synchronizing value
+//	auto		   fencevalue  = RenderEngine::GetFenceValue();
+//	//auto		   DirectQueue = RenderEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT);
+//	auto		   Swapchain   = RenderEngine::GetSwapChain(); //this is taken to update the backbuffer index (m_FrameIndex)
+//	const uint64_t fence_value = fencevalue;
+//	//HAKU_SOK_ASSERT(DirectQueue->Get()->Signal(m_Fence, fence_value))
+//	// updating fence value
+//	RenderEngine::FenceValueAdd();
+//	if (m_Fence->GetCompletedValue() < fence_value)
+//	{
+//		HAKU_SOK_ASSERT(m_Fence->SetEventOnCompletion(fence_value, m_FenceEvent))
+//		WaitForSingleObject(m_FenceEvent, INFINITE);
+//	}
+//	Swapchain->SetBackBufferIndex();
+//}
 void Fence::ShutDown() noexcept
 {
 	m_Fence->Release();
