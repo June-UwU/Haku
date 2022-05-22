@@ -1,9 +1,8 @@
 #pragma once
 #include "wil/wrl.h"
 #include "directx/d3d12.h"
-#include "directx/d3dx12.h"
 #include <dxgi1_6.h>
-#include "../../Platform/Windows/MainWindow.hpp"
+#include "Platform/Windows/MainWindow.hpp"
 // TODO
 // shift the this to a consumable class
 namespace Haku

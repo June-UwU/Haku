@@ -12,32 +12,36 @@ file(GLOB_RECURSE renderer_interface_inc ${CMAKE_CURRENT_SOURCE_DIR}/Renderer/*.
 file(GLOB_RECURSE renderer_interface_src ${CMAKE_CURRENT_SOURCE_DIR}/Renderer/*.hpp)
 file(GLOB_RECURSE renderer_inc ${CMAKE_CURRENT_SOURCE_DIR}/Renderer/DirectX12/*.hpp)
 file(GLOB_RECURSE renderer_src ${CMAKE_CURRENT_SOURCE_DIR}/Renderer/DirectX12/*.cpp)
+file(GLOB_RECURSE renderer_utils_inc ${CMAKE_CURRENT_SOURCE_DIR}/Renderer/Utils/*.hpp)
+file(GLOB_RECURSE renderer_utils_src ${CMAKE_CURRENT_SOURCE_DIR}/Renderer/Utils/*.cpp)
+
+
 
 #needs to be made platform dependant selections
 
 file(GLOB_RECURSE windows_inc ${CMAKE_CURRENT_SOURCE_DIR}/platform/Windows/*.hpp)
 file(GLOB_RECURSE windows_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/Windows/*.cpp)
 
-
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_src})
-
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_src})
 
-
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_src})
-
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${windows_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${windows_src})
 
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${render_utils_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${render_utils_src})
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${render_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${render_src})
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_interface_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_interface_src})
-
 
 set(DEPEND_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../vendor)
 
@@ -72,8 +76,11 @@ add_library(${PROJECT_NAME}
 	${windows_src}
 	${renderer_inc}
 	${renderer_src}
+	${renderer_utils_inc}
+	${renderer_utils_src}
 	${renderer_interface_inc}
-	${renderer_interface_src})
+	${renderer_interface_src}
+	)
 message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/wil/include/")
 message("Dependencies : will : ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/spdlog/include/")
 

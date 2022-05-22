@@ -3,7 +3,9 @@
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 
+#include <map>
 #include <list>
+#include <array>
 #include <queue>
 #include <string>
 #include <vector>
