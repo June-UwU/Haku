@@ -1,6 +1,6 @@
 #pragma once
-#include "../macros.hpp"
-#include "../hakupch.hpp"
+#include "macros.hpp"
+#include "hakupch.hpp"
 #include "imgui.h"
 #include "backends/imgui_impl_dx12.h"
 #include "backends/imgui_impl_win32.h"

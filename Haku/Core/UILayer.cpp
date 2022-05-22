@@ -16,17 +16,17 @@ void InitUI() noexcept
 	ImGui::CreateContext();
 	auto* app			 = Haku::Application::Get();
 	auto* hwnd			 = app->GetWindow()->GetHandle();
-	auto* device		 = app->GetRenderer()->GetDevice();
-	auto* descriptorheap = app->GetRenderer()->GetSRVDesciptor();
+	//auto* device		 = app->GetRenderer()->GetDevice();
+	//auto* descriptorheap = app->GetRenderer()->GetSRVDesciptor();
 
-	ImGui_ImplWin32_Init(hwnd);
-	ImGui_ImplDX12_Init(
-		device,
-		2,
-		DXGI_FORMAT_R8G8B8A8_UNORM,
-		descriptorheap,
-		descriptorheap->GetCPUDescriptorHandleForHeapStart(),
-		descriptorheap->GetGPUDescriptorHandleForHeapStart());
+	//ImGui_ImplWin32_Init(hwnd);
+	//ImGui_ImplDX12_Init(
+	//	device,
+	//	2,
+	//	DXGI_FORMAT_R8G8B8A8_UNORM,
+	//	descriptorheap,
+	//	descriptorheap->GetCPUDescriptorHandleForHeapStart(),
+	//	descriptorheap->GetGPUDescriptorHandleForHeapStart());
 	ImGui::StyleColorsDark();
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 }

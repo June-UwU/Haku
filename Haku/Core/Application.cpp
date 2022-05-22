@@ -6,7 +6,6 @@ namespace Haku
 Application* Application::s_Instance = nullptr;
 
 Application::Application()
-	: m_Renderer(720, 1080)
 {
 	HAKU_LOG_INFO("Creating Application");
 	HAKU_ASSERT(!s_Instance);
@@ -22,7 +21,7 @@ void Application::SetMainWindow(Windows& window) noexcept
 {
 	HAKU_LOG_INFO("Setting Window");
 	m_Window = &window;
-	m_Renderer.Init();
+	Haku::Renderer::RenderEngine::Initialize();
 	m_Window->SetEventRoutine(HAKU_BIND_FUNC(OnEvent));
 }
 void Application::ProcessMessage()
@@ -34,7 +33,6 @@ void Application::ProcessMessage()
 		if (!m_Window->GetMinimize())
 		{
 			ClientUpdate();
-			m_Renderer.Render();
 		}
 	}
 	ClientCleanUp();
@@ -51,24 +49,24 @@ void Application::Onclose(Event& Event)
 	Event.Handled = true;
 }
 
-void Application::OnResize(Event& Event)
+void Application::OnResize(Event& event)
 {
 	HAKU_LOG_INFO();
 	uint32_t width{};
 	uint32_t height{};
-	HAKU_DISPLAY_SIZE_EXTRACT(Event.GetData(), height, width)
+	HAKU_DISPLAY_SIZE_EXTRACT(event.GetData(), height, width)
 	m_Window->SetWidth(width);
 	m_Window->SetHeight(height);
 	m_Window->SetMinimize(false);
-	m_Renderer.Resize(height, width);
-	Event.Handled = true;
+	//m_Renderer.Resize(height, width);
+	event.Handled = true;
 }
 
-void Application::OnMinimize(Event& Event)
+void Application::OnMinimize(Event& event)
 {
 	HAKU_LOG_INFO();
 	HAKU_ASSERT(m_Window);
-	Event.Handled = true;
+	event.Handled = true;
 	m_Window->SetMinimize(true);
 }
 
