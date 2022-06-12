@@ -2,6 +2,7 @@
 // everything
 
 #pragma once
+#include <mutex>
 #include <atomic>
 #include "macros.hpp"
 #include "hakupch.hpp"
@@ -13,8 +14,9 @@
 #include "D3D12RenderDevice.hpp"
 #include "D3D12CommandQueue.hpp"
 #include "D3D12DescriptorAllocator.hpp"
+#include "Utils/Dequeue.hpp"
 
-//TODO : make the gpu allocated resource and the virtual address to be on position and 
+// TODO : make the gpu allocated resource and the virtual address to be on position and
 
 #include "Platform/Windows/MainWindow.hpp"
 
@@ -28,6 +30,7 @@ namespace Haku
 {
 namespace Renderer
 {
+void RecordAndCommandList();
 class RenderEngine
 {
 public:
@@ -42,16 +45,21 @@ public:
 	static SwapChain*	 GetSwapChain() noexcept;
 	static uint64_t		 GetFenceValue() noexcept;
 	static uint64_t		 FenceValueAdd() noexcept;
-	static void			 ReturnStaleCommandList(CommandList* ptr);
+	static void			 ResizeEvent(uint64_t height, uint64_t width);
 
 private:
-	static std::unique_ptr<Fence>				m_Fence;
-	static std::unique_ptr<RenderDevice>		m_Device;
-	static std::unique_ptr<SwapChain>			m_SwapChain;
-	static std::atomic_uint64_t					m_FenceValue;
-	static Utils::HK_Queue_mt<CommandList*>		m_FreeCmdList;
-	static std::unique_ptr<CommandQueue>		m_CommandQueue;
-	static std::unique_ptr<DescriptorAllocator> m_CPUDescriptorAllocators[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+	static std::mutex					 m_mutex;
+	static std::unique_ptr<Fence>		 m_Fence;
+	static std::unique_ptr<RenderDevice> m_Device;
+	static std::unique_ptr<SwapChain>	 m_SwapChain;
+	static std::atomic_uint64_t			 m_FenceValue;
+	static std::unique_ptr<CommandQueue> m_CommandQueue;
+	static std::array<std::unique_ptr<DescriptorAllocator>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES>
+		m_CPUDescriptorAllocators;
+
+	// TESTING THESE
+	static Haku::Utils::Hk_Dequeue_mt<CommandList*> m_ExecutableQueue;
+	static ID3D12GraphicsCommandList*				CurrentCommandList;
 };
 
 } // namespace Renderer

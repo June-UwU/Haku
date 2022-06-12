@@ -6,73 +6,35 @@ namespace Haku
 {
 namespace Renderer
 {
-static Utils::HK_Queue_mt<CommandList*> CommandQueue::m_ReadyCmdList;
-
 CommandQueue::CommandQueue(D3D12_COMMAND_QUEUE_FLAGS flags, INT priority)
 {
 	auto Device = RenderEngine::GetDeviceD3D();
 	// Command Queue Creations
-	for (size_t i = 0; i < m_CommandQueueArray.size(); i++)
-	{
-		D3D12_COMMAND_QUEUE_DESC Queue_desc{};
-		Queue_desc.Flags = flags;
-		Queue_desc.Type	 = static_cast<D3D12_COMMAND_LIST_TYPE>(i);
 
-		HAKU_SOK_ASSERT(Device->CreateCommandQueue(
-			&Queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(&m_CommandQueueArray[i])))
-	}
-	///// may expand the naming in the future
-	/// switch (type)
-	///{
-	/// case D3D12_COMMAND_LIST_TYPE_DIRECT:
-	///{
-	///	HAKU_DXNAME(m_CommandQueue, L"Direct Command Queue")
-	///	break;
-	///}
-	/// case D3D12_COMMAND_LIST_TYPE_COMPUTE:
-	///{
-	///	HAKU_DXNAME(m_CommandQueue, L"Compute Command Queue")
-	///	break;
-	///}
-	/// case D3D12_COMMAND_LIST_TYPE_COPY:
-	///{
-	///	HAKU_DXNAME(m_CommandQueue, L"Copy Command Queue")
-	///	break;
-	///}
-	///}
+	D3D12_COMMAND_QUEUE_DESC Queue_desc{};
+	Queue_desc.Flags = flags;
+	Queue_desc.Type	 = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-	// for (size_t i = 0; i < FrameCount; i++)
-	//{
-	//	HAKU_SOK_ASSERT(device.Get()->CreateCommandAllocator(type, IID_PPV_ARGS(&m_CommandAllocator[i])))
-	//	switch (type)
-	//	{
-	//	case D3D12_COMMAND_LIST_TYPE_DIRECT:
-	//	{
-	//		wchar_t array[100]{};
-	//		_snwprintf(array, 100, L"Direct Command Allocator : %d", i);
-	//		HAKU_DXNAME(m_CommandQueue, array)
-	//		break;
-	//	}
-	//	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
-	//	{
-	//		wchar_t array[100]{};
-	//		_snwprintf(array, 100, L"Compute Command Allocator : %d", i);
-	//		HAKU_DXNAME(m_CommandQueue, array)
-	//		break;
-	//	}
-	//	case D3D12_COMMAND_LIST_TYPE_COPY:
-	//	{
-	//		wchar_t array[100]{};
-	//		_snwprintf(array, 100, L"Copy Command Allocator : %d", i);
-	//		HAKU_DXNAME(m_CommandQueue, array)
-	//		break;
-	//	}
-	//	}
-	//}
+	HAKU_SOK_ASSERT(Device->CreateCommandQueue(
+		&Queue_desc,
+		__uuidof(ID3D12CommandQueue),
+		reinterpret_cast<void**>(&m_CommandQueueArray[D3D12_COMMAND_LIST_TYPE_DIRECT])))
+	HAKU_DXNAME(m_CommandQueueArray[0], L"Direct Command Queue");
+	Queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+
+	HAKU_SOK_ASSERT(Device->CreateCommandQueue(
+		&Queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(&m_CommandQueueArray[1])))
+	HAKU_DXNAME(m_CommandQueueArray[1], L"Compute Command Queue");
+
+	Queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+
+	HAKU_SOK_ASSERT(Device->CreateCommandQueue(
+		&Queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(&m_CommandQueueArray[2])))
+	HAKU_DXNAME(m_CommandQueueArray[2], L"Copy Command Queue");
 }
 CommandQueue::~CommandQueue()
 {
-	Shutdown();
+	//Shutdown();
 }
 
 void CommandQueue::Shutdown() noexcept
@@ -84,22 +46,47 @@ void CommandQueue::Shutdown() noexcept
 }
 void CommandQueue::ExecuteLists() noexcept
 {
-	if (!m_ReadyCmdList.empty())
+}
+
+ID3D12CommandQueue* CommandQueue::Get(D3D12_COMMAND_LIST_TYPE type)
+{
+	ID3D12CommandQueue* ret_val = nullptr;
+	switch (type)
 	{
-		auto Current = m_ReadyCmdList.front();
-		//
-		// Current->ResolveResourceStates();
-		// auto Queue = Get(Current->GetType());
-		// Queue->ExecuteCommandLists(Current->GetListSize(),Current->GetList());
-		// Synchronize();
-		// RenderEngine::ReturnStaleCommandList(Current);
-		// m_CommandQueueArray.pop();
+	case D3D12_COMMAND_LIST_TYPE_DIRECT:
+	{
+		ret_val = m_CommandQueueArray[0];
+		break;
+	}
+	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
+	{
+		ret_val = m_CommandQueueArray[1];
+		break;
+	}
+	case D3D12_COMMAND_LIST_TYPE_COPY:
+	{
+		ret_val = m_CommandQueueArray[2];
+		break;
+	}
+	default:
+	{
+		HAKU_LOG_CRIT("Unknown Type of Command Queue", type);
+		HAKU_THROW("Unknown Type of Command Queue");
+		break;
+	}
+	}
+	return ret_val;
+}
+
+void CommandQueue::ExecuteTest(ID3D12GraphicsCommandList* ptr, size_t count)
+{
+	ID3D12CommandList* arr = { ptr };
+	for (size_t i = 0; i < count; i++)
+	{
+		m_CommandQueueArray[0]->ExecuteCommandLists(1, &arr);
 	}
 }
-void CommandQueue::EmplaceCommandList(CommandList* ptr) noexcept
-{
-	m_ReadyCmdList.push(ptr);
-}
+
 void CommandQueue::Synchronize()
 {
 	//	// Get the device and synchronizing value
@@ -107,7 +94,7 @@ void CommandQueue::Synchronize()
 	auto fence		= fenceptr->Get();
 	auto fenceevent = fenceptr->GetEvent();
 	auto fencevalue = RenderEngine::FenceValueAdd();
-	auto Swapchain	= RenderEngine::GetSwapChain(); // this is taken to update the backbuffer index (m_FrameIndex)
+	// auto Swapchain	= RenderEngine::GetSwapChain(); // this is taken to update the backbuffer index (m_FrameIndex)
 	// auto		   DirectQueue = RenderEngine::GetCommandQueue();
 	const uint64_t fence_value = fencevalue;
 	HAKU_SOK_ASSERT(m_CommandQueueArray[D3D12_COMMAND_LIST_TYPE_DIRECT]->Signal(fence, fence_value))
@@ -118,7 +105,6 @@ void CommandQueue::Synchronize()
 		HAKU_SOK_ASSERT(fence->SetEventOnCompletion(fence_value, fenceevent))
 		WaitForSingleObject(fenceevent, INFINITE);
 	}
-	Swapchain->SetBackBufferIndex();
 }
 } // namespace Renderer
 } // namespace Haku

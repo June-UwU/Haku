@@ -1,76 +1,39 @@
 #pragma once
-#include <memory>
-#include "macros.hpp"
+#include "HakuLog.hpp"
 #include "hakupch.hpp"
 #include "directx/d3d12.h"
-#include "Core/Exceptions.hpp"
-#include "D3D12CommandQueue.hpp"
-#include "D3D12RenderDevice.hpp"
-#include "D3D12PipelineState.hpp"
-#include "D3D12RootSignature.hpp"
-#include "D3D12ResourceStateTracker.hpp"
-
-// TODO : functions to port over
-// m_Signature->SetSignature(*m_Command);
-// m_DescriptorHeap->SetDescriptorHeaps(*m_Command);
-// These two are probably commandlist methods
-// void ClearRenderTargets() noexcept;
-/// would probably thanos this function
-// void TransitionPresent();
+#include "Utils/Dequeue.hpp"
 
 namespace Haku
 {
 namespace Renderer
 {
-struct D3DCommandList
+struct CommandList
 {
-	D3DCommandList(D3D12_COMMAND_LIST_TYPE type);
-	void Reset() noexcept;
-	void ShutDown() noexcept;
-	~D3DCommandList();
-
+	void					   Reset();
+	void					   Release();
+	void					   ResetCommandList();
+	void					   ResetCommandAllocator();
 	D3D12_COMMAND_LIST_TYPE	   m_Type;
-	ID3D12CommandAllocator*	   m_CommandAllocator = nullptr;
-	ID3D12GraphicsCommandList* m_CommandList	  = nullptr;
+	ID3D12CommandAllocator*	   m_Allocator;
+	ID3D12GraphicsCommandList* m_CommandList;
 };
-static D3DCommandList* CreateD3DCommandList(D3D12_COMMAND_LIST_TYPE type);
 
-class CommandList
+class ProxyCommandList
 {
 public:
-	// CommandList(D3D12_COMMAND_LIST_TYPE type);
-	//~CommandList();
-	// void					   Reset() noexcept;
-	// void					   Shutdown() noexcept;
-	// ID3D12GraphicsCommandList* Get() noexcept { return m_CommandList; };
-	//
-	//// These functions are expected to change as the interface develops
-	// void SetRootSignature(D3D12RootSignature& signature);
-	// void SetScissorRects(D3D12_RECT rect, uint32_t rectnum);
-	// void SetViewports(D3D12_VIEWPORT port, uint32_t viewportnum = 1u);
-	// void SetPipelineState(CommandQueue& allocator, D3D12PipelineState& state);
-	// void SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	////void SetDescriptorHeap();
-	//
-	// void TransitionBarriers(
-	//	ID3D12Resource*				 Resource,
-	//	D3D12_RESOURCE_STATES		 statebefore,
-	//	D3D12_RESOURCE_STATES		 stateafter,
-	//	D3D12_RESOURCE_BARRIER_FLAGS flags = D3D12_RESOURCE_BARRIER_FLAG_NONE);
-	//// void Render()...???
-
 private:
-	std::vector<D3DCommandList*> m_ExecuteCommandList;
-
-	static Utils::HK_Queue_mt<D3DCommandList*> m_FreeListCopy;
-	static Utils::HK_Queue_mt<D3DCommandList*> m_FreeListDirect;
-	static Utils::HK_Queue_mt<D3DCommandList*> m_FreeListCompute;
-
-	static Utils::HK_Queue_mt<D3DCommandList*> m_StaleListCopy;
-	static Utils::HK_Queue_mt<D3DCommandList*> m_StaleListDirect;
-	static Utils::HK_Queue_mt<D3DCommandList*> m_StaleListCompute;
 };
 
-static CommandList* CreateCommandList();
-}; // namespace Renderer
-}; // namespace Haku
+static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_ReadyCopyCommandList;
+static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_ReadyDirectCommandList;
+static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_ReadyComputeCommandList;
+static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_StaleCommandList;
+
+CommandList* CreateCommandList(D3D12_COMMAND_LIST_TYPE type);
+CommandList* RequestCommandList(D3D12_COMMAND_LIST_TYPE type);
+void		 ReturnStaleList(CommandList* ptr);
+void		 RepurposeStaleList();
+void		 ShutDownCommandlist();
+} // namespace Renderer
+} // namespace Haku

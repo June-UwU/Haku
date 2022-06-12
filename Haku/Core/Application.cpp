@@ -30,12 +30,14 @@ void Application::ProcessMessage()
 	{
 		m_Window->run();
 		Dispatcher.ServiceEvent();
+		Haku::Renderer::RenderEngine::Render();
 		if (!m_Window->GetMinimize())
 		{
-			ClientUpdate();
+//			ClientUpdate();
 		}
 	}
-	ClientCleanUp();
+	Haku::Renderer::RenderEngine::ShutDown();
+//	ClientCleanUp();
 }
 void Application::OnEvent(Event Event)
 {
@@ -58,7 +60,7 @@ void Application::OnResize(Event& event)
 	m_Window->SetWidth(width);
 	m_Window->SetHeight(height);
 	m_Window->SetMinimize(false);
-	//m_Renderer.Resize(height, width);
+	Haku::Renderer::RenderEngine::ResizeEvent(height,width);
 	event.Handled = true;
 }
 

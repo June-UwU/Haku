@@ -62,7 +62,10 @@ namespace Renderer
 // void D3D12DescriptorHeap::SetDescriptorHeaps(D3D12CommandQueue& Command) noexcept
 //{
 //	ID3D12DescriptorHeap* ppHeaps[] = { m_SRVHeap.Get() };
-//	Command.GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+//	Command.Get
+//
+//
+// ()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 //}
 //
 // ID3D12DescriptorHeap* D3D12DescriptorHeap::GetSRVDescriptorHeap() noexcept
@@ -93,8 +96,9 @@ DescriptorHeap::DescriptorHeap(
 
 	HAKU_LOG_INFO("Creating Desriptor Heap", type, "Descriptor Count : ", number_of_descriptors);
 	HAKU_SOK_ASSERT(Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_Heap)));
-	m_CPUHandle = m_Heap->GetCPUDescriptorHandleForHeapStart();
-	m_GPUHandle = m_Heap->GetGPUDescriptorHandleForHeapStart();
+	m_CPUHandle			= m_Heap->GetCPUDescriptorHandleForHeapStart();
+	m_GPUHandle			= m_Heap->GetGPUDescriptorHandleForHeapStart();
+	m_IncrementSize = Device->GetDescriptorHandleIncrementSize(type);
 }
 DescriptorHeap::~DescriptorHeap() noexcept
 {
@@ -104,13 +108,21 @@ const ID3D12DescriptorHeap* DescriptorHeap::Get() noexcept
 {
 	return m_Heap;
 }
-D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeap::GetCPUBaseHandle() noexcept
+D3D12_CPU_DESCRIPTOR_HANDLE& DescriptorHeap::GetCPUBaseHandle() noexcept
 {
 	return m_CPUHandle;
 }
-D3D12_GPU_DESCRIPTOR_HANDLE DescriptorHeap::GetGPUBaseHandle() noexcept
+D3D12_GPU_DESCRIPTOR_HANDLE& DescriptorHeap::GetGPUBaseHandle() noexcept
 {
 	return m_GPUHandle;
+}
+D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeap::GetCPUHandleOnPosition(size_t pos) noexcept
+{
+	return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_CPUHandle, pos, m_IncrementSize);
+}
+D3D12_GPU_DESCRIPTOR_HANDLE DescriptorHeap::GetGPUHandleOnPosition(size_t pos) noexcept
+{
+	return CD3DX12_GPU_DESCRIPTOR_HANDLE(m_GPUHandle, pos, m_IncrementSize);
 }
 void DescriptorHeap::ShutDown() noexcept
 {

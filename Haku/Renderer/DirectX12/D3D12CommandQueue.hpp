@@ -30,12 +30,14 @@ public:
 	void				Synchronize();
 	void				Shutdown() noexcept;
 	void				ExecuteLists() noexcept;
-	void				EmplaceCommandList(CommandList* ptr) noexcept;
-	ID3D12CommandQueue* Get(D3D12_COMMAND_LIST_TYPE type) noexcept { return m_CommandQueueArray[type]; };
+	ID3D12CommandQueue* Get(D3D12_COMMAND_LIST_TYPE type);
+
+
+	//this needs to be ripped out
+	void ExecuteTest(ID3D12GraphicsCommandList* ptr, size_t count);
 
 private:
-	static Utils::HK_Queue_mt<CommandList*> m_ReadyCmdList;
-	std::array<ID3D12CommandQueue*, 4>		m_CommandQueueArray;
+	std::array<ID3D12CommandQueue*, 3> m_CommandQueueArray;
 };
 } // namespace Renderer
 } // namespace Haku

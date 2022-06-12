@@ -6,6 +6,7 @@
 #include "Core/Application.hpp"
 #include "..\..\imgui\backends\imgui_impl_dx12.h"
 
+#define TEST 1
 #pragma comment(lib, "DXGI.lib")
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -20,25 +21,76 @@ namespace Haku
 {
 namespace Renderer
 {
-std::unique_ptr<Fence>				 RenderEngine::m_Fence;
-std::unique_ptr<RenderDevice>		 RenderEngine::m_Device;
-std::unique_ptr<SwapChain>			 RenderEngine::m_SwapChain;
-std::atomic_uint64_t				 RenderEngine::m_FenceValue;
-Utils::HK_Queue_mt<CommandList*>	 RenderEngine::m_FreeCmdList;
-std::unique_ptr<CommandQueue>		 RenderEngine::m_CommandQueue;
-std::unique_ptr<DescriptorAllocator> RenderEngine::m_CPUDescriptorAllocators[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+std::mutex					  RenderEngine::m_mutex;
+std::unique_ptr<Fence>		  RenderEngine::m_Fence;
+std::unique_ptr<RenderDevice> RenderEngine::m_Device;
+std::unique_ptr<SwapChain>	  RenderEngine::m_SwapChain;
+std::atomic_uint64_t		  RenderEngine::m_FenceValue;
+std::unique_ptr<CommandQueue> RenderEngine::m_CommandQueue;
+std::array<std::unique_ptr<DescriptorAllocator>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES>
+	RenderEngine::m_CPUDescriptorAllocators;
 
-void RenderEngine::Render()
+// testing
+Haku::Utils::Hk_Dequeue_mt<CommandList*> RenderEngine::m_ExecutableQueue;
+ID3D12GraphicsCommandList*				 RenderEngine::CurrentCommandList;
+void									 RenderEngine::Render()
 {
-	if (m_FreeCmdList.empty())
-	{
-		m_FreeCmdList.push(CreateCommandList());
-	}
+	RecordAndCommandList();
+
+#if TEST
+	CommandList* Commandlist = RequestCommandList(D3D12_COMMAND_LIST_TYPE_DIRECT);
+	CurrentCommandList		 = Commandlist->m_CommandList;
+	// thhis needs to repaired
+	auto resbar = CD3DX12_RESOURCE_BARRIER::Transition(
+		m_SwapChain->GetRenderTargetResource(m_SwapChain->GetFrameIndex()),
+		D3D12_RESOURCE_STATE_PRESENT,
+		D3D12_RESOURCE_STATE_RENDER_TARGET);
+	CurrentCommandList->ResourceBarrier(1, &resbar);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(
+		m_SwapChain->GetCPUHeapHandleInOffset(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_SwapChain->GetFrameIndex()));
+	// auto dsvhandle = Heap.GetDSVCPUHandle();
+
+	CurrentCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	// clearing back buffer
+	const float clearColor[] = { 1.0f, 0.2f, 0.2f, 1.0f };
+	CurrentCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	auto esbar = CD3DX12_RESOURCE_BARRIER::Transition(
+		m_SwapChain->GetRenderTargetResource(m_SwapChain->GetFrameIndex()),
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		D3D12_RESOURCE_STATE_PRESENT);
+	CurrentCommandList->ResourceBarrier(1, &esbar);
+	CurrentCommandList->Close();
+	m_ExecutableQueue.push_back(Commandlist);
+	m_CommandQueue->ExecuteTest(m_ExecutableQueue.front()->m_CommandList, 1);
+#endif
+	// this might be required only when there is a commandlist execution ,,...so bind them together...?
+	m_CommandQueue->ExecuteLists();
+	m_SwapChain->Present();
+	m_CommandQueue->Synchronize();
+	m_SwapChain->SetBackBufferIndex();
+	ReturnStaleList(m_ExecutableQueue.front());
+	m_ExecutableQueue.pop_front();
+	RepurposeStaleList();
+	// this will be the eventual end game
+	// if(!m_CommandQueue->NoCommandListForExecute())
+	//{
+	//	m_CommandQueue->ExecuteLists();
+	//}
+}
+void RenderEngine::ResizeEvent(uint64_t height, uint64_t width)
+{
+	m_SwapChain->Resize(height, width);
 }
 
 void RenderEngine::ShutDown()
 {
+	// Synchronzing to make all command list finish execution
+	m_CommandQueue->Synchronize();
 	m_Device.reset();
+	m_CommandQueue->Shutdown();
+	m_SwapChain->ShutDown();
+	ShutDownCommandlist();
 }
 
 void RenderEngine::Initialize()
@@ -62,17 +114,13 @@ void RenderEngine::Initialize()
 
 uint64_t RenderEngine::GetFenceValue() noexcept
 {
+	std::lock_guard<std::mutex> lock(m_mutex);
 	return m_FenceValue;
 }
 
 uint64_t RenderEngine::FenceValueAdd() noexcept
 {
 	return m_FenceValue++;
-}
-
-void RenderEngine::ReturnStaleCommandList(CommandList* ptr)
-{
-	m_FreeCmdList.push(ptr);
 }
 
 Fence* RenderEngine::GetFence() noexcept
@@ -94,6 +142,11 @@ SwapChain* RenderEngine::GetSwapChain() noexcept
 CommandQueue* RenderEngine::GetCommandQueue()
 {
 	return m_CommandQueue.get();
+}
+
+void RecordAndCommandList()
+{
+	// CurrentCommandLis
 }
 
 } // namespace Renderer

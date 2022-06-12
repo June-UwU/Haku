@@ -61,12 +61,20 @@ namespace Renderer
 //	// Indicate that the back buffer will be used as a render target.
 //	auto resbar = CD3DX12_RESOURCE_BARRIER::Transition(
 //		m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-//	Command.GetCommandList()->ResourceBarrier(1, &resbar);
+//	Command.Get
+//
+//
+//
+// ()->ResourceBarrier(1, &resbar);
 //
 //	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(Heap.GetRTVCPUHandle(), m_FrameIndex, m_RtvDescriptorSize);
 //	auto						  dsvhandle = Heap.GetDSVCPUHandle();
 //
-//	Command.GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvhandle);
+//	Command.Get
+//
+//
+//
+// ()->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvhandle);
 //	// clearing back buffer
 //	const float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
 //	Command.GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
@@ -178,6 +186,10 @@ SwapChain::SwapChain()
 {
 }
 
+SwapChain::~SwapChain()
+{
+}
+
 void SwapChain::Present()
 {
 	m_SwapChain->Present(1, 0);
@@ -206,7 +218,8 @@ void SwapChain::Init(Windows* window)
 	HAKU_SOK_ASSERT(DxgiFactory->CreateSwapChainForHwnd(
 		Cmd->Get(D3D12_COMMAND_LIST_TYPE_DIRECT), window->GetHandle(), &Swap_desc, nullptr, nullptr, &swap_chain1))
 
-	auto ret	 = swap_chain1.As(&m_SwapChain);
+	// auto ret	 = swap_chain1.As(&m_SwapChain);
+	HAKU_SOK_ASSERT(swap_chain1->QueryInterface(__uuidof(IDXGISwapChain3), reinterpret_cast<void**>(&m_SwapChain)))
 	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
 
 	m_RTVDescriptorHeapIncrementSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -257,13 +270,20 @@ void SwapChain::Init(Windows* window)
 		D3D12_RESOURCE_STATE_DEPTH_WRITE,
 		&depthOptimizedClearValue,
 		IID_PPV_ARGS(&m_DSVResource)));
-
+	SetBackBufferIndex();
 	Device->CreateDepthStencilView(m_DSVResource, &depthStencilDesc, m_DSVHeap.GetCPUBaseHandle());
 	HAKU_DXNAME(m_DSVResource, L"Depth Stencil Resource");
 }
 
+uint64_t SwapChain::GetFrameIndex() noexcept
+{
+	std::lock_guard<std::mutex> lock(m_Mutex);
+	return m_FrameIndex;
+}
+
 void SwapChain::SetBackBufferIndex() noexcept
 {
+	std::lock_guard<std::mutex> lock(m_Mutex);
 	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
 }
 
@@ -299,13 +319,95 @@ void SwapChain::Resize(uint64_t height, uint64_t width)
 
 		Device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
 
-		wchar_t array[100]{};
-		_snwprintf(array, 100, L"Back Buffer: %d", i);
-		HAKU_DXNAME(m_RenderTargets[i], array)
-
 		m_RenderTargets[i] = backBuffer;
 
 		rtvHandle.Offset(rtvDescriptorSize);
+	}
+}
+
+ID3D12Resource* SwapChain::GetRenderTargetResource(size_t pos) noexcept
+{
+	assert(pos < FrameCount);
+	return m_RenderTargets[pos];
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE& SwapChain::GetCPUHeapHandle(D3D12_DESCRIPTOR_HEAP_TYPE type)
+{
+	switch (type)
+	{
+	case D3D12_DESCRIPTOR_HEAP_TYPE_DSV:
+	{
+		return m_DSVHeap.GetCPUBaseHandle();
+	}
+	case D3D12_DESCRIPTOR_HEAP_TYPE_RTV:
+	{
+		return m_RTVHeap.GetCPUBaseHandle();
+	}
+	default:
+	{
+		HAKU_LOG_CRIT("Unknown Swapchain cpu heap type :", type);
+		throw std::logic_error("Unknown Swapchain cpu heap type");
+	}
+	}
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE& SwapChain::GetGPUHeapHandle(D3D12_DESCRIPTOR_HEAP_TYPE type)
+{
+	switch (type)
+	{
+	case D3D12_DESCRIPTOR_HEAP_TYPE_DSV:
+	{
+		return m_DSVHeap.GetGPUBaseHandle();
+	}
+	case D3D12_DESCRIPTOR_HEAP_TYPE_RTV:
+	{
+		return m_RTVHeap.GetGPUBaseHandle();
+	}
+	default:
+	{
+		HAKU_LOG_CRIT("Unknown Swapchain gpu heap type :", type);
+		throw std::logic_error("Unknown Swapchain gpu heap type");
+	}
+	}
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE SwapChain::GetCPUHeapHandleInOffset(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pos)
+{
+	switch (type)
+	{
+	case D3D12_DESCRIPTOR_HEAP_TYPE_DSV:
+	{
+		return m_DSVHeap.GetCPUHandleOnPosition(pos);
+	}
+	case D3D12_DESCRIPTOR_HEAP_TYPE_RTV:
+	{
+		return m_RTVHeap.GetCPUHandleOnPosition(pos);
+	}
+	default:
+	{
+		HAKU_LOG_CRIT("Unknown Swapchain gpu heap type :", type);
+		throw std::logic_error("Unknown Swapchain gpu heap type");
+	}
+	}
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE SwapChain::GetGPUHeapHandleInOffset(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pos)
+{
+	switch (type)
+	{
+	case D3D12_DESCRIPTOR_HEAP_TYPE_DSV:
+	{
+		return m_DSVHeap.GetGPUHandleOnPosition(pos);
+	}
+	case D3D12_DESCRIPTOR_HEAP_TYPE_RTV:
+	{
+		return m_RTVHeap.GetGPUHandleOnPosition(pos);
+	}
+	default:
+	{
+		HAKU_LOG_CRIT("Unknown Swapchain gpu heap type :", type);
+		throw std::logic_error("Unknown Swapchain gpu heap type");
+	}
 	}
 }
 
