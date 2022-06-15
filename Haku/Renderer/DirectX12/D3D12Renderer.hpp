@@ -36,9 +36,9 @@ class RenderEngine
 public:
 	static void			 Render();
 	static void			 ShutDown();
-	static void			 EndScene(){};
+	static void			 EndScene();
 	static void			 Initialize();
-	static void			 BeginScene(){};
+	static void			 BeginScene();
 	static CommandQueue* GetCommandQueue();
 	static Fence*		 GetFence() noexcept;
 	static ID3D12Device* GetDeviceD3D() noexcept;
@@ -48,18 +48,17 @@ public:
 	static void			 ResizeEvent(uint64_t height, uint64_t width);
 
 private:
-	static std::mutex					 m_mutex;
-	static std::unique_ptr<Fence>		 m_Fence;
-	static std::unique_ptr<RenderDevice> m_Device;
-	static std::unique_ptr<SwapChain>	 m_SwapChain;
-	static std::atomic_uint64_t			 m_FenceValue;
-	static std::unique_ptr<CommandQueue> m_CommandQueue;
+	static std::mutex					 S_mutex;
+	static std::unique_ptr<Fence>		 S_Fence;
+	static std::unique_ptr<RenderDevice> S_Device;
+	static std::unique_ptr<SwapChain>	 S_SwapChain;
+	static std::atomic_uint64_t			 S_FenceValue;
+	static std::unique_ptr<CommandQueue> S_CommandQueue;
 	static std::array<std::unique_ptr<DescriptorAllocator>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES>
-		m_CPUDescriptorAllocators;
+						S_CPUDescriptorAllocators;
 
-	// TESTING THESE
-	static Haku::Utils::Hk_Dequeue_mt<CommandList*> m_ExecutableQueue;
-	static ID3D12GraphicsCommandList*				CurrentCommandList;
+	//TEST
+	static CommandList* S_CurrentCommandList;
 };
 
 } // namespace Renderer

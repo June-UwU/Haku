@@ -1,4 +1,5 @@
 #pragma once
+#include "macros.hpp"
 #include "HakuLog.hpp"
 #include "hakupch.hpp"
 #include "directx/d3d12.h"
@@ -8,32 +9,33 @@ namespace Haku
 {
 namespace Renderer
 {
-struct CommandList
-{
-	void					   Reset();
-	void					   Release();
-	void					   ResetCommandList();
-	void					   ResetCommandAllocator();
-	D3D12_COMMAND_LIST_TYPE	   m_Type;
-	ID3D12CommandAllocator*	   m_Allocator;
-	ID3D12GraphicsCommandList* m_CommandList;
-};
-
-class ProxyCommandList
+class CommandList
 {
 public:
+	CommandList(D3D12_COMMAND_LIST_TYPE type);
+	DISABLE_COPY(CommandList)
+	DISABLE_MOVE(CommandList)
+
+	void Reset();
+	void Release();
+
+public:
+	D3D12_COMMAND_LIST_TYPE	   m_Type;
+	ID3D12GraphicsCommandList* m_CommandList;
+
 private:
+	std::array<ID3D12CommandAllocator*, FrameCount> m_Allocator;
+	std::atomic_uint64_t							m_Select = 0;
 };
 
-static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_ReadyCopyCommandList;
-static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_ReadyDirectCommandList;
-static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_ReadyComputeCommandList;
+static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_CopyCommandList;
+static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_DirectCommandList;
+static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_ComputeCommandList;
 static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_StaleCommandList;
-
-CommandList* CreateCommandList(D3D12_COMMAND_LIST_TYPE type);
-CommandList* RequestCommandList(D3D12_COMMAND_LIST_TYPE type);
-void		 ReturnStaleList(CommandList* ptr);
-void		 RepurposeStaleList();
-void		 ShutDownCommandlist();
+void											ResetStaleList();
+void											ReturnStaleList(CommandList* ptr);
+CommandList*									RequestCommandList(D3D12_COMMAND_LIST_TYPE type);
+CommandList*									CreateCommandList(D3D12_COMMAND_LIST_TYPE type);
+void											ShutDownCommandList();
 } // namespace Renderer
 } // namespace Haku

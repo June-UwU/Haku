@@ -4,7 +4,7 @@
 #include "wil/wrl.h"
 #include "macros.hpp"
 #include "Utils/Queue_MT.hpp"
-
+#include "D3D12CommandList.hpp"
 // TODO : make ExecuteLists asynchronous
 
 /*Command Queue*/
@@ -28,16 +28,17 @@ public:
 	DISABLE_MOVE(CommandQueue)
 
 	void				Synchronize();
+	void				ExecuteLists();
 	void				Shutdown() noexcept;
-	void				ExecuteLists() noexcept;
+	void				ExecuteCommandList();
+	void				AddListAndExecute(CommandList* list);
 	ID3D12CommandQueue* Get(D3D12_COMMAND_LIST_TYPE type);
-
-
-	//this needs to be ripped out
-	void ExecuteTest(ID3D12GraphicsCommandList* ptr, size_t count);
+	// this needs to be ripped out
+	void Execute(ID3D12GraphicsCommandList* ptr, size_t count);
 
 private:
 	std::array<ID3D12CommandQueue*, 3> m_CommandQueueArray;
 };
+static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_ExecuteList;
 } // namespace Renderer
 } // namespace Haku

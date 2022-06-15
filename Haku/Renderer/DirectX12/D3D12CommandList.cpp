@@ -5,22 +5,76 @@ namespace Haku
 {
 namespace Renderer
 {
-CommandList* CreateCommandList(D3D12_COMMAND_LIST_TYPE type)
+CommandList::CommandList(D3D12_COMMAND_LIST_TYPE type)
+	: m_Type(type)
 {
-	HAKU_LOG_INFO("Creating Command list Type : ", type);
-	CommandList* ret_val = new CommandList;
-	auto		 Device	 = RenderEngine::GetDeviceD3D();
-	HAKU_SOK_ASSERT(Device->CreateCommandAllocator(
-		type, __uuidof(ID3D12CommandAllocator), reinterpret_cast<void**>(&ret_val->m_Allocator)))
+	auto Device = RenderEngine::GetDeviceD3D();
+	for (size_t i = 0; i < m_Allocator.size(); i++)
+	{
+		HAKU_SOK_ASSERT(Device->CreateCommandAllocator(
+			m_Type, __uuidof(ID3D12CommandAllocator), reinterpret_cast<void**>(&m_Allocator[i])))
+	}
 	HAKU_SOK_ASSERT(Device->CreateCommandList(
-		0,
-		type,
-		ret_val->m_Allocator,
-		nullptr,
-		__uuidof(ID3D12CommandList),
-		reinterpret_cast<void**>(&ret_val->m_CommandList)))
-	ret_val->m_Type = type;
-	return ret_val;
+		0, m_Type, m_Allocator[0], nullptr, __uuidof(ID3D12CommandList), reinterpret_cast<void**>(&m_CommandList)))
+	HAKU_SOK_ASSERT(m_CommandList->Close())
+}
+void CommandList::Reset()
+{
+	auto select_uint = m_Select.fetch_add(1u, std::memory_order_seq_cst);
+	auto select		 = select_uint % FrameCount;
+
+	// auto ret = m_CommandList->Close();
+	// HAKU_SOK_ASSERT(ret)
+	auto ret = m_Allocator[select]->Reset();
+	HAKU_SOK_ASSERT(ret)
+	ret = m_CommandList->Reset(m_Allocator[select], nullptr);
+	HAKU_SOK_ASSERT(ret);
+}
+void CommandList::Release()
+{
+	for (auto* ptr : m_Allocator)
+	{
+		ptr->Release();
+	}
+	m_CommandList->Release();
+}
+
+void ResetStaleList()
+{
+	CommandList* list = nullptr;
+	auto size = S_StaleCommandList.size();
+	while (size > FrameCount)
+	{
+		list = S_StaleCommandList.front();
+		switch (list->m_Type)
+		{
+		case D3D12_COMMAND_LIST_TYPE_DIRECT:
+		{
+			S_DirectCommandList.push_back(list);
+			break;
+		}
+		case D3D12_COMMAND_LIST_TYPE_COMPUTE:
+		{
+			S_ComputeCommandList.push_back(list);
+			break;
+		}
+		case D3D12_COMMAND_LIST_TYPE_COPY:
+		{
+			S_CopyCommandList.push_back(list);
+			break;
+		}
+		default:
+		{
+			HAKU_LOG_CRIT("Unknown Command List Type In Stale List TYPE : ", list->m_Type);
+			HAKU_THROW("Unknown Command List Type In Stale List ");
+			break;
+		}
+		}
+	}
+}
+void ReturnStaleList(CommandList* ptr)
+{
+	S_StaleCommandList.push_back(ptr);
 }
 CommandList* RequestCommandList(D3D12_COMMAND_LIST_TYPE type)
 {
@@ -29,142 +83,86 @@ CommandList* RequestCommandList(D3D12_COMMAND_LIST_TYPE type)
 	{
 	case D3D12_COMMAND_LIST_TYPE_DIRECT:
 	{
-		if (!S_ReadyDirectCommandList.empty())
+		if (!S_DirectCommandList.empty())
 		{
-			ret_val = S_ReadyDirectCommandList.front();
-			S_ReadyDirectCommandList.pop_front();
+			ret_val = S_DirectCommandList.front();
+			S_DirectCommandList.pop_front();
 		}
 		else
 		{
-			HAKU_LOG_INFO("No  Ready Commandlist Allocating a new Commandlist");
+			HAKU_LOG_INFO("No Available CommandList, Allocating a new list TYPE : ", type);
 			ret_val = CreateCommandList(type);
 		}
 		break;
 	}
 	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
 	{
-		if (!S_ReadyComputeCommandList.empty())
+		if (!S_DirectCommandList.empty())
 		{
-			ret_val = S_ReadyComputeCommandList.front();
-			S_ReadyComputeCommandList.pop_front();
+			ret_val = S_ComputeCommandList.front();
+			S_ComputeCommandList.pop_front();
 		}
 		else
 		{
-			HAKU_LOG_INFO("No  Ready Commandlist Allocating a new Commandlist");
+			HAKU_LOG_INFO("No Available CommandList, Allocating a new list TYPE : ", type);
 			ret_val = CreateCommandList(type);
 		}
 		break;
 	}
 	case D3D12_COMMAND_LIST_TYPE_COPY:
 	{
-		if (!S_ReadyCopyCommandList.empty())
+		if (!S_DirectCommandList.empty())
 		{
-			ret_val = S_ReadyCopyCommandList.front();
-			S_ReadyCopyCommandList.pop_front();
+			ret_val = S_CopyCommandList.front();
+			S_CopyCommandList.pop_front();
 		}
 		else
 		{
-			HAKU_LOG_INFO("No  Ready Commandlist Allocating a new Commandlist");
+			HAKU_LOG_INFO("No Available CommandList, Allocating a new list TYPE : ", type);
 			ret_val = CreateCommandList(type);
 		}
 		break;
 	}
 	default:
 	{
-		HAKU_LOG_CRIT("Unknown Type of Command List", type);
-		HAKU_THROW("Unknown Type of Command List");
+		HAKU_LOG_CRIT("Unknown Command List Type In Stale List TYPE : ", type);
+		HAKU_THROW("Unknown Command List Type In Stale List ");
 		break;
 	}
 	}
 	return ret_val;
 }
-void ReturnStaleList(CommandList* ptr)
+CommandList* CreateCommandList(D3D12_COMMAND_LIST_TYPE type)
 {
-	S_StaleCommandList.push_back(ptr);
+	return new CommandList(type);
 }
-void RepurposeStaleList()
+void ShutDownCommandList()
 {
-	while (!S_StaleCommandList.empty())
-	{
-		auto commandlist = S_StaleCommandList.front();
-		switch (commandlist->m_Type)
-		{
-		case D3D12_COMMAND_LIST_TYPE_DIRECT:
-		{
-			S_ReadyDirectCommandList.push_back(commandlist);
-			break;
-		}
-		case D3D12_COMMAND_LIST_TYPE_COMPUTE:
-		{
-			S_ReadyComputeCommandList.push_back(commandlist);
-			break;
-		}
-		case D3D12_COMMAND_LIST_TYPE_COPY:
-		{
-			S_ReadyCopyCommandList.push_back(commandlist);
-			break;
-		}
-		default:
-		{
-			HAKU_LOG_CRIT("Unknown Type of Command List In Stale Queue", commandlist->m_Type);
-			HAKU_THROW("Unknown Type of Command List In Stale Queue");
-			break;
-		}
-		}
-		S_StaleCommandList.pop_front();
-		commandlist->Reset();
-	}
-}
-void ShutDownCommandlist()
-{
-	HAKU_LOG_INFO("Releasing Command List Pool");
 	CommandList* list = nullptr;
 	while (!S_StaleCommandList.empty())
 	{
 		list = S_StaleCommandList.front();
 		S_StaleCommandList.pop_front();
 		list->Release();
-		delete list;
 	}
-	while (!S_ReadyCopyCommandList.empty())
+	while (!S_DirectCommandList.empty())
 	{
-		list = S_ReadyCopyCommandList.front();
-		S_ReadyCopyCommandList.pop_front();
+		list = S_DirectCommandList.front();
+		S_DirectCommandList.pop_front();
 		list->Release();
-		delete list;
 	}
-	while (!S_ReadyDirectCommandList.empty())
+	while (!S_ComputeCommandList.empty())
 	{
-		list = S_ReadyDirectCommandList.front();
-		S_ReadyDirectCommandList.pop_front();
+		list = S_ComputeCommandList.front();
+		S_ComputeCommandList.pop_front();
 		list->Release();
-		delete list;
 	}
-	while (!S_ReadyComputeCommandList.empty())
+	while (!S_CopyCommandList.empty())
 	{
-		list = S_ReadyComputeCommandList.front();
-		S_ReadyComputeCommandList.pop_front();
+		list = S_CopyCommandList.front();
+		S_CopyCommandList.pop_front();
 		list->Release();
-		delete list;
 	}
-}
-void CommandList::Reset()
-{
-	ResetCommandAllocator();
-	ResetCommandList();
-}
-void CommandList::Release()
-{
-	m_Allocator->Release();
-	m_CommandList->Release();
-}
-void CommandList::ResetCommandList()
-{
-	m_CommandList->Reset(m_Allocator, nullptr);
-}
-void CommandList::ResetCommandAllocator()
-{
-	m_Allocator->Reset();
 }
 } // namespace Renderer
 } // namespace Haku

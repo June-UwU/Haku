@@ -26,17 +26,19 @@ void Application::SetMainWindow(Windows& window) noexcept
 }
 void Application::ProcessMessage()
 {
+	
+	m_RenderThread = std::thread(Renderer::RenderEngine::Render);
 	while (m_Running)
 	{
 		m_Window->run();
 		Dispatcher.ServiceEvent();
-		Haku::Renderer::RenderEngine::Render();
 		if (!m_Window->GetMinimize())
 		{
 //			ClientUpdate();
 		}
 	}
 	Haku::Renderer::RenderEngine::ShutDown();
+	m_RenderThread.join();
 //	ClientCleanUp();
 }
 void Application::OnEvent(Event Event)

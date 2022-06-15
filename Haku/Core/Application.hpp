@@ -37,6 +37,7 @@ private:
 
 private:
 	EventDispatcher Dispatcher;
+	std::thread		m_RenderThread;
 	bool			m_Running = true;
 	Haku::Windows*	m_Window  = nullptr;
 

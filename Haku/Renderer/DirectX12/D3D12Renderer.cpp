@@ -21,34 +21,44 @@ namespace Haku
 {
 namespace Renderer
 {
-std::mutex					  RenderEngine::m_mutex;
-std::unique_ptr<Fence>		  RenderEngine::m_Fence;
-std::unique_ptr<RenderDevice> RenderEngine::m_Device;
-std::unique_ptr<SwapChain>	  RenderEngine::m_SwapChain;
-std::atomic_uint64_t		  RenderEngine::m_FenceValue;
-std::unique_ptr<CommandQueue> RenderEngine::m_CommandQueue;
+std::mutex					  RenderEngine::S_mutex;
+std::unique_ptr<Fence>		  RenderEngine::S_Fence;
+std::unique_ptr<RenderDevice> RenderEngine::S_Device;
+std::unique_ptr<SwapChain>	  RenderEngine::S_SwapChain;
+std::atomic_uint64_t		  RenderEngine::S_FenceValue;
+std::unique_ptr<CommandQueue> RenderEngine::S_CommandQueue;
 std::array<std::unique_ptr<DescriptorAllocator>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES>
-	RenderEngine::m_CPUDescriptorAllocators;
+	RenderEngine::S_CPUDescriptorAllocators;
 
 // testing
-Haku::Utils::Hk_Dequeue_mt<CommandList*> RenderEngine::m_ExecutableQueue;
-ID3D12GraphicsCommandList*				 RenderEngine::CurrentCommandList;
-void									 RenderEngine::Render()
+CommandList* RenderEngine::S_CurrentCommandList;
+void		 RenderEngine::EndScene()
 {
+	S_CurrentCommandList = nullptr;
+	ResetStaleList();//reuse the list
+};
+void RenderEngine::BeginScene()
+{
+	// getting a command list and then resetting it for recording
+	S_CurrentCommandList = RequestCommandList(D3D12_COMMAND_LIST_TYPE_DIRECT);
+	S_CurrentCommandList->Reset();
+};
+void RenderEngine::Render()
+{
+	BeginScene();
 	RecordAndCommandList();
 
 #if TEST
-	CommandList* Commandlist = RequestCommandList(D3D12_COMMAND_LIST_TYPE_DIRECT);
-	CurrentCommandList		 = Commandlist->m_CommandList;
+	auto* CurrentCommandList = S_CurrentCommandList->m_CommandList;
 	// thhis needs to repaired
 	auto resbar = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_SwapChain->GetRenderTargetResource(m_SwapChain->GetFrameIndex()),
+		S_SwapChain->GetRenderTargetResource(S_SwapChain->GetFrameIndex()),
 		D3D12_RESOURCE_STATE_PRESENT,
 		D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CurrentCommandList->ResourceBarrier(1, &resbar);
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(
-		m_SwapChain->GetCPUHeapHandleInOffset(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_SwapChain->GetFrameIndex()));
+		S_SwapChain->GetCPUHeapHandleInOffset(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, S_SwapChain->GetFrameIndex()));
 	// auto dsvhandle = Heap.GetDSVCPUHandle();
 
 	CurrentCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
@@ -56,92 +66,89 @@ void									 RenderEngine::Render()
 	const float clearColor[] = { 1.0f, 0.2f, 0.2f, 1.0f };
 	CurrentCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	auto esbar = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_SwapChain->GetRenderTargetResource(m_SwapChain->GetFrameIndex()),
+		S_SwapChain->GetRenderTargetResource(S_SwapChain->GetFrameIndex()),
 		D3D12_RESOURCE_STATE_RENDER_TARGET,
 		D3D12_RESOURCE_STATE_PRESENT);
 	CurrentCommandList->ResourceBarrier(1, &esbar);
-	CurrentCommandList->Close();
-	m_ExecutableQueue.push_back(Commandlist);
-	m_CommandQueue->ExecuteTest(m_ExecutableQueue.front()->m_CommandList, 1);
+	HAKU_SOK_ASSERT(CurrentCommandList->Close())
 #endif
 	// this might be required only when there is a commandlist execution ,,...so bind them together...?
-	m_CommandQueue->ExecuteLists();
-	m_SwapChain->Present();
-	m_CommandQueue->Synchronize();
-	m_SwapChain->SetBackBufferIndex();
-	ReturnStaleList(m_ExecutableQueue.front());
-	m_ExecutableQueue.pop_front();
-	RepurposeStaleList();
+	// S_CommandQueue->Execute(CurrentCommandList, 1);
+	S_CommandQueue->AddListAndExecute(S_CurrentCommandList);
+	S_SwapChain->Present();
+	S_CommandQueue->Synchronize();
+	S_SwapChain->SetBackBufferIndex();
 	// this will be the eventual end game
 	// if(!m_CommandQueue->NoCommandListForExecute())
 	//{
 	//	m_CommandQueue->ExecuteLists();
 	//}
+	EndScene();
 }
 void RenderEngine::ResizeEvent(uint64_t height, uint64_t width)
 {
-	m_SwapChain->Resize(height, width);
+	S_SwapChain->Resize(height, width);
 }
 
 void RenderEngine::ShutDown()
 {
 	// Synchronzing to make all command list finish execution
-	m_CommandQueue->Synchronize();
-	m_Device.reset();
-	m_CommandQueue->Shutdown();
-	m_SwapChain->ShutDown();
-	ShutDownCommandlist();
+	S_CommandQueue->Synchronize();
+	S_Device.reset();
+	S_CommandQueue->Shutdown();
+	S_SwapChain->ShutDown();
+	ShutDownCommandList();
 }
 
 void RenderEngine::Initialize()
 {
 	auto app	 = Haku::Application::Get();
 	auto pWindow = app->GetWindow();
-	m_FenceValue = 0;
-	m_Device	 = std::make_unique<RenderDevice>();
+	S_FenceValue = 0;
+	S_Device	 = std::make_unique<RenderDevice>();
 
 	// these all need RenderDevice
-	m_Fence		   = std::make_unique<Fence>();
-	m_SwapChain	   = std::make_unique<SwapChain>();
-	m_CommandQueue = std::make_unique<CommandQueue>();
+	S_Fence		   = std::make_unique<Fence>();
+	S_SwapChain	   = std::make_unique<SwapChain>();
+	S_CommandQueue = std::make_unique<CommandQueue>();
 	for (uint64_t i = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; i++)
 	{
-		m_CPUDescriptorAllocators[i] =
+		S_CPUDescriptorAllocators[i] =
 			std::make_unique<DescriptorAllocator>(static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(i));
 	}
-	m_SwapChain->Init(pWindow);
+	S_SwapChain->Init(pWindow);
 }
 
 uint64_t RenderEngine::GetFenceValue() noexcept
 {
-	std::lock_guard<std::mutex> lock(m_mutex);
-	return m_FenceValue;
+	std::lock_guard<std::mutex> lock(S_mutex);
+	return S_FenceValue;
 }
 
 uint64_t RenderEngine::FenceValueAdd() noexcept
 {
-	return m_FenceValue++;
+	return S_FenceValue++;
 }
 
 Fence* RenderEngine::GetFence() noexcept
 {
-	return m_Fence.get();
+	return S_Fence.get();
 }
 
 //* ()
 ID3D12Device* RenderEngine::GetDeviceD3D() noexcept
 {
-	return m_Device->Get();
+	return S_Device->Get();
 }
 
 SwapChain* RenderEngine::GetSwapChain() noexcept
 {
-	return m_SwapChain.get();
+	return S_SwapChain.get();
 }
 
 CommandQueue* RenderEngine::GetCommandQueue()
 {
-	return m_CommandQueue.get();
+	return S_CommandQueue.get();
 }
 
 void RecordAndCommandList()

@@ -218,7 +218,6 @@ void SwapChain::Init(Windows* window)
 	HAKU_SOK_ASSERT(DxgiFactory->CreateSwapChainForHwnd(
 		Cmd->Get(D3D12_COMMAND_LIST_TYPE_DIRECT), window->GetHandle(), &Swap_desc, nullptr, nullptr, &swap_chain1))
 
-	// auto ret	 = swap_chain1.As(&m_SwapChain);
 	HAKU_SOK_ASSERT(swap_chain1->QueryInterface(__uuidof(IDXGISwapChain3), reinterpret_cast<void**>(&m_SwapChain)))
 	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
 

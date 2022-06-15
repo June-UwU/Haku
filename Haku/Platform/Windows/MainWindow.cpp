@@ -82,8 +82,8 @@ void Windows::SetEventRoutine(const EventRoutine& func)
 LRESULT Windows::ProcessMessage(HWND handle, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT ret{};
-	if (ImGui_ImplWin32_WndProcHandler(handle, message, wParam, lParam))
-		return true;
+//	if (ImGui_ImplWin32_WndProcHandler(handle, message, wParam, lParam))
+//		return true;
 	switch (message)
 	{
 	case WM_SIZE:
