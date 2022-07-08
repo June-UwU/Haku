@@ -17,6 +17,7 @@ Application::Application()
 	Dispatcher.RegisterRoutine(
 		HAKU_BIND_FUNC(Application::OnMinimize), static_cast<uint32_t>(EventType::WindowMinimizeEvent));
 }
+
 void Application::SetMainWindow(Windows& window) noexcept
 {
 	HAKU_LOG_INFO("Setting Window");
@@ -26,20 +27,17 @@ void Application::SetMainWindow(Windows& window) noexcept
 }
 void Application::ProcessMessage()
 {
-	
-	m_RenderThread = std::thread(Renderer::RenderEngine::Render);
 	while (m_Running)
 	{
 		m_Window->run();
 		Dispatcher.ServiceEvent();
 		if (!m_Window->GetMinimize())
 		{
-//			ClientUpdate();
+			Renderer::RenderEngine::Render();
 		}
 	}
 	Haku::Renderer::RenderEngine::ShutDown();
-	m_RenderThread.join();
-//	ClientCleanUp();
+	//	ClientCleanUp();
 }
 void Application::OnEvent(Event Event)
 {
@@ -55,14 +53,14 @@ void Application::Onclose(Event& Event)
 
 void Application::OnResize(Event& event)
 {
-	HAKU_LOG_INFO();
 	uint32_t width{};
 	uint32_t height{};
 	HAKU_DISPLAY_SIZE_EXTRACT(event.GetData(), height, width)
+	HAKU_LOG_INFO("Resize Event : ", width, " ", height);
 	m_Window->SetWidth(width);
 	m_Window->SetHeight(height);
 	m_Window->SetMinimize(false);
-	Haku::Renderer::RenderEngine::ResizeEvent(height,width);
+	Haku::Renderer::RenderEngine::ResizeEvent(height, width);
 	event.Handled = true;
 }
 

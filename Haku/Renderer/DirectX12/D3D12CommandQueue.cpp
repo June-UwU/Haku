@@ -44,86 +44,10 @@ void CommandQueue::Shutdown() noexcept
 		ptr->Release();
 	}
 }
-void CommandQueue::ExecuteCommandList()
+
+void CommandQueue::ExecuteLists(CommandList* list)
 {
-	if (!S_ExecuteList.empty())
-	{
-		auto* CommandList = S_ExecuteList.front();
-		S_ExecuteList.pop_front();
-		switch (CommandList->m_Type)
-		{
-		case D3D12_COMMAND_LIST_TYPE_DIRECT:
-		{
-			m_CommandQueueArray[0]->ExecuteCommandLists(
-				1, reinterpret_cast<ID3D12CommandList**>(&CommandList->m_CommandList));
-			break;
-		}
-		case D3D12_COMMAND_LIST_TYPE_COMPUTE:
-		{
-			m_CommandQueueArray[1]->ExecuteCommandLists(
-				1, reinterpret_cast<ID3D12CommandList**>(&CommandList->m_CommandList));
-			break;
-		}
-		case D3D12_COMMAND_LIST_TYPE_COPY:
-		{
-			m_CommandQueueArray[2]->ExecuteCommandLists(
-				1, reinterpret_cast<ID3D12CommandList**>(&CommandList->m_CommandList));
-			break;
-		}
-		default:
-		{
-			HAKU_LOG_CRIT("Unknown Command List Type In The Execute Queue: ");
-			HAKU_THROW("Unknown Command List Type In The Execute Queue");
-			break;
-		}
-		}
-		ReturnStaleList(CommandList);
-	}
-}
-void CommandQueue::AddListAndExecute(CommandList* list)
-{
-	if (list)
-	{
-		S_ExecuteList.push_back(list);
-		ExecuteCommandList();
-	}
-}
-void CommandQueue::ExecuteLists()
-{
-	CommandList* ptr = nullptr;
-	if (!S_ExecuteList.empty())
-	{
-		ptr = S_ExecuteList.front();
-		switch (ptr->m_Type)
-		{
-		case D3D12_COMMAND_LIST_TYPE_DIRECT:
-		{
-			m_CommandQueueArray[0]->ExecuteCommandLists(
-				1, reinterpret_cast<ID3D12CommandList* const*>(&ptr->m_CommandList));
-			break;
-		}
-		case D3D12_COMMAND_LIST_TYPE_COMPUTE:
-		{
-			m_CommandQueueArray[1]->ExecuteCommandLists(
-				1, reinterpret_cast<ID3D12CommandList* const*>(&ptr->m_CommandList));
-			break;
-		}
-		case D3D12_COMMAND_LIST_TYPE_COPY:
-		{
-			m_CommandQueueArray[2]->ExecuteCommandLists(
-				1, reinterpret_cast<ID3D12CommandList* const*>(&ptr->m_CommandList));
-			break;
-		}
-		default:
-		{
-			HAKU_LOG_CRIT("Unknown Command List Type In Execute List");
-			HAKU_THROW("Unknown Command List Type In Execute List");
-			break;
-		}
-		}
-		ReturnStaleList(ptr);
-		S_ExecuteList.pop_front();
-	}
+	m_CommandQueueArray[0]->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const*>(&list->m_CommandList));
 }
 
 ID3D12CommandQueue* CommandQueue::Get(D3D12_COMMAND_LIST_TYPE type)
@@ -154,15 +78,6 @@ ID3D12CommandQueue* CommandQueue::Get(D3D12_COMMAND_LIST_TYPE type)
 	}
 	}
 	return ret_val;
-}
-
-void CommandQueue::Execute(ID3D12GraphicsCommandList* ptr, size_t count)
-{
-	ID3D12CommandList* arr = { ptr };
-	for (size_t i = 0; i < count; i++)
-	{
-		m_CommandQueueArray[0]->ExecuteCommandLists(1, &arr);
-	}
 }
 
 void CommandQueue::Synchronize()

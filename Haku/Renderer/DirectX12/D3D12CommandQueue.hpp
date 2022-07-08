@@ -28,17 +28,12 @@ public:
 	DISABLE_MOVE(CommandQueue)
 
 	void				Synchronize();
-	void				ExecuteLists();
 	void				Shutdown() noexcept;
-	void				ExecuteCommandList();
-	void				AddListAndExecute(CommandList* list);
+	void				ExecuteLists(CommandList* list);
 	ID3D12CommandQueue* Get(D3D12_COMMAND_LIST_TYPE type);
-	// this needs to be ripped out
-	void Execute(ID3D12GraphicsCommandList* ptr, size_t count);
 
 private:
 	std::array<ID3D12CommandQueue*, 3> m_CommandQueueArray;
 };
-static Haku::Utils::Hk_Dequeue_mt<CommandList*> S_ExecuteList;
 } // namespace Renderer
 } // namespace Haku

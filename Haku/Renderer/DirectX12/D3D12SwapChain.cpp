@@ -322,6 +322,7 @@ void SwapChain::Resize(uint64_t height, uint64_t width)
 
 		rtvHandle.Offset(rtvDescriptorSize);
 	}
+	CommandQueue->Synchronize();
 }
 
 ID3D12Resource* SwapChain::GetRenderTargetResource(size_t pos) noexcept

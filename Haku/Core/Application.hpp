@@ -1,4 +1,5 @@
 #pragma once
+#include <windows.h>
 #include "Events.hpp"
 #include "UILayer.hpp"
 #include "macros.hpp"
@@ -37,7 +38,6 @@ private:
 
 private:
 	EventDispatcher Dispatcher;
-	std::thread		m_RenderThread;
 	bool			m_Running = true;
 	Haku::Windows*	m_Window  = nullptr;
 

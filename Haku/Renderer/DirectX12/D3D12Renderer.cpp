@@ -12,77 +12,49 @@
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 
-// TEST VALUES
-const uint32_t TextureHeight	= 256u;
-const uint32_t TextureWidth		= 256u;
-const uint32_t TexturePixelSize = 4u;
-
 namespace Haku
 {
 namespace Renderer
 {
-std::mutex					  RenderEngine::S_mutex;
-std::unique_ptr<Fence>		  RenderEngine::S_Fence;
-std::unique_ptr<RenderDevice> RenderEngine::S_Device;
-std::unique_ptr<SwapChain>	  RenderEngine::S_SwapChain;
-std::atomic_uint64_t		  RenderEngine::S_FenceValue;
-std::unique_ptr<CommandQueue> RenderEngine::S_CommandQueue;
+std::mutex						RenderEngine::S_mutex;
+std::unique_ptr<Fence>			RenderEngine::S_Fence;
+std::unique_ptr<RenderDevice>	RenderEngine::S_Device;
+std::unique_ptr<SwapChain>		RenderEngine::S_SwapChain;
+std::unique_ptr<D3D12_VIEWPORT> RenderEngine::S_Viewport;
+std::atomic_uint64_t			RenderEngine::S_FenceValue;
+std::unique_ptr<CommandQueue>	RenderEngine::S_CommandQueue;
+std::unique_ptr<D3D12_RECT>		RenderEngine::S_ScissorRect;
+CommandList*					RenderEngine::S_CurrentCommandList;
 std::array<std::unique_ptr<DescriptorAllocator>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES>
 	RenderEngine::S_CPUDescriptorAllocators;
 
-// testing
-CommandList* RenderEngine::S_CurrentCommandList;
-void		 RenderEngine::EndScene()
+void RenderEngine::EndScene()
 {
+	S_SwapChain->Present();
+	S_CommandQueue->Synchronize();
+	S_SwapChain->SetBackBufferIndex();
 	S_CurrentCommandList = nullptr;
-	ResetStaleList();//reuse the list
 };
 void RenderEngine::BeginScene()
 {
-	// getting a command list and then resetting it for recording
 	S_CurrentCommandList = RequestCommandList(D3D12_COMMAND_LIST_TYPE_DIRECT);
 	S_CurrentCommandList->Reset();
+	S_CurrentCommandList->TransitionSwapChainRenderTarget();
+	S_CurrentCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	S_CurrentCommandList->RSSetScissorRects(1, S_ScissorRect.get());
+	S_CurrentCommandList->RSSetViewports(1, S_Viewport.get());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE Handle(
+		S_SwapChain->GetCPUHeapHandleInOffset(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, S_SwapChain->GetFrameIndex()));
+	auto dsvhandle = S_SwapChain->GetCPUHeapHandle(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	S_CurrentCommandList->OMSetRenderTargets(1, &Handle, FALSE, &dsvhandle);
+	const float clearColor[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+	S_CurrentCommandList->ClearRenderTargetView(Handle, clearColor, 0, nullptr);
 };
 void RenderEngine::Render()
 {
 	BeginScene();
 	RecordAndCommandList();
-
-#if TEST
-	auto* CurrentCommandList = S_CurrentCommandList->m_CommandList;
-	// thhis needs to repaired
-	auto resbar = CD3DX12_RESOURCE_BARRIER::Transition(
-		S_SwapChain->GetRenderTargetResource(S_SwapChain->GetFrameIndex()),
-		D3D12_RESOURCE_STATE_PRESENT,
-		D3D12_RESOURCE_STATE_RENDER_TARGET);
-	CurrentCommandList->ResourceBarrier(1, &resbar);
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(
-		S_SwapChain->GetCPUHeapHandleInOffset(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, S_SwapChain->GetFrameIndex()));
-	// auto dsvhandle = Heap.GetDSVCPUHandle();
-
-	CurrentCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
-	// clearing back buffer
-	const float clearColor[] = { 1.0f, 0.2f, 0.2f, 1.0f };
-	CurrentCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	auto esbar = CD3DX12_RESOURCE_BARRIER::Transition(
-		S_SwapChain->GetRenderTargetResource(S_SwapChain->GetFrameIndex()),
-		D3D12_RESOURCE_STATE_RENDER_TARGET,
-		D3D12_RESOURCE_STATE_PRESENT);
-	CurrentCommandList->ResourceBarrier(1, &esbar);
-	HAKU_SOK_ASSERT(CurrentCommandList->Close())
-#endif
-	// this might be required only when there is a commandlist execution ,,...so bind them together...?
-	// S_CommandQueue->Execute(CurrentCommandList, 1);
-	S_CommandQueue->AddListAndExecute(S_CurrentCommandList);
-	S_SwapChain->Present();
-	S_CommandQueue->Synchronize();
-	S_SwapChain->SetBackBufferIndex();
-	// this will be the eventual end game
-	// if(!m_CommandQueue->NoCommandListForExecute())
-	//{
-	//	m_CommandQueue->ExecuteLists();
-	//}
+	S_CommandQueue->ExecuteLists(S_CurrentCommandList);
 	EndScene();
 }
 void RenderEngine::ResizeEvent(uint64_t height, uint64_t width)
@@ -98,6 +70,7 @@ void RenderEngine::ShutDown()
 	S_CommandQueue->Shutdown();
 	S_SwapChain->ShutDown();
 	ShutDownCommandList();
+	ShutDownPSO();
 }
 
 void RenderEngine::Initialize()
@@ -108,15 +81,25 @@ void RenderEngine::Initialize()
 	S_Device	 = std::make_unique<RenderDevice>();
 
 	// these all need RenderDevice
-	S_Fence		   = std::make_unique<Fence>();
-	S_SwapChain	   = std::make_unique<SwapChain>();
-	S_CommandQueue = std::make_unique<CommandQueue>();
+	S_Fence				 = std::make_unique<Fence>();
+	S_SwapChain			 = std::make_unique<SwapChain>();
+	S_CommandQueue		 = std::make_unique<CommandQueue>();
+	S_Viewport			 = std::make_unique<D3D12_VIEWPORT>();
+	S_Viewport->TopLeftX = 0;
+	S_Viewport->TopLeftY = 0;
+	S_Viewport->Width	 = pWindow->GetWidth();
+	S_Viewport->Height	 = pWindow->GetHeight();
+
+	S_ScissorRect = std::make_unique<D3D12_RECT>(0, 0, pWindow->GetWidth(), pWindow->GetHeight());
+
+	InitializeCommandListArrays();
 	for (uint64_t i = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; i++)
 	{
 		S_CPUDescriptorAllocators[i] =
 			std::make_unique<DescriptorAllocator>(static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(i));
 	}
 	S_SwapChain->Init(pWindow);
+	InitializePSOWithUISRV();
 }
 
 uint64_t RenderEngine::GetFenceValue() noexcept
@@ -151,9 +134,10 @@ CommandQueue* RenderEngine::GetCommandQueue()
 	return S_CommandQueue.get();
 }
 
-void RecordAndCommandList()
+void RenderEngine::RecordAndCommandList()
 {
-	// CurrentCommandLis
+	S_CurrentCommandList->TransitionSwapChainPresent();
+	S_CurrentCommandList->Close();
 }
 
 } // namespace Renderer
