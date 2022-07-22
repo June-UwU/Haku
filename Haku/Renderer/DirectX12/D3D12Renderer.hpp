@@ -1,21 +1,18 @@
-// TODO : Create and make the texture class work then convert this into a Interface that provides functions for
-// everything
-
 #pragma once
+
 #include "macros.hpp"
 #include "hakupch.hpp"
+#include "DirectXMath.h"
 #include "D3D12Fence.hpp"
 #include "D3D12SwapChain.hpp"
 #include "Core/Exceptions.hpp"
+#include "VertexProperties.hpp"
 #include "D3D12CommandList.hpp"
+#include "D3D12UploadBuffer.hpp"
 #include "D3D12RenderDevice.hpp"
 #include "D3D12CommandQueue.hpp"
 #include "D3D12DescriptorAllocator.hpp"
 #include "Platform/Windows/MainWindow.hpp"
-
-// TODO : make the gpu allocated resource and the virtual address to be on position and
-
-// NOTE : this will be part of the ECS..?
 
 namespace Haku
 {
@@ -49,7 +46,12 @@ private:
 	static std::unique_ptr<CommandQueue>   S_CommandQueue;
 	static CommandList*					   S_CurrentCommandList;
 	static std::array<std::unique_ptr<DescriptorAllocator>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES>
-		S_CPUDescriptorAllocators;
+										 S_CPUDescriptorAllocators;
+	static std::unique_ptr<UploadBuffer> S_UploadBuffer;
+	// test
+	static std::unique_ptr<VertexBuffer> S_VertexBuffer;
+	//static ID3D12Resource*				 T_VertexBuffer;
+	//static D3D12_VERTEX_BUFFER_VIEW		 T_View;
 };
 
 } // namespace Renderer

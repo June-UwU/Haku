@@ -25,9 +25,9 @@ public:
 	DISABLE_MOVE(PipeLineState)
 	~PipeLineState();
 
-	ID3D12PipelineState* Get() const noexcept;
 	void				 Release() noexcept;
-
+	ID3D12PipelineState* Get() const noexcept;
+	ID3D12RootSignature* GetRootSignature() noexcept;
 private:
 	ID3D12PipelineState* m_PSO;
 	ID3DBlob*			 m_HullShader;

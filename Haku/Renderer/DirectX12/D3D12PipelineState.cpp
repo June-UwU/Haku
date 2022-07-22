@@ -154,6 +154,10 @@ ID3D12PipelineState* PipeLineState::Get() const noexcept
 {
 	return m_PSO;
 }
+ID3D12RootSignature* PipeLineState::GetRootSignature() noexcept
+{
+	return m_RootSignature->Get();
+}
 void PipeLineState::Release() noexcept
 {
 	m_PSO->Release();

@@ -26,7 +26,13 @@ std::unique_ptr<CommandQueue>	RenderEngine::S_CommandQueue;
 std::unique_ptr<D3D12_RECT>		RenderEngine::S_ScissorRect;
 CommandList*					RenderEngine::S_CurrentCommandList;
 std::array<std::unique_ptr<DescriptorAllocator>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES>
-	RenderEngine::S_CPUDescriptorAllocators;
+							  RenderEngine::S_CPUDescriptorAllocators;
+std::unique_ptr<UploadBuffer> RenderEngine::S_UploadBuffer;
+// test
+//D3D12_VERTEX_BUFFER_VIEW RenderEngine::T_View;
+//ID3D12Resource*			 RenderEngine::T_VertexBuffer;
+
+std::unique_ptr<VertexBuffer> RenderEngine::S_VertexBuffer;
 
 void RenderEngine::EndScene()
 {
@@ -53,6 +59,11 @@ void RenderEngine::BeginScene()
 void RenderEngine::Render()
 {
 	BeginScene();
+	auto pso = GetPSO(0);
+	S_CurrentCommandList->SetPipelineState(pso);
+	S_CurrentCommandList->m_CommandList->SetGraphicsRootSignature(pso->GetRootSignature());
+	S_CurrentCommandList->m_CommandList->IASetVertexBuffers(0, 1, S_VertexBuffer->GetView());
+	S_CurrentCommandList->m_CommandList->DrawInstanced(3, 1, 0, 0);
 	RecordAndCommandList();
 	S_CommandQueue->ExecuteLists(S_CurrentCommandList);
 	EndScene();
@@ -85,6 +96,7 @@ void RenderEngine::Initialize()
 	S_SwapChain			 = std::make_unique<SwapChain>();
 	S_CommandQueue		 = std::make_unique<CommandQueue>();
 	S_Viewport			 = std::make_unique<D3D12_VIEWPORT>();
+	S_UploadBuffer		 = std::make_unique<UploadBuffer>();
 	S_Viewport->TopLeftX = 0;
 	S_Viewport->TopLeftY = 0;
 	S_Viewport->Width	 = pWindow->GetWidth();
@@ -100,6 +112,66 @@ void RenderEngine::Initialize()
 	}
 	S_SwapChain->Init(pWindow);
 	InitializePSOWithUISRV();
+
+	// test
+	auto commandlist = RequestCommandList(D3D12_COMMAND_LIST_TYPE_DIRECT);
+	S_CommandQueue->ExecuteLists(commandlist);
+	S_CommandQueue->Synchronize();
+	commandlist->Reset();
+
+	VertexData bufferdata[] = { { { 0.0f, 0.25f, 0.0f }, { 0.2f, 0.0f, 0.0f, 0.4f } },
+								{ { 0.25f, -0.25f, 0.0f }, { 0.0f, 0.3f, 0.0f, 0.4f } },
+								{ { -0.25f, -0.25f, 0.0f }, { 0.0f, 0.0f, 0.1f, 0.4f } } };
+	size_t	   buffersize	= 3u * sizeof(VertexData);
+
+	S_UploadBuffer->SubmitVertex(bufferdata, 3);
+	S_VertexBuffer = S_UploadBuffer->MakeVertexBuffer();
+	S_UploadBuffer->TransitionVertexBuffers(commandlist);
+	//auto			Device = GetDeviceD3D();
+	//ID3D12Resource* ImmediateBuffer{};
+	//auto			upheapprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	//auto			heapprop   = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	//auto			resdesc	   = CD3DX12_RESOURCE_DESC::Buffer(buffersize, D3D12_RESOURCE_FLAG_NONE);
+	//auto			sok		   = Device->CreateCommittedResource(
+	//	  &heapprop,
+	//	  D3D12_HEAP_FLAG_NONE,
+	//	  &resdesc,
+	//	  D3D12_RESOURCE_STATE_COPY_DEST,
+	//	  nullptr,
+	//	  __uuidof(ID3D12Resource),
+	//	  reinterpret_cast<void**>(&T_VertexBuffer));
+	//HAKU_SOK_ASSERT(sok);
+	//
+	//sok = Device->CreateCommittedResource(
+	//	&upheapprop,
+	//	D3D12_HEAP_FLAG_NONE,
+	//	&resdesc,
+	//	D3D12_RESOURCE_STATE_GENERIC_READ,
+	//	nullptr,
+	//	__uuidof(ID3D12Resource),
+	//	reinterpret_cast<void**>(&ImmediateBuffer));
+	//
+	//T_View.BufferLocation = T_VertexBuffer->GetGPUVirtualAddress();
+	//T_View.SizeInBytes	  = 3 * sizeof(VertexData);
+	//T_View.StrideInBytes  = sizeof(VertexData);
+	//uint8_t*	  ptr;
+	//CD3DX12_RANGE readrange(0, 0);
+	//HAKU_SOK_ASSERT(ImmediateBuffer->Map(0, &readrange, reinterpret_cast<void**>(&ptr)))
+	//memcpy(ptr, bufferdata, buffersize);
+	//ImmediateBuffer->Unmap(0, nullptr);
+	//
+	//D3D12_SUBRESOURCE_DATA subresourcedata{};
+	//subresourcedata.pData	   = ptr;
+	//subresourcedata.SlicePitch = buffersize;
+	//subresourcedata.RowPitch   = buffersize;
+	//
+	//UpdateSubresources(commandlist->m_CommandList, T_VertexBuffer, ImmediateBuffer, 0, 0, 1, &subresourcedata);
+	//CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+	//	T_VertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+	//commandlist->m_CommandList->ResourceBarrier(1, &barrier);
+
+	commandlist->Close();
+	S_CommandQueue->ExecuteLists(commandlist);
 }
 
 uint64_t RenderEngine::GetFenceValue() noexcept
