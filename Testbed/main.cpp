@@ -1,11 +1,14 @@
-#include <test.hpp>
-
+#include <Core/logger.hpp>
 
 
 
 int main(void)
 {
-	char ptr[11] = "print this";
-	test(&ptr[0]);
+	HLEMER("Emergency %d",1);
+	HLCRIT("Critical %d",2);
+	HLERRO("Error %d",3);
+	HLWARN("Warning %d",4);
+	HLINFO("Information %d",5);
+
 	return 0;
 }
