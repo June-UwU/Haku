@@ -3,62 +3,60 @@
 #include <string.h>
 #include <stdio.h>
 #include <cstdarg>
+#include "Platform\platform.hpp"
 
-namespace Engine
+static i8 initialized = false; // Internal Variable that keeps track of the initialization status
+static constexpr u32 OUT_BUFFER_SIZE = 32000u; // internal constexpr that manages the maximum length of log buffer
+  
+
+//initialization and shutdown
+i32 logger_initiate(void)
+{
+	initialized = true;		
+	return initialized;
+}
+
+void shutdown(void)
 {
 
-	static i8 initialized = false;
-	static constexpr u32 OUT_BUFFER_SIZE = 32000u;
-
-	  
-	//initialization and shutdown
-	i32 logger_initiate(void)
-	{
-		initialized = true;		
-		return initialized;
-	}
-
-	void shutdown(void)
-	{
-
-	}
+}
 
 
-	//logging function
-		
-	void log(log_level level,const char* message,...)
-	{
-		static const char* log_level_indicator[LOG_LVL_COUNT]
-		{
-			"[EMERGENCY]",
-			"[CRITICAL]",
-			"[ERROR]",
-			"[WARN]",
-			"[INFO]"
-		};
-
-		static char outbuffer[OUT_BUFFER_SIZE];
-		
-		//clear the memory and keep the offset alive
-		u32 offset = 0;
+//logging function
 	
-		memset(outbuffer,0,OUT_BUFFER_SIZE);
+void log(log_level level,const char* message,...)
+{
+	static const char* log_level_indicator[LOG_LVL_COUNT] //  string map for log level
+	{
+		"[EMERGENCY]",
+		"[CRITICAL]",
+		"[ERROR]",
+		"[WARN]",
+		"[INFO]"
+	};
+
+	static char outbuffer[OUT_BUFFER_SIZE]; // declared static and cleared every log
 	
-		i32  indicator_len = strlen(log_level_indicator[level]);
+	//clear the memory and keep the offset alive
+	u32 offset = 0; // offset to current write
 
-		memcpy(outbuffer,log_level_indicator[level],indicator_len);
-		
-		offset += indicator_len;
+	memset(outbuffer,0,OUT_BUFFER_SIZE); 
 
-		va_list varadic_list;
-		va_start(varadic_list,message);
+	i32  indicator_len = strlen(log_level_indicator[level]);
 
-		vsnprintf((outbuffer + offset),(OUT_BUFFER_SIZE - offset),message,varadic_list);
+	memcpy(outbuffer,log_level_indicator[level],indicator_len);
+	
+	offset += indicator_len;
 
-		va_end(varadic_list);
+	va_list varadic_list;
+	va_start(varadic_list,message);
 
-		printf("%s\n",outbuffer);
-	}
+	vsnprintf((outbuffer + offset), (OUT_BUFFER_SIZE - offset), message, varadic_list);
+
+	va_end(varadic_list);
+	
+	//  TODO : convert this to platform specfic logging function
+	platform_console_write(outbuffer,level);
+}
 
 
-};

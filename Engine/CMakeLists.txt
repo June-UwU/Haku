@@ -10,6 +10,8 @@ file(GLOB_RECURSE global_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE core_inc ${CMAKE_CURRENT_SOURCE_DIR}/Core/*.hpp)
 file(GLOB_RECURSE core_src ${CMAKE_CURRENT_SOURCE_DIR}/Core/*.cpp)
 
+file(GLOB_RECURSE platform_inc ${CMAKE_CURRENT_SOURCE_DIR}/Core/*.hpp)
+file(GLOB_RECURSE platform_src ${CMAKE_CURRENT_SOURCE_DIR}/Core/*.cpp)
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_src})
@@ -18,6 +20,9 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_src})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_src})
 
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_src})
+
 add_compile_definitions(HAKU_API_BUILD)
 add_library(${PROJECT_NAME} 
 	SHARED 
@@ -25,6 +30,8 @@ add_library(${PROJECT_NAME}
 	${global_src}
 	${core_inc}
 	${core_src}
+	${platform_inc}
+	${platform_src}
 	)
 
 

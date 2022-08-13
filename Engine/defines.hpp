@@ -1,10 +1,16 @@
 #pragma once
-
+#include <cstdlib>
 #include <cstdint>
 
+// TODO : make an haku specfic asserts
 
 //HAKU TYPE DEFINES
 
+#define HASSERT(condition) if(!condition)\
+{\
+	HLEMER("Assertion Failure..!\n File : %s \n Line : %d",__FILE__ , __LINE__);\
+	exit(-1);\
+}
 
 //signed types 
 
