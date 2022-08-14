@@ -2,8 +2,6 @@
 #include <cstdlib>
 #include <cstdint>
 
-// TODO : make an haku specfic asserts
-
 //HAKU TYPE DEFINES
 
 #define HASSERT(condition) if(!condition)\
@@ -36,6 +34,19 @@
 #define 	H_OK	0
 #define 	H_FAIL	-1
 
+constexpr u64 BYTESINKiB(u64 scale)
+{
+	return 1024 * scale;
+}
+
+constexpr u64 BYTESINMiB(u64 scale)
+{
+	return 1024 * 1024 * scale;
+}
+constexpr u64 BYTESINGiB(u64 scale)
+{
+	return 1024 * 1024 * 1024 * scale;
+}
 
 //HAKU API EXPORT MACROS
 

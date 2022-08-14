@@ -14,14 +14,20 @@
 	// @param height: height of the window
 	// @param width	: width of the window
 	// @return 	: true on sucess and false on failure
-	HAPI i32 platform_initialize( void* state, const char* name, u32 x, u32 y, u32 height, u32  width);
+	HAPI i8 platform_initialize( void* state, const char* name, u32 x, u32 y, u32 height, u32  width);
 	
-	//@breif  	 platform clean up
-	//@param state 	: platform state 
+	// @breif  	 platform clean up
+	// @param state 	: platform state 
 	HAPI void platform_shutdown();
 
-	//@brief 	 routine to pump messages
+	// @brief 	 routine to pump messages
 	HAPI i8 platform_pump_messages(void);
+
+	// @breif	 platform specfic memory initialize
+	i8    platform_memory_initialize();
+
+	// @breif	 platform specfic memory shutdown
+	void  platform_memory_shutdown();
 
 	// @breif	 allocation platform  specfic
 	// @param size	 : size of the pointer to return
@@ -33,6 +39,11 @@
 	// @param block  : pointer to the allocated memory
 	// @param aligned: bool to indicate if its aligned
 	void platform_free(void* block, bool aligned);
+
+	// @breif 	routine for getting heap allocated mem size for supporting platform (win32 HeapSize())
+	// @param	: pointer to the previously allocated block
+	// @return	: size of the block
+	u8   platform_alloc_size(void* block);
 
 	// @breif	 routine to zero out a block of memory
 	// @param block	: pointer to the block

@@ -16,7 +16,6 @@ file(GLOB_RECURSE platform_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/*.cpp)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_src})
 
-
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_src})
 

@@ -15,7 +15,10 @@ typedef struct platform_state
 	HWND 	  hwnd;
 }platform_state;
 
-static platform_state* state_ptr;
+static platform_state* state_ptr; // platform dependant state
+
+static HANDLE private_heap; 	  // windows specfic heaps
+static DWORD  heap_flags = HEAP_GENERATE_EXCEPTIONS;  // generate exception if heap_allocation fails
 
 static constexpr WORD platform_level_lookup[LOG_LVL_COUNT]
 {
@@ -29,10 +32,28 @@ static constexpr WORD platform_level_lookup[LOG_LVL_COUNT]
 
 static LRESULT win32_msg_proc(HWND handle ,UINT msg, WPARAM wparam, LPARAM lparam);
 
+// Internal function to create error strings
+char* win32_get_error_string(DWORD error_code)
+{
+	char* ret_ptr = nullptr;
+	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,NULL,error_code,
+			MAKELANGID(LANG_NEUTRAL , SUBLANG_DEFAULT),ret_ptr,0,NULL);
+
+	// there is a small mem leak here from LocalAlloc()
+	// LocalFree() if possible
+	if(nullptr == ret_ptr)
+	{
+		ret_ptr = const_cast<char*>("Unknown Error");
+	}
+
+	return ret_ptr;
+}
+
 
 	// TODO : make use of state
-i32 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, u32  width)
+i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, u32  width)
 {	
+	// TODO : make this haku internal memory allocation
 	state_ptr 		= (platform_state*)malloc(sizeof(platform_state));
 
 	state_ptr->hinstance 	= GetModuleHandle(nullptr);
@@ -85,13 +106,57 @@ i8 platform_pump_messages(void)
 	return true;
 }
 
+i8 platform_memory_initialize()
+{
+	// heap initial size is made to be zero and commits one page
+	// heap max is set to zero which limits the heap allcation based on available memory
+	// the largest allocation that can be made from the heap is 
+	// 	32 bit system : 512  KB
+	// 	64 bit system : 1024 KB
+	private_heap = HeapCreate(heap_flags,0,0);
+	
+	if(!private_heap)
+	{
+		DWORD error = GetLastError();
+		char* message = win32_get_error_string(error);
+		HLEMER("Windows private heap allocation failed");
+		HLEMER(message);
+		LocalFree(message); // This frees the buffer
+		return H_FAIL;
+	}
+	return H_OK;
+}
+
+void platform_memory_shutdown()
+{
+	HeapDestroy(private_heap);
+}
+
 void* platform_allocate(u64 size, bool aligned)
 {
-	return malloc(size);
+	void* ret_ptr = HeapAlloc(private_heap,heap_flags,size);
+
+	if(nullptr == ret_ptr)
+	{
+		HLEMER("Heap allocation failure");
+		DWORD error = GetLastError();
+		char* message = win32_get_error_string(error);
+		HLEMER(message);
+		LocalFree(message);
+		exit(H_FAIL); // aborting application, generated crash
+	}
+
+	return ret_ptr;
 }
+
 void platform_free(void* block, bool aligned)
 {
-	free(block);
+	HeapFree(private_heap,heap_flags,block);
+}
+
+u8   platform_alloc_size(void* block)
+{
+	return HeapSize(private_heap,heap_flags,block);
 }
 
 void platform_zero_memory(void* block, u64 size)
