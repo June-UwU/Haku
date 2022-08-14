@@ -7,11 +7,11 @@ set(PROJECT_NAME "Haku_Engine")
 file(GLOB_RECURSE global_inc ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 file(GLOB_RECURSE global_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
-file(GLOB_RECURSE core_inc ${CMAKE_CURRENT_SOURCE_DIR}/Core/*.hpp)
-file(GLOB_RECURSE core_src ${CMAKE_CURRENT_SOURCE_DIR}/Core/*.cpp)
+file(GLOB_RECURSE core_inc ${CMAKE_CURRENT_SOURCE_DIR}/core/*.hpp)
+file(GLOB_RECURSE core_src ${CMAKE_CURRENT_SOURCE_DIR}/core/*.cpp)
 
-file(GLOB_RECURSE platform_inc ${CMAKE_CURRENT_SOURCE_DIR}/Core/*.hpp)
-file(GLOB_RECURSE platform_src ${CMAKE_CURRENT_SOURCE_DIR}/Core/*.cpp)
+file(GLOB_RECURSE platform_inc ${CMAKE_CURRENT_SOURCE_DIR}/platform/*.hpp)
+file(GLOB_RECURSE platform_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/*.cpp)
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_src})

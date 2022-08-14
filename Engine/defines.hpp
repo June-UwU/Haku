@@ -31,7 +31,10 @@
 #define 	f32 	float
 #define 	f64 	double
 
+//HAKU RETURN CODES
 
+#define 	H_OK	0
+#define 	H_FAIL	-1
 
 
 //HAKU API EXPORT MACROS

@@ -1,8 +1,10 @@
 #pragma once
 
-#include "../defines.hpp"
+#include "defines.hpp"
 
 // Haku platform subsystem
+
+	//TODO : don't export the platform code
 
 	// @breif	 platform initialzation
 	// @param state : generic structure that is defined per platform inside the transation unit
@@ -12,11 +14,14 @@
 	// @param height: height of the window
 	// @param width	: width of the window
 	// @return 	: true on sucess and false on failure
-	i32 platform_initialize( void* state, const char* name, u32 x, u32 y, u32 height, u32  width);
+	HAPI i32 platform_initialize( void* state, const char* name, u32 x, u32 y, u32 height, u32  width);
 	
 	//@breif  	 platform clean up
 	//@param state 	: platform state 
-	void platform_shutdown(void* state);
+	HAPI void platform_shutdown();
+
+	//@brief 	 routine to pump messages
+	HAPI i8 platform_pump_messages(void);
 
 	// @breif	 allocation platform  specfic
 	// @param size	 : size of the pointer to return

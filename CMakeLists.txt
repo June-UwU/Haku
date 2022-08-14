@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
 
+
+if (WIN32)
+	add_compile_definitions(HWIN32)
+endif (WIN32)
+
+if (UNIX)
+	error(" Haku only has windows support")
+endif(UNIX)
+
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(PROJECT_NAME "Haku")
 

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <cstdarg>
-#include "Platform\platform.hpp"
+#include "platform\platform.hpp"
 
 static i8 initialized = false; // Internal Variable that keeps track of the initialization status
 static constexpr u32 OUT_BUFFER_SIZE = 32000u; // internal constexpr that manages the maximum length of log buffer
@@ -40,11 +40,11 @@ void log(log_level level,const char* message,...)
 	//clear the memory and keep the offset alive
 	u32 offset = 0; // offset to current write
 
-	memset(outbuffer,0,OUT_BUFFER_SIZE); 
+	platform_set_memory(outbuffer,0,OUT_BUFFER_SIZE); 
 
 	i32  indicator_len = strlen(log_level_indicator[level]);
 
-	memcpy(outbuffer,log_level_indicator[level],indicator_len);
+	platform_copy_memory(outbuffer,(void*)log_level_indicator[level],indicator_len);
 	
 	offset += indicator_len;
 
@@ -55,7 +55,6 @@ void log(log_level level,const char* message,...)
 
 	va_end(varadic_list);
 	
-	//  TODO : convert this to platform specfic logging function
 	platform_console_write(outbuffer,level);
 }
 
