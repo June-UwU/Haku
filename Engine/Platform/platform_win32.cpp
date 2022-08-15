@@ -158,9 +158,9 @@ void platform_free(void* block, bool aligned)
 	HeapFree(private_heap,heap_flags,block);
 }
 
-u8   platform_alloc_size(void* block)
+u64   platform_alloc_size(void* block)
 {
-	return HeapSize(private_heap,heap_flags,block);
+	return HeapSize(private_heap,0,block);
 }
 
 void platform_zero_memory(void* block, u64 size)

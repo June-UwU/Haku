@@ -15,12 +15,6 @@ int main(void)
 
 	application_initialize(&app_state);
 
-	HLEMER("Emergency %d",1);
-	HLCRIT("Critical %d",2);
-	HLERRO("Error %d",3);
-	HLWARN("Warning %d",4);
-	HLINFO("Information %d",5);
-
 	CreateGame();
 
 	application_run(); // game loop

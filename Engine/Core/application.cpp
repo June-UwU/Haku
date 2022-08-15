@@ -53,6 +53,8 @@ void application_shutdown(void)
 {
 	platform_shutdown();
 
+	hlog_memory_report();
+
 	logger_shutdown();
 
 	hmemory_shutdown();

@@ -43,7 +43,7 @@
 	// @breif 	routine for getting heap allocated mem size for supporting platform (win32 HeapSize())
 	// @param	: pointer to the previously allocated block
 	// @return	: size of the block
-	u8   platform_alloc_size(void* block);
+	u64   platform_alloc_size(void* block);
 
 	// @breif	 routine to zero out a block of memory
 	// @param block	: pointer to the block

@@ -2,6 +2,8 @@
 #include "hmemory.hpp"
 #include "platform\platform.hpp"
 
+// TODO : write a read write test and check test for the memory subsystem
+
 static u64 total_allocated = 0;
 static u64 memory_tracker_array[MEMORY_TAG_COUNT]{};
 
@@ -91,7 +93,7 @@ void hmemory_test(void)
 {
 	void* mem_ptr[MEMORY_TAG_COUNT][page_slice]{};
 
-	HLINFO("MEMORY TEST INITIAL REPORT\n\n");
+	HLINFO("\n\n\n\n\nMEMORY TEST INITIAL REPORT\n\n");
 	hlog_memory_report();
 
 	for(u32 i = 0; i < MEMORY_TAG_COUNT; i++)
@@ -102,7 +104,7 @@ void hmemory_test(void)
 		}
 	}
 
-	HLINFO("MEMORY TEST ALLOCATION REPORT\n\n");
+	HLINFO("\n\n\n\n\nMEMORY TEST ALLOCATION REPORT\n");
 	hlog_memory_report();
 
 	for( u32 i = 0; i < MEMORY_TAG_COUNT; i++)
@@ -113,7 +115,7 @@ void hmemory_test(void)
 		}
 	}
 	
-	HLINFO("MEMORY  TEST DEALLOCATION REPORT\n\n");
+	HLINFO("\n\n\n\n\nMEMORY  TEST DEALLOCATION REPORT\n");
 	hlog_memory_report();
 
 }
