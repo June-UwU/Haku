@@ -14,14 +14,14 @@
 	// @param height: height of the window
 	// @param width	: width of the window
 	// @return 	: true on sucess and false on failure
-	HAPI i8 platform_initialize( void* state, const char* name, u32 x, u32 y, u32 height, u32  width);
+	i8 platform_initialize( void* state, const char* name, u32 x, u32 y, u32 height, u32  width);
 	
 	// @breif  	 platform clean up
 	// @param state 	: platform state 
-	HAPI void platform_shutdown();
+	void platform_shutdown();
 
 	// @brief 	 routine to pump messages
-	HAPI i8 platform_pump_messages(void);
+	i8 platform_pump_messages(void);
 
 	// @breif	 platform specfic memory initialize
 	i8    platform_memory_initialize();

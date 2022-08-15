@@ -2,11 +2,12 @@
 
 #ifdef HWIN32
 
-#include <stdlib.h>
+#include "core/logger.hpp"
+#include "core/hmemory.hpp"
 
-#include <Windows.h>
+#include <stdlib.h>
 #include <string.h>
-#include "core\logger.hpp"
+#include <Windows.h>
 #include <sysinfoapi.h>
 
 typedef struct platform_state
@@ -54,7 +55,9 @@ char* win32_get_error_string(DWORD error_code)
 i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, u32  width)
 {	
 	// TODO : make this haku internal memory allocation
-	state_ptr 		= (platform_state*)malloc(sizeof(platform_state));
+	state_ptr 		= (platform_state*)hmemory_alloc(sizeof(platform_state),MEM_TAG_PLATFORM);
+
+	state 			= state_ptr;
 
 	state_ptr->hinstance 	= GetModuleHandle(nullptr);
 
@@ -90,6 +93,7 @@ i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, 
 
 void platform_shutdown()
 {
+	hmemory_free(state_ptr,MEM_TAG_PLATFORM);
 }
 
 i8 platform_pump_messages(void)

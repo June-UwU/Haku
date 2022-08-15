@@ -10,13 +10,13 @@ static constexpr u32 OUT_BUFFER_SIZE = 32000u; // internal constexpr that manage
   
 
 //initialization and shutdown
-i32 logger_initiate(void)
+i8 logger_initialize(void)
 {
 	initialized = true;		
-	return initialized;
+	return H_OK;
 }
 
-void shutdown(void)
+void logger_shutdown(void)
 {
 
 }

@@ -19,8 +19,8 @@
 	} log_level;
 
 	//initialization and shutdown
-	i32 logger_initiate(void);
-	void shutdown(void);
+	i8   logger_initialize(void);
+	void logger_shutdown(void);
 
 	//logging function : DONOT CALL THIS DIRECTLY IN ANY PART
 	
