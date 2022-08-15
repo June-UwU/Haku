@@ -3,7 +3,11 @@
 
 #include "defines.hpp"
 
-#define HL_MEM_REPORT()
+
+// Haku memory subsystem
+// currently there exits a platform limitation as a memory alloc call has a cap on size 
+// x86 		: 512  KB
+// x64		: 1024 KB
 
 
 typedef enum memory_tag
@@ -42,3 +46,6 @@ void hmemory_free(void* block, memory_tag tag);
 
 // @breif	debug routine to log memory report
 void hlog_memory_report();
+
+// @brief 	memory test routine
+void hmemory_test(void);

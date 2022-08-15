@@ -58,4 +58,7 @@ void log(log_level level,const char* message,...)
 	platform_console_write(outbuffer,level);
 }
 
+void logger_test(void)
+{
 
+}

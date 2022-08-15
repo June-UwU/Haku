@@ -26,7 +26,8 @@
 	
 	HAPI void log(log_level level,const char* message,...);
 
-
+	// @breif	logger subsystem test routine
+	void logger_test(void);
 
 
 

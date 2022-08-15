@@ -16,3 +16,5 @@ HAPI i8 application_initialize(application_state* app_state);
 // @brief 	routine to run application (game loop) shutdown is handled internally
 HAPI void application_run(void);
 
+
+

@@ -3,6 +3,21 @@
 #include "application.hpp"
 #include "platform/platform.hpp"
 
+#define TEST 1
+
+#if TEST
+	#define RUN_TEST() application_run_test()
+#else
+	#define RUN_TEST()
+#endif
+
+void application_run_test(void)
+{
+	logger_test();
+	hmemory_test();
+}
+
+
 void* platform_state = nullptr; // store platform dependant data
 
 i8 application_initialize(application_state* app_state)
@@ -46,6 +61,7 @@ void application_shutdown(void)
 
 void application_run(void)
 {
+	RUN_TEST();
 	while(true)
 	{
 		platform_pump_messages();		

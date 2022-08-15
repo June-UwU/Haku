@@ -5,6 +5,9 @@
 static u64 total_allocated = 0;
 static u64 memory_tracker_array[MEMORY_TAG_COUNT]{};
 
+constexpr u32 page_slice 		= 10;	// forcing atleast two pages of memory
+constexpr u32 single_alloc_cap 	= 512; 	// using x86 mem cap 
+
 static const char* memory_tag_lookup[MEMORY_TAG_COUNT]
 {
 	"\t Logger 	: %d %s",
@@ -50,7 +53,7 @@ void* hmemory_alloc_zeroed(u64 size, memory_tag tag)
 void hmemory_free(void* block, memory_tag tag)
 {
 	u64 size 		  = platform_alloc_size(block);
-	total_allocated 	  -= size;
+	total_allocated 	-= size;
 	memory_tracker_array[tag] -= size;
 	platform_free(block,false);
 }
@@ -82,4 +85,35 @@ void hlog_memory_report()
 		HLINFO(memory_tag_lookup[i],size,unit);
 	}
 	
+}
+
+void hmemory_test(void)
+{
+	void* mem_ptr[MEMORY_TAG_COUNT][page_slice]{};
+
+	HLINFO("MEMORY TEST INITIAL REPORT\n\n");
+	hlog_memory_report();
+
+	for(u32 i = 0; i < MEMORY_TAG_COUNT; i++)
+	{
+		for(u32 j = 0; j < page_slice; j++)
+		{
+			mem_ptr[i][j] = hmemory_alloc(single_alloc_cap, static_cast<memory_tag>(i));
+		}
+	}
+
+	HLINFO("MEMORY TEST ALLOCATION REPORT\n\n");
+	hlog_memory_report();
+
+	for( u32 i = 0; i < MEMORY_TAG_COUNT; i++)
+	{
+		for(u32 j = 0; j < page_slice; j++)
+		{
+			hmemory_free(mem_ptr[i][j],static_cast<memory_tag>(i));
+		}
+	}
+	
+	HLINFO("MEMORY  TEST DEALLOCATION REPORT\n\n");
+	hlog_memory_report();
+
 }
