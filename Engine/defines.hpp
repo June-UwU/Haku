@@ -10,6 +10,7 @@
 	exit(-1);\
 }
 
+
 //signed types 
 
 #define 	i8 	int8_t
@@ -22,7 +23,7 @@
 #define 	u8	uint8_t
 #define 	u16	uint16_t
 #define 	u32	uint32_t
-#define 	u64	uint32_t
+#define 	u64	uint64_t
 
 //floating point types
 
