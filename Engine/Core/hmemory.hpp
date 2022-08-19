@@ -16,6 +16,7 @@ typedef enum memory_tag
 	MEM_TAG_MEMORY,		// memory subsystem allocations
 	MEM_TAG_PLATFORM,	// platform subsystem allocations
 	MEM_TAG_GAME,		// game allocations
+	MEM_TAG_DARRAY,
 
 	MEMORY_TAG_COUNT 	// last enum for size purposes
 }memory_tag;
@@ -44,6 +45,17 @@ void* hmemory_alloc_zeroed(u64 size, memory_tag);
 // @param	: pointer to the block to free
 void hmemory_free(void* block, memory_tag tag);
 
+// @breif	memcpy routine
+// @param	: destination for the memcpy
+// @param	: source to get copy from
+// @param	: size of the copy in bytes
+void hmemory_copy(void* dest, void* src, u64 size);
+
+// @breif	memset  routine
+// @param	: destination to be set
+// @param 	: byte value to be set
+// @param	: size of the set in bytes
+void hmemory_set(void* dest,i8 val,u64 size);
 // @breif	debug routine to log memory report
 void hlog_memory_report();
 

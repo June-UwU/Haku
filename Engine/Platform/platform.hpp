@@ -60,7 +60,7 @@
 	// @param block	: destination of memset
 	// @param value	: value to set block
 	// @param size	: size of memory block to write
-	void platform_set_memory(void* block, i32 value, u64 size);
+	void platform_set_memory(void* block, i8 value, u64 size);
 
 	// @breif 	 routine to write to console
 	// @param message: message to write to console

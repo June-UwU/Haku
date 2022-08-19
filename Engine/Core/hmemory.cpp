@@ -15,7 +15,8 @@ static const char* memory_tag_lookup[MEMORY_TAG_COUNT]
 	"\t Logger 	: %d %s",
 	"\t Memory 	: %d %s",
 	"\t Platform	: %d %s",
-	"\t Game	: %d %s"
+	"\t Game	: %d %s",
+	"\t Darray	: %d %s"
 };
 
 static const char* unit_map[]
@@ -58,6 +59,16 @@ void hmemory_free(void* block, memory_tag tag)
 	total_allocated 	-= size;
 	memory_tracker_array[tag] -= size;
 	platform_free(block,false);
+}
+
+void hmemory_copy(void* dest, void* src, u64 size)
+{
+	platform_copy_memory(dest,src,size);
+}
+
+void hmemory_set(void* dest, i8 val, u64 size)
+{
+	platform_set_memory(dest,val,size);
 }
 
 void hlog_memory_report()
@@ -103,6 +114,41 @@ void hmemory_test(void)
 			mem_ptr[i][j] = hmemory_alloc(single_alloc_cap, static_cast<memory_tag>(i));
 		}
 	}
+
+	// read write test
+	
+	for( u32 i = 0; i < MEMORY_TAG_COUNT; i++)
+	{
+		for( u32 j = 0 ; j < page_slice; j++)
+		{
+			for( u32 k = 0; k < 256; k++)
+			{
+				char* handle =	reinterpret_cast<char*>(mem_ptr[i][j]);
+				handle += k;
+				*handle	= k;
+			}
+		}
+	}
+
+	HLINFO("\n\nMemory Write done");
+	
+	for( u32 i = 0; i < MEMORY_TAG_COUNT; i++)
+	{
+		for( u32 j = 0 ; j < page_slice; j++)
+		{
+			for( u32 k = 0; k < 256; k++)
+			{
+				char* handle =	reinterpret_cast<char*>(mem_ptr[i][j]);
+				handle += k;
+				if( *handle != static_cast<char>(k))
+				{
+					HLCRIT("Memory Read Write test failure");
+				}
+			}
+		}
+	}
+
+	HLINFO("Memory Read Back Done");
 
 	HLINFO("\n\n\n\n\nMEMORY TEST ALLOCATION REPORT\n");
 	hlog_memory_report();

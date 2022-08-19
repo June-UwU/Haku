@@ -165,17 +165,17 @@ u64   platform_alloc_size(void* block)
 
 void platform_zero_memory(void* block, u64 size)
 {
-	platform_set_memory(block,0,size);
+	ZeroMemory(block,size);
 }
 
 void platform_copy_memory(void* dest, void* src, u64 size)
 {
-	memcpy(dest,src,size);
+	CopyMemory(dest,src,size);
 }
 
-void platform_set_memory(void* block, i32 value, u64 size)
+void platform_set_memory(void* block, i8 value, u64 size)
 {
-	memset(block,value,size);
+	FillMemory(block,size,value);
 }
 
 void platform_console_write(const char* message, u8 color)

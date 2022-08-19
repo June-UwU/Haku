@@ -4,14 +4,10 @@
 
 // Haku dynamic array
 
-// TODO : things needed for a darray (modeled based on the std::vector
 // size 	: keeps track of the size
 // capacity 	: keeps the current capacity of the array
 // element size : size in bytes if the structure that the d array is being allocated for   
-
-// TODO : make sure the return follow on function and it's probably needs to be the object count and byte length can be obtained through multiplying DARRAY_ELEMENT_SIZE
-
-// TODO : make tests for darray
+// mulitplier	: size expansion of multipler
 
 // @breif 	macro to create a darray by passing the struct
 #define HAKU_CREATE_DARRAY(container_element) create_darray(sizeof(container_element))
@@ -29,7 +25,7 @@ typedef enum
 // @breif	routine to initialize a darray 
 // @param	: size of the element
 // @return	: returns H_OK on sucess else H_FAIL
-HAPI i8* create_darray(u64 element_size);
+HAPI darray create_darray(u64 element_size);
 
 // @breif	routine to destroy the darray
 // @param	: darray
@@ -58,11 +54,11 @@ HAPI bool empty(darray ptr);
 // @breif	routine to add and object back to the array
 // @param 	: darray pointer
 // @param	: pointer to a object (object is memcpy-ed for now
-HAPI void push_back(darray ptr,void* obj);
+HAPI darray push_back(darray ptr,void* obj);
 
 // @breif 	routine to pop out of the darray form the back
 // @param	: darray pointer
-HAPI void pop_back(darray ptr);
+HAPI darray pop_back(darray ptr);
 
 // @breif 	routine to insert element at the position ,the position must be inside capacity or it's a failure with a critiical warning for missing data(_DEBUG builds)
 // @param 	: darray pointer
@@ -75,3 +71,5 @@ HAPI void insert_at(darray ptr,void* obj,u64 pos);
 // @param	: position to be removed
 HAPI void remove_at(darray ptr,u64 pos);
 
+// @breif 	routine to test darray functionalites
+void darray_test();

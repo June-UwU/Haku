@@ -2,9 +2,12 @@
 #include "core/hmemory.hpp"
 #include "core/logger.hpp"
 
+// TODO : subtle bug on size(darray ptr function)
+
+
 // initial count for elements that can be held inside the darray later used as a multiplying constant
-constexpr 	u64	 DARRAY_INIT_SIZE 	= 64u; // Initial count for elements that can be held inside the darray later used as a multiplying constant
-constexpr 	u64 	 DARRAY_EXPAND_MARGIN 	= 8u;  // the space the is left in a darray that triggers a rellocation of darray
+constexpr 	u64	 DARRAY_INIT_SIZE 	= 8u;	// Initial count for elements that can be held inside the darray later used as a multiplying constant
+constexpr 	u64 	 DARRAY_EXPAND_MARGIN 	= 4u;  	// the space the is left in a darray that triggers a rellocation of darray
 
 // @breif 	this is a attribute structure that is kept infront of the darray (i8*) that keeps track of the darray state and property
 typedef struct darray_attr
@@ -18,18 +21,20 @@ typedef struct darray_attr
 // helper function to get a pointer to the header struct
 darray_attr* get_darray_attr(darray ptr)
 {
-	return (darray_attr*)(ptr - sizeof(struct darray_attr));
+	darray_attr* attr = (darray_attr*)(ptr - sizeof(struct darray_attr));
+	return attr;
 }
 
 // helper function to expand a darray once space is deemed too low
-void expand_darray(darray ptr)
+darray expand_darray(darray ptr)		// darray ptr is i8**
 {
 	darray_attr* attr 	= get_darray_attr(ptr);
 
-	attr->multiplier	+= 1;
+	attr->multiplier	= attr->multiplier + 1;
 	attr->capacity		= attr->multiplier * DARRAY_INIT_SIZE;
 
-	darray_attr* new_darray = (darray_attr*)hmemory_alloc((attr->capacity * attr->element_size),MEM_TAG_DARRAY);
+	darray_attr* new_darray =
+		(darray_attr*)hmemory_alloc(((attr->capacity * attr->element_size) + sizeof(struct darray_attr)), MEM_TAG_DARRAY);
 
 	new_darray->multiplier 	= attr->multiplier;
 	new_darray->capacity	= attr->capacity;
@@ -38,13 +43,15 @@ void expand_darray(darray ptr)
 
 	u64 copy_byte_count	= attr->element_size * attr->size;
 
-	new_darray		= new_darray + sizeof(struct darray_attr);
+	darray swap_array = (darray)new_darray; 
+
+	swap_array		= swap_array + sizeof(struct darray_attr);
 	
-	hmemory_copy(new_darray, ptr,copy_byte_count);
+	hmemory_copy(swap_array, ptr,copy_byte_count);
 
 	destroy_darray(ptr);
 
-	ptr 			= reinterpret_cast<darray>(new_darray);
+	return swap_array;
 }
 
 darray create_darray(u64 element_size)
@@ -54,12 +61,16 @@ darray create_darray(u64 element_size)
 	darray_attr* attr_ptr = (darray_attr*)hmemory_alloc((element_size * DARRAY_INIT_SIZE) + sizeof(struct darray_attr), MEM_TAG_DARRAY);
 	 
 
-	attr_ptr->size		= 0;
+	attr_ptr->size		= 1;
 	attr_ptr->capacity	= DARRAY_INIT_SIZE;
 	attr_ptr->element_size	= element_size;
 	attr_ptr->multiplier	= 1;
 
-	return (darray)(attr_ptr + sizeof(struct darray_attr));  // return the array
+	darray ret_ptr		= (darray)(attr_ptr);
+
+	ret_ptr = ret_ptr + sizeof(darray_attr);
+
+	return ret_ptr;  // return the array
 }
 
 
@@ -95,7 +106,7 @@ bool empty(darray ptr)
 	return false;
 }
 
-void push_back(darray ptr,void* obj)
+darray push_back(darray ptr,void* obj)
 {
 	darray_attr* attr 	= get_darray_attr( ptr);
 
@@ -105,7 +116,7 @@ void push_back(darray ptr,void* obj)
 
 	if( DARRAY_EXPAND_MARGIN > (attr->capacity - attr->size))
 	{
-		expand_darray(ptr);
+		ptr = expand_darray(ptr);
 	}
 
 	darray entry_ptr 	= (ptr + ( size * element_size));
@@ -114,19 +125,68 @@ void push_back(darray ptr,void* obj)
 	
 	attr			= get_darray_attr(ptr);
 	attr->size		+= 1;
+
+	return ptr;
 }
 
-void pop_back(darray ptr)
+darray pop_back(darray ptr)
 {
 	darray_attr* attr	= get_darray_attr(ptr);
 	
 	if( 0 == attr->size)
 	{
 		HLCRIT("darray popping on zero size : undefined behaviour");
-		return;
+		return ptr;
 	}
 
-	attr->size 		-=1;
+	attr->size 		-= 1;
+
+	return ptr;
+}
+
+void darray_test()
+{
+	darray ptr	= create_darray(sizeof(u64));
+
+	HLINFO("Darray Initialized \n\n\n");
+
+	hlog_memory_report();
+
+	u64 init_cap	= capacity(ptr);
+
+	// push back test
+	for(u64 i = 0; i < 2 * init_cap;i++)
+	{
+		ptr 	= push_back(ptr,&i);
+		if( i == init_cap)
+		{
+			HLINFO("Darray capacity exanded, capacity : %d\n\n\n\n",capacity(ptr));
+			hlog_memory_report();
+		}
+	}	
+
+	u64* val_ptr  = (u64*)ptr;
+
+	for(u64 i = 0; i < size(ptr); i++)
+	{
+		HLINFO(" %d", val_ptr[i]);
+	}
+
+	// pop_back test
+	for (u64 i = 0; i < 6; i++)
+	{
+		pop_back(ptr);
+	}
+
+	for (u64 i = 0; i < size(ptr); i++)
+	{
+		HLINFO("%d", val_ptr[i]);
+	}
+
+	destroy_darray(ptr);
+	
+	HLINFO("Darray Dellocation");
+	hlog_memory_report();
 }
 
 // @breif 	routine to insert element at the position ,the position must be inside capacity or it's a failure with a critiical warning for missing data(_DEBUG builds)

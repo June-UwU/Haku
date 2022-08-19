@@ -2,6 +2,7 @@
 #include "hmemory.hpp"
 #include "application.hpp"
 #include "platform/platform.hpp"
+#include "generics/darray.hpp"
 
 #define TEST 1
 
@@ -15,6 +16,7 @@ void application_run_test(void)
 {
 	logger_test();
 	hmemory_test();
+	darray_test();
 }
 
 
@@ -22,6 +24,8 @@ void* platform_state = nullptr; // store platform dependant data
 
 i8 application_initialize(application_state* app_state)
 {
+	HLINFO("Hellow >w<");
+
 	i32 haku_ret_code = hmemory_initialize(); // memory initialize
 	
 	if( H_OK != haku_ret_code)
