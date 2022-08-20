@@ -11,6 +11,11 @@
 }
 
 
+// objects that are intended to be opaque
+
+#define 	opaque	void
+
+
 //signed types 
 
 #define 	i8 	int8_t
@@ -32,8 +37,9 @@
 
 //HAKU RETURN CODES
 
-#define 	H_OK	0
-#define 	H_FAIL	-1
+constexpr i8 	H_OK	= 0 ;
+constexpr i8 	H_FAIL	= -1;
+constexpr i8	H_ERR	= -2;
 
 constexpr u64 BYTESINKiB(u64 scale)
 {

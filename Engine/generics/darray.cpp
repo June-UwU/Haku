@@ -21,7 +21,8 @@ typedef struct darray_attr
 // helper function to get a pointer to the header struct
 darray_attr* get_darray_attr(darray ptr)
 {
-	darray_attr* attr = (darray_attr*)(ptr - sizeof(struct darray_attr));
+	i8*	byte_ptr	= reinterpret_cast<i8*>(ptr);
+	darray_attr* attr	= (darray_attr*)(byte_ptr - sizeof(struct darray_attr));
 	return attr;
 }
 
@@ -43,7 +44,7 @@ darray expand_darray(darray ptr)		// darray ptr is i8**
 
 	u64 copy_byte_count	= attr->element_size * attr->size;
 
-	darray swap_array = (darray)new_darray; 
+	i8*	swap_array 	= reinterpret_cast<i8*>(new_darray); 
 
 	swap_array		= swap_array + sizeof(struct darray_attr);
 	
@@ -61,14 +62,14 @@ darray create_darray(u64 element_size)
 	darray_attr* attr_ptr = (darray_attr*)hmemory_alloc((element_size * DARRAY_INIT_SIZE) + sizeof(struct darray_attr), MEM_TAG_DARRAY);
 	 
 
-	attr_ptr->size		= 1;
+	attr_ptr->size			= 0;
 	attr_ptr->capacity	= DARRAY_INIT_SIZE;
 	attr_ptr->element_size	= element_size;
 	attr_ptr->multiplier	= 1;
 
-	darray ret_ptr		= (darray)(attr_ptr);
+	i8* ret_ptr		= reinterpret_cast<i8*>(attr_ptr);
 
-	ret_ptr = ret_ptr + sizeof(darray_attr);
+	ret_ptr 		= ret_ptr + sizeof(darray_attr);
 
 	return ret_ptr;  // return the array
 }
@@ -76,8 +77,11 @@ darray create_darray(u64 element_size)
 
 void destroy_darray(darray ptr)
 {
-	void* free_ptr =  (void*)(ptr - sizeof(struct darray_attr));
-	hmemory_free(free_ptr, MEM_TAG_DARRAY);
+	i8* byte_ptr 	= reinterpret_cast<i8*>(ptr);			// make the ptr a byte ptr
+
+	byte_ptr	= byte_ptr - sizeof(struct darray_attr);	// calculate the orginal ptr
+		
+	hmemory_free(byte_ptr, MEM_TAG_DARRAY);
 }
 
 u64 capacity(darray ptr)
@@ -119,7 +123,9 @@ darray push_back(darray ptr,void* obj)
 		ptr = expand_darray(ptr);
 	}
 
-	darray entry_ptr 	= (ptr + ( size * element_size));
+	i8* entry_ptr	= reinterpret_cast<i8*>( ptr);
+
+	entry_ptr 	= (entry_ptr + ( size * element_size));
 
 	hmemory_copy(entry_ptr,obj,element_size);
 	
@@ -193,10 +199,41 @@ void darray_test()
 // @param 	: darray pointer
 // @param	: pointer to object to be copied
 // @param	: position
-void insert_at(darray ptr,void* obj,u64 pos);
-
+void insert_at(darray ptr,void* obj,u64 pos)
+{
+	HASSERT(false);
+}
 // @breif	routine to remove from the position (must be in bounds and warns when a over the size or under the size remove is called on _DEBUG builds
 // @param	: pointer to the darray
 // @param	: position to be removed
-void remove_at(darray ptr,u64 pos);
+darray remove_at(darray ptr,u64 pos)
+{
+	darray_attr* attr	= get_darray_attr(ptr);
 
+	u64 size 		= attr->size;
+
+	u64 element_size 	= attr->element_size;
+
+	if( pos > (size - 1))
+	{
+		HLCRIT("Remove called at out of bounds area : %d",pos);
+	}
+	
+	i8* byte_ptr		= reinterpret_cast<i8*>(ptr);
+
+	byte_ptr		= byte_ptr +  (pos * element_size);
+
+	i8* copy_ptr		= byte_ptr;
+
+	copy_ptr		= copy_ptr + element_size;
+
+	for(u64 i = pos; i < size; i++)
+	{
+		hmemory_copy(byte_ptr,copy_ptr,element_size);
+		byte_ptr	= byte_ptr + element_size;
+		copy_ptr	= copy_ptr + element_size;
+	}
+	attr->size 		= attr->size - 1;
+
+	return ptr;
+}

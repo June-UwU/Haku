@@ -12,7 +12,7 @@
 // @breif 	macro to create a darray by passing the struct
 #define HAKU_CREATE_DARRAY(container_element) create_darray(sizeof(container_element))
 
-typedef i8* darray;
+typedef void* darray;
 
 typedef enum
 {
@@ -69,7 +69,7 @@ HAPI void insert_at(darray ptr,void* obj,u64 pos);
 // @breif	routine to remove from the position (must be in bounds and warns when a over the size or under the size remove is called on _DEBUG builds
 // @param	: pointer to the darray
 // @param	: position to be removed
-HAPI void remove_at(darray ptr,u64 pos);
+HAPI darray remove_at(darray ptr,u64 pos);
 
 // @breif 	routine to test darray functionalites
 void darray_test();

@@ -1,4 +1,5 @@
 #include "defines.hpp"
+#include <cstdint>
 
 // Haku Event Subsystem
 // Event Context data : the context data is based on the ioctl type of parameter for linux, the context data may be casted on to a pointer or used as itself and is a 64 bit signed int
@@ -8,9 +9,11 @@
 // @param	context , linux ioctl type command that may or may not be casted to approiate pointer based on the use case
 typedef i8 (*H_call_back)(void* sender, i64 context);
 
+constexpr u64 H_ECODE_RANGE	= 	UINT_LEAST16_MAX;  // number of event codes 	
+
 typedef enum
 {
-
+	HK_EXIT 	= 0x0,
 
 	MAX_EVENT_CODES // event code used to count the maximum number of event code
 }event_code;

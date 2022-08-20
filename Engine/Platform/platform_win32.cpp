@@ -4,6 +4,7 @@
 
 #include "core/logger.hpp"
 #include "core/hmemory.hpp"
+#include "core/event.hpp"
 
 #include <stdlib.h>
 #include <string.h>
@@ -50,11 +51,8 @@ char* win32_get_error_string(DWORD error_code)
 	return ret_ptr;
 }
 
-
-	// TODO : make use of state
 i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, u32  width)
 {	
-	// TODO : make this haku internal memory allocation
 	state_ptr 		= (platform_state*)hmemory_alloc(sizeof(platform_state),MEM_TAG_PLATFORM);
 
 	state 			= state_ptr;
@@ -210,6 +208,14 @@ i32 get_number_of_logical_procressor(void)
 
 static LRESULT win32_msg_proc(HWND handle ,UINT msg, WPARAM wparam, LPARAM lparam)
 {
+	switch(msg)
+	{
+		case WM_CLOSE:
+			{
+				event_fire(HK_EXIT,NULL, 0);
+				break;
+			}
+	}
 	return DefWindowProc(handle,msg,wparam,lparam);
 }
 #endif
