@@ -3,9 +3,10 @@
 #include "application.hpp"
 #include "platform/platform.hpp"
 #include "generics/darray.hpp"
+#include "generics/c_queue.hpp"
 #include "event.hpp"
 
-#define TEST 0
+#define TEST 1
 
 #if TEST
 	#define RUN_TEST() application_run_test()
@@ -20,6 +21,7 @@ void application_run_test(void)
 	logger_test();
 	hmemory_test();
 	darray_test();
+	c_queue_test();
 }
 
 i8 application_exit(void* sender, i64 context)
