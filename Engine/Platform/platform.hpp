@@ -74,3 +74,7 @@
 
 	// @breif 	routine to return the number of cores available
 	i32 get_number_of_logical_procressor(void);
+
+	// @breif	routine to return performance counter
+	// @return	: float timer
+	f64 platform_time(void);

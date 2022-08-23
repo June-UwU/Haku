@@ -1,6 +1,16 @@
 #include "event.hpp"
 #include "logger.hpp"
 #include "generics\darray.hpp"
+#include "generics\c_queue.hpp"
+
+
+// internal representation for event data 
+typedef struct event_packet
+{
+	event_code	code;				// event code
+	void*		sender;				// sender ptr
+	int 		context;			// context data
+}event_packet;
 
 typedef struct event_entry
 {
@@ -13,14 +23,14 @@ typedef struct event_table
 	event_entry* 	table[H_ECODE_RANGE];		// table entry
 }event_table;
 
+constexpr u64		eq_capacity	= 256u;
+static c_queue*		ep_queue 	= nullptr;
 static event_table 	e_table;
 
-// TODO : implement a buffered array of events maybe a circular array of events that eats other events if needed?
-// TODO : implement insertat and removeat for darray
 
 i8 event_initialize(void)
 {
-
+	ep_queue	= create_c_queue(eq_capacity,sizeof(event_packet),true);	// this create a purging queue , attention must be given so as to not miss messages
 	for(u64 i = 0; i < H_ECODE_RANGE; i++)
 	{
 		e_table.table[i]	= nullptr;
@@ -31,8 +41,24 @@ i8 event_initialize(void)
 
 i8 service_event(void)
 {
-	//HASSERT(false);
-	return H_OK;
+	i8 ret_code = H_OK;
+	while (0 != size(ep_queue))
+	{
+		event_packet* packet	= (event_packet*)dequeue(ep_queue);
+		event_entry* event_vec  = e_table.table[packet->code];
+
+		if (nullptr == event_vec)
+		{
+			HLWARN("No event vector code : %d", packet->code);
+			return H_ERR;
+		}
+
+		for (u64 i = 0; i < size(event_vec); i++)
+		{
+			ret_code = event_vec[i].callback(packet->sender, packet->context);
+		}
+	}
+	return ret_code;
 }
 
 void event_shutdown(void)
@@ -44,6 +70,7 @@ void event_shutdown(void)
 			destroy_darray(e_table.table[i]);
 		}
 	}
+	destroy_c_queue(ep_queue);
 }
 
 i8 event_register(event_code code,void* listener,H_call_back callback)
@@ -90,20 +117,14 @@ i8 event_unregister(event_code code,void* listener,H_call_back callback)
 // TODO : make the sender and listener check for event dispatch
 i8 event_fire(event_code code, void* sender,i64 context)
 {
-	event_entry* event_vec		= e_table.table[code];
-	i8 ret_code 			= H_OK;
+	i8 ret_code 	= H_OK;
 
+	event_packet pack{};
+	pack.code	= code;
+	pack.sender	= sender;
+	pack.context	= context;
 
-	if( nullptr == event_vec)
-	{
-		HLWARN("No event vector code : %d",code);
-		return H_ERR;
-	}
+	ret_code	= enqueue(ep_queue,&pack);
 
-
-	for(u64 i = 0; i < size(event_vec); i++)
-	{
-		ret_code = event_vec[i].callback(sender,context);
-	}
 	return ret_code;
 }

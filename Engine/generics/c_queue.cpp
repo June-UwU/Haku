@@ -45,6 +45,7 @@ i8 enqueue(c_queue* q_ptr, void* obj)
 	{
 		if(true == q_ptr->purge)
 		{
+			HLWARN("Purge queue rewrite : %x", q_ptr);
 			q_ptr->rear	= q_ptr->front;
 			if(q_ptr->front == (q_ptr->capacity -1))
 			{

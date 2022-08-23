@@ -17,10 +17,11 @@ typedef struct platform_state
 	HWND 	  hwnd;
 }platform_state;
 
-static platform_state* state_ptr; // platform dependant state
+static platform_state* 	state_ptr; // platform dependant state
 
-static HANDLE private_heap; 	  // windows specfic heaps
-static DWORD  heap_flags = HEAP_GENERATE_EXCEPTIONS;  // generate exception if heap_allocation fails
+static HANDLE 		private_heap; 	  // windows specfic heaps
+static DWORD  		heap_flags = HEAP_GENERATE_EXCEPTIONS;  // generate exception if heap_allocation fails
+static f64		start_time;
 
 static constexpr WORD platform_level_lookup[LOG_LVL_COUNT]
 {
@@ -85,6 +86,16 @@ i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, 
 	}
 	
 	ShowWindow(state_ptr->hwnd,SW_SHOWDEFAULT);
+
+	LARGE_INTERGER timer;
+	bool ret_code = QueryPerformanceCounter(&timer);
+
+	if( false == ret_code)
+	{
+		HLCRIT("Timer  failed to initialize");
+	}
+
+	start_timer = 1.0f/(f64)timer.QuadPart;
 
 	return H_OK;
 }
@@ -217,5 +228,15 @@ static LRESULT win32_msg_proc(HWND handle ,UINT msg, WPARAM wparam, LPARAM lpara
 			}
 	}
 	return DefWindowProc(handle,msg,wparam,lparam);
+}
+
+void platform_time(void)
+{
+	LARGE_INTERGER tick;
+	QueryPerformanceCounter(&tick);
+
+	f64 ret_val	= 1.0f/(f64)tick.QuadPart;
+
+	return  ret_val - start_time;
 }
 #endif

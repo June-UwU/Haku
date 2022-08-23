@@ -6,7 +6,7 @@
 #include "generics/c_queue.hpp"
 #include "event.hpp"
 
-#define TEST 1
+#define TEST 0
 
 #if TEST
 	#define RUN_TEST() application_run_test()
