@@ -16,9 +16,24 @@ constexpr u64 H_ECODE_RANGE	= 	UINT_LEAST16_MAX;  // number of event codes
 typedef enum
 {
 	HK_EXIT 	= 0x0,
+	HK_KEY_UP,
+	HK_KEY_DOWN,
+	HK_MOUSE_BUTTON,
+	HK_MOUSE_MOVE,
+	HK_MOUSE_WHEEL,
 
 	MAX_EVENT_CODES // event code used to count the maximum number of event code
 }event_code;
+
+constexpr const char* HK_EVENT_STRING[MAX_EVENT_CODES]
+{ 
+	"exit event", 
+	"key up event",
+	"key down event",
+	"mouse button event", 
+	"mouse move",
+	"mouse wheel",
+};
 
 // @brief	event subsystem initialization routine
 // @returns 	: H_OK on sucess

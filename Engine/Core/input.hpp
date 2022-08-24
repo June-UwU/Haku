@@ -1,6 +1,8 @@
 #pragma once
 
-#include "defines.h"
+#include "defines.hpp"
+
+// TODO : maybe support raw input
 
 /**
  * @brief Represents available mouse buttons.
@@ -289,7 +291,7 @@ HAPI i8 input_was_key_down(keys key);
 
 HAPI i8 input_was_key_up(keys key);
 
-void input_process_key(keys key, i8 pressed);
+void input_process_key(keys key, bool pressed);
 
 HAPI i8 input_is_button_down(buttons button);
 

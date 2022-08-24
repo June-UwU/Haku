@@ -5,10 +5,12 @@
 #include "core/logger.hpp"
 #include "core/hmemory.hpp"
 #include "core/event.hpp"
+#include "core/input.hpp"
 
 #include <stdlib.h>
 #include <string.h>
 #include <Windows.h>
+#include <windowsx.h>
 #include <sysinfoapi.h>
 
 typedef struct platform_state
@@ -87,7 +89,7 @@ i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, 
 	
 	ShowWindow(state_ptr->hwnd,SW_SHOWDEFAULT);
 
-	LARGE_INTERGER timer;
+	LARGE_INTEGER timer;
 	bool ret_code = QueryPerformanceCounter(&timer);
 
 	if( false == ret_code)
@@ -95,7 +97,7 @@ i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, 
 		HLCRIT("Timer  failed to initialize");
 	}
 
-	start_timer = 1.0f/(f64)timer.QuadPart;
+	start_time = 1.0f/(f64)timer.QuadPart;
 
 	return H_OK;
 }
@@ -221,18 +223,77 @@ static LRESULT win32_msg_proc(HWND handle ,UINT msg, WPARAM wparam, LPARAM lpara
 {
 	switch(msg)
 	{
+		case WM_KEYDOWN:
+			{
+				switch(wparam)
+				{
+					case VK_MBUTTON:
+						{
+							input_process_button(BUTTON_MIDDLE, true);
+							break;
+						}
+					case VK_LBUTTON:
+						{
+							input_process_button(BUTTON_LEFT, true);
+							break;
+						}
+					case VK_RBUTTON:
+						{
+							input_process_button(BUTTON_RIGHT, true);
+							break;
+						}
+					default:
+						input_process_key((keys)wparam, false);
+				}
+				return 0;
+			}
+		case WM_KEYUP:
+			{
+				switch(wparam)
+				{
+					case VK_MBUTTON:
+						{
+							input_process_button(BUTTON_MIDDLE,false);
+							break;
+						}
+					case VK_LBUTTON:
+						{
+							input_process_button(BUTTON_LEFT, false);
+							break;
+						}
+					case VK_RBUTTON:
+						{
+							input_process_button(BUTTON_RIGHT, false);
+							break;
+						}
+					default:						
+							input_process_key((keys)wparam,false);
+						
+				}
+				return 0;
+			}
+		case WM_MOUSEMOVE:
+			{
+				input_process_mouse_move(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
+				return 0;
+			}
+		case WM_MOUSEWHEEL:
+			{
+				input_process_mouse_wheel((i8)GET_WHEEL_DELTA_WPARAM(wparam));
+				return 0;
+			}
 		case WM_CLOSE:
 			{
 				event_fire(HK_EXIT,NULL, 0);
-				break;
+				return 0;
 			}
 	}
-	return DefWindowProc(handle,msg,wparam,lparam);
+		return DefWindowProc(handle, msg, wparam, lparam);
 }
 
-void platform_time(void)
+f64 platform_time(void)
 {
-	LARGE_INTERGER tick;
+	LARGE_INTEGER tick;
 	QueryPerformanceCounter(&tick);
 
 	f64 ret_val	= 1.0f/(f64)tick.QuadPart;

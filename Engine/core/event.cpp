@@ -49,7 +49,7 @@ i8 service_event(void)
 
 		if (nullptr == event_vec)
 		{
-			HLWARN("No event vector code : %d", packet->code);
+			HLWARN("No event vector code : %s", HK_EVENT_STRING[packet->code]);
 			return H_ERR;
 		}
 

@@ -1,10 +1,11 @@
+#include "event.hpp"
+#include "input.hpp"
+#include "timer.hpp"
 #include "logger.hpp"
 #include "hmemory.hpp"
 #include "application.hpp"
 #include "platform/platform.hpp"
-#include "generics/darray.hpp"
-#include "generics/c_queue.hpp"
-#include "event.hpp"
+
 
 #define TEST 0
 
@@ -14,14 +15,13 @@
 	#define RUN_TEST()
 #endif
 
+static timer app_timer;
 static bool running = false;
 
 void application_run_test(void)
 {
 	logger_test();
 	hmemory_test();
-	darray_test();
-	c_queue_test();
 }
 
 i8 application_exit(void* sender, i64 context)
@@ -60,6 +60,14 @@ i8 application_initialize(application_state* app_state)
 		return H_FAIL;
 	}
 
+	haku_ret_code = input_system_initialize();
+
+	if( H_OK != haku_ret_code)
+	{
+		HLEMER("input subsystem : H_FAIL");
+		return H_FAIL;
+	}
+
 	haku_ret_code	 = event_initialize();
 
 	if (H_OK != haku_ret_code)
@@ -70,6 +78,8 @@ i8 application_initialize(application_state* app_state)
 
 	event_register(HK_EXIT,NULL,application_exit);
 
+	clock_start(app_timer);
+
 	running	= true;
 
 	return H_OK;
@@ -78,6 +88,8 @@ i8 application_initialize(application_state* app_state)
 void application_shutdown(void)
 {
 	event_shutdown();
+
+	input_system_shutdown();
 
 	platform_shutdown();
 
@@ -93,9 +105,12 @@ void application_run(void)
 	RUN_TEST();
 	while(true == running)
 	{
+		clock_update(app_timer);
 		platform_pump_messages();
-		service_event();		
+		service_event();	
+		input_update(app_timer.elapsed);	
 	}
 	application_shutdown();
+	clock_stop(app_timer);
 }
 
