@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
+message("${API}")
 message("Building Haku Shared Library")
 
 set(PROJECT_NAME "Haku_Engine")
@@ -15,6 +16,18 @@ file(GLOB_RECURSE platform_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/*.cpp)
 
 file(GLOB_RECURSE generic_inc ${CMAKE_CURRENT_SOURCE_DIR}/generics/*.hpp)
 file(GLOB_RECURSE generic_src ${CMAKE_CURRENT_SOURCE_DIR}/generics/*.cpp)
+
+file(GLOB_RECURSE renderer_inc	${CMAKE_CURRENT_SOURCE_DIR}/renderer/*.hpp)
+file(GLOB_RECURSE renderer_src	${CMAKE_CURRENT_SOURCE_DIR}/renderer/*.cpp)
+
+file(GLOB_RECURSE renderer_backends_inc	${CMAKE_CURRENT_SOURCE_DIR}/renderer/backends/*.hpp)
+file(GLOB_RECURSE renderer_backends_src	${CMAKE_CURRENT_SOURCE_DIR}/renderer/backends/*.cpp)
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_backends_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_backends_src})
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_src})
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${generic_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${generic_src})
@@ -39,6 +52,10 @@ add_library(${PROJECT_NAME}
 	${core_src}
 	${platform_inc}
 	${platform_src}
+	${renderer_inc}
+	${renderer_src}
+	${renderer_backends_inc}
+	${renderer_backends_src}
 	)
 
 

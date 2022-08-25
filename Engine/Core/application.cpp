@@ -6,6 +6,7 @@
 #include "application.hpp"
 #include "platform/platform.hpp"
 
+#include "renderer/renderer_front_end.hpp"
 
 #define TEST 0
 
@@ -78,15 +79,25 @@ i8 application_initialize(application_state* app_state)
 
 	event_register(HK_EXIT,NULL,application_exit);
 
+	haku_ret_code	= renderer_initialize(HK_DIRECTX_12);
+
+	if( H_OK != haku_ret_code)
+	{
+		HLEMER("renderer subsystem : H_FAIL");
+		return H_FAIL;
+	}
+
 	clock_start(app_timer);
 
 	running	= true;
 
-	return H_OK;
+	return haku_ret_code;
 }
 
 void application_shutdown(void)
 {
+	renderer_shutdown();
+
 	event_shutdown();
 
 	input_system_shutdown();
@@ -103,12 +114,18 @@ void application_shutdown(void)
 void application_run(void)
 {
 	RUN_TEST();
+	HLINFO("Initialization report ");
+	hlog_memory_report();
 	while(true == running)
 	{
 		clock_update(app_timer);
 		platform_pump_messages();
 		service_event();	
-		input_update(app_timer.elapsed);	
+		input_update(app_timer.elapsed);
+
+		// TODO : push render_packet outta here
+		render_packet packet{};
+		renderer_draw_frame(&packet);
 	}
 	application_shutdown();
 	clock_stop(app_timer);

@@ -13,6 +13,8 @@
 #include <windowsx.h>
 #include <sysinfoapi.h>
 
+static const char* UNRESOLVED_WIN_ERROR = "Api message failure";
+
 typedef struct platform_state
 {
 	HINSTANCE hinstance;
@@ -38,20 +40,23 @@ static constexpr WORD platform_level_lookup[LOG_LVL_COUNT]
 static LRESULT win32_msg_proc(HWND handle ,UINT msg, WPARAM wparam, LPARAM lparam);
 
 // Internal function to create error strings
-char* win32_get_error_string(DWORD error_code)
+void win32_get_error_string(DWORD error_code)
 {
-	char* ret_ptr = nullptr;
+	char* ret_ptr = const_cast<char*>(UNRESOLVED_WIN_ERROR);
 	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,NULL,error_code,
 			MAKELANGID(LANG_NEUTRAL , SUBLANG_DEFAULT),ret_ptr,0,NULL);
 
-	// there is a small mem leak here from LocalAlloc()
-	// LocalFree() if possible
-	if(nullptr == ret_ptr)
+	// cleaner and better implementation
+	if ( UNRESOLVED_WIN_ERROR == ret_ptr)
 	{
-		ret_ptr = const_cast<char*>("Unknown Error");
+		HLEMER(ret_ptr);
+	}	
+	else
+	{
+		HLEMER(ret_ptr);
+		LocalFree(ret_ptr);
 	}
-
-	return ret_ptr;
+	
 }
 
 i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, u32  width)
@@ -97,7 +102,7 @@ i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, 
 		HLCRIT("Timer  failed to initialize");
 	}
 
-	start_time = 1.0f/(f64)timer.QuadPart;
+	start_time = (f64)timer.QuadPart/1000.0f;
 
 	return H_OK;
 }
@@ -133,10 +138,8 @@ i8 platform_memory_initialize()
 	if(!private_heap)
 	{
 		DWORD error = GetLastError();
-		char* message = win32_get_error_string(error);
+		win32_get_error_string(error);
 		HLEMER("Windows private heap allocation failed");
-		HLEMER(message);
-		LocalFree(message); // This frees the buffer
 		return H_FAIL;
 	}
 	return H_OK;
@@ -155,9 +158,7 @@ void* platform_allocate(u64 size, bool aligned)
 	{
 		HLEMER("Heap allocation failure");
 		DWORD error = GetLastError();
-		char* message = win32_get_error_string(error);
-		HLEMER(message);
-		LocalFree(message);
+		win32_get_error_string(error);
 		exit(H_FAIL); // aborting application, generated crash
 	}
 
@@ -296,7 +297,7 @@ f64 platform_time(void)
 	LARGE_INTEGER tick;
 	QueryPerformanceCounter(&tick);
 
-	f64 ret_val	= 1.0f/(f64)tick.QuadPart;
+	f64 ret_val	= (f64)tick.QuadPart/1000.0f;
 
 	return  ret_val - start_time;
 }

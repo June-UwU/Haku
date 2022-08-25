@@ -15,6 +15,7 @@ typedef enum memory_tag
 	MEM_TAG_LOGGER,		// logger subsystem allocations
 	MEM_TAG_MEMORY,		// memory subsystem allocations
 	MEM_TAG_PLATFORM,	// platform subsystem allocations
+	MEM_TAG_RENDERER,	// renderer subsystem allocations
 	MEM_TAG_GAME,		// game allocations
 	MEM_TAG_DARRAY,		// generic darray
 	MEM_TAG_CQUEUE,		// generic c_queue

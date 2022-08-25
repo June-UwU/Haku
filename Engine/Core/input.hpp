@@ -3,6 +3,12 @@
 #include "defines.hpp"
 
 // TODO : maybe support raw input
+// TODO : make this use the and execute all code and use context for syskey
+// click 
+// double click
+// syskey state
+// etc
+// NOTE : this is as basic as it gets 
 
 /**
  * @brief Represents available mouse buttons.

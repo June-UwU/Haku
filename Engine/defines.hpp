@@ -55,6 +55,20 @@ constexpr u64 BYTESINGiB(u64 scale)
 	return 1024 * 1024 * 1024 * scale;
 }
 
+constexpr u64 BYTESTOKiB(u64 bytes)
+{
+	return bytes / 1024u;
+}
+
+constexpr u64 BYTESTOMiB(u64 bytes)
+{
+	return BYTESTOKiB(bytes) / 1024u;
+}
+
+constexpr u64 BYTESTOGiB(u64  bytes)
+{
+	return BYTESTOMiB(bytes) / 1024u;
+}
 //HAKU API EXPORT MACROS
 
 #ifdef HAKU_API_BUILD

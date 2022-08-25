@@ -14,7 +14,8 @@ static const char* memory_tag_lookup[MEMORY_TAG_COUNT]
 {
 	"\t Logger 		: %d %s",
 	"\t Memory 		: %d %s",
-	"\t Platform		: %d %s",
+	"\t Platform	: %d %s",
+	"\t Renderer	: %d %s",
 	"\t Game		: %d %s",
 	"\t Darray		: %d %s",
 	"\t CQueue		: %d %s",
