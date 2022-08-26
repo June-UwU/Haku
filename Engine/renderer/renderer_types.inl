@@ -22,6 +22,8 @@ constexpr const char* BACKEND_STRING[HK_BACKEND_MAX]
 // @breif 	renderer backend abstract struct
 typedef struct renderer_backend
 {
+	// @breif	frame count 
+	u64         frame_count;
 	// @breif	backend type enum
 	backends 	api_type;
 

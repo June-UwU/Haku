@@ -1,7 +1,6 @@
 #pragma once
 
 #include "defines.hpp"
-#include "directx_types.hpp"
 
 
 #ifdef _DEBUG

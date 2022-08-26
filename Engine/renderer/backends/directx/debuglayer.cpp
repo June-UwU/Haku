@@ -14,7 +14,7 @@ i8 debug_layer_initialize(void)
 	if(S_OK	== ret_code)
 	{
 		debug_interface->EnableDebugLayer();
-		HLINFO("DirectX debugg layer enable");
+		HLWARN("DirectX debug layer enabled, This make the application slower if shown on release built, TREAT AS ERROR");
 	}
 	return H_OK;
 }
