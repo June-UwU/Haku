@@ -4,6 +4,7 @@
 #include "directx_types.hpp"
 #include "command_context.hpp"
 
+
 #pragma comment(lib, "D3d12.lib")
 #pragma comment(lib, "DXGI.lib") 
 
@@ -11,7 +12,7 @@
 #include <dxgi1_6.h>
 
 
-static ID3D12Device* device;
+static ID3D12Device* 	device;		// directx device
 
 // helper function that prints adapter features
 void print_adapter_spec(IDXGIAdapter1* adapter)
@@ -23,8 +24,15 @@ void print_adapter_spec(IDXGIAdapter1* adapter)
 	HLINFO("GPU		: %ls",desc.Description);
 }
 
-// helper function to create device
-i8 create_device(void)
+// helper function to destroy device 
+void device_destroy(void)
+{
+	HLINFO("device shutdown");
+	device->Release();
+}
+
+// helper function to create device and swap chain
+i8 create_device_and_swapchain(void)
 {
 	HLINFO("device creation");
 	i8 ret_code		= H_OK;
@@ -71,10 +79,20 @@ i8 create_device(void)
 		ret_code = H_FAIL;
 		goto fail_device;
 	}
-
+	HLINFO("Device initailized");
 	FRIENDLY_NAME(device, L"DirectX device");
 
+	ret_code = command_context_initialize(device,factory_6);
+	if (H_FAIL == ret_code)
+	{
+		goto command_fail;
+	}
+	goto h_ok;
+
+command_fail:
+	device_destroy();
 fail_device:
+h_ok:
 	factory_6->Release();
 fail_adapter:
 	adapter->Release();
@@ -84,12 +102,6 @@ fail_factory_1:
 	return ret_code;
 }
 
-void device_destroy(void)
-{
-	HLINFO("device shutdown");
-	device->Release();
-}
-
 i8 directx_initialize(renderer_backend* backend_ptr)
 {
 	i8 ret_code		= H_OK;
@@ -97,23 +109,13 @@ i8 directx_initialize(renderer_backend* backend_ptr)
 	HLINFO("Directx initialize");
 	ENABLE_DEBUG_LAYER();	
 	
-	ret_code = create_device();
+	ret_code = create_device_and_swapchain();
 	if (H_FAIL == ret_code)
 	{
 		goto init_fail;
 	}
-
-	ret_code = command_context_initialize(device);
-	if (H_FAIL == ret_code)
-	{
-		goto command_fail;
-	}
 	goto h_ok;
 
-
-
-command_fail:
-	device_destroy();
 init_fail:
 h_ok:
 	return ret_code;

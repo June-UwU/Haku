@@ -23,6 +23,8 @@ typedef struct platform_state
 
 static platform_state* 	state_ptr; // platform dependant state
 
+static u32          p_height;
+static u32          p_width;
 static HANDLE 		private_heap; 	  // windows specfic heaps
 static DWORD  		heap_flags = HEAP_GENERATE_EXCEPTIONS;  // generate exception if heap_allocation fails
 static f64		start_time;
@@ -61,6 +63,9 @@ void win32_get_error_string(DWORD error_code)
 
 i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, u32  width)
 {	
+	p_height        = height;
+	p_width         = width;
+
 	state_ptr 		= (platform_state*)hmemory_alloc(sizeof(platform_state),MEM_TAG_PLATFORM);
 
 	state 			= state_ptr;
@@ -301,4 +306,15 @@ f64 platform_time(void)
 
 	return  ret_val - start_time;
 }
+void platform_data_for_render_api(void** ptr)
+{
+	*ptr = (void*)&state_ptr->hwnd;
+}
+void get_platform_properties(p_prop* ptr)
+{
+	ptr->height = p_height;
+	ptr->width  = p_width;
+}
+
+
 #endif

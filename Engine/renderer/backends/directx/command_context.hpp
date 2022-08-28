@@ -4,6 +4,7 @@
 #include "directx_types.hpp"
 
 #include <D3d12.h>
+#include <dxgi1_6.h>
 
 constexpr const u32 ALLOCATOR_COUNT = 6u;
 
@@ -21,7 +22,7 @@ typedef enum
 
 // @breif		command queue initializations routine
 // @return		: H_OK on sucess , else H_FAIL
-i8 command_context_initialize(ID3D12Device* device);
+i8 command_context_initialize(ID3D12Device* device, IDXGIFactory6* factory_6);
 
 // @breif		tear down routine for the underlying command routine
 void command_context_shutdown(void);

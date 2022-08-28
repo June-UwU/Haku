@@ -12,11 +12,10 @@ HAPI typedef struct application_state
 	const char* name;	// name of application
 }application_state;
 
+
 // @breif 	routine to application entry point
 HAPI i8 application_initialize(application_state* app_state);
 
 // @brief 	routine to run application (game loop) shutdown is handled internally
 HAPI void application_run(void);
-
-
 

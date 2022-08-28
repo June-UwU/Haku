@@ -16,8 +16,21 @@
 	#define RUN_TEST()
 #endif
 
-static timer app_timer;
-static bool running = false;
+// internal engine representation
+typedef struct engine_state
+{
+	i32 x;			// appication window corrds
+	i32 y;
+	u32 height;		// window height
+	u32 width;		// window width
+	const char* name;	// engine name
+	bool running;		// true if state is running
+	bool suspended;		// true is suspended
+}engine_state;
+
+
+static timer clock;	    // internal timer
+static engine_state e_state;
 
 void application_run_test(void)
 {
@@ -27,7 +40,7 @@ void application_run_test(void)
 
 i8 application_exit(void* sender, i64 context)
 {
-	running 	= false;
+	e_state.running 	= false;
 	return H_OK;
 }
 
@@ -87,9 +100,15 @@ i8 application_initialize(application_state* app_state)
 		return H_FAIL;
 	}
 
-	clock_start(app_timer);
-
-	running	= true;
+	clock_start(clock);
+	
+	e_state.suspended	= false;
+	e_state.y		= app_state->y;
+	e_state.x		= app_state->x;
+	e_state.width		= app_state->width;
+	e_state.height		= app_state->height;
+	e_state.name	 	= app_state->name;
+	e_state.running		= true;
 
 	return haku_ret_code;
 }
@@ -116,18 +135,21 @@ void application_run(void)
 	RUN_TEST();
 	HLINFO("Initialization report ");
 	hlog_memory_report();
-	while(true == running)
+	while(true == e_state.running)
 	{
-		clock_update(app_timer);
+		clock_update(clock);
 		platform_pump_messages();
 		service_event();	
-		input_update(app_timer.elapsed);
+		input_update(clock.elapsed);
 
 		// TODO : push render_packet outta here
 		render_packet packet{};
 		renderer_draw_frame(&packet);
 	}
+	clock_stop(clock);
+	HLINFO("engine up time : %f", clock.elapsed);
 	application_shutdown();
-	clock_stop(app_timer);
 }
+
+
 

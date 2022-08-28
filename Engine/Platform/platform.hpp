@@ -2,6 +2,12 @@
 
 #include "defines.hpp"
 
+typedef struct p_prop
+{
+	u32 height;
+	u32 width;
+}p_prop;
+
 // Haku platform subsystem
 
 	//TODO : don't export the platform code
@@ -78,3 +84,10 @@
 	// @breif	routine to return performance counter
 	// @return	: float timer
 	f64 platform_time(void);
+
+	// @breif	routine to set platform specfic data to api 
+	// @param	pointer to fill the data
+	void platform_data_for_render_api(void** ptr);
+
+
+	void get_platform_properties(p_prop* ptr);
