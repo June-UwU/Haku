@@ -69,7 +69,7 @@ typedef enum keys {
     KEY_DOWN = 0x28,
     KEY_SELECT = 0x29,
     KEY_PRINT = 0x2A,
-    KEY_EXE = 0x2B,
+    KEY_EXECUTE = 0x2B,
     KEY_SNAPSHOT = 0x2C,
     /** @brief The insert key. */
     KEY_INSERT = 0x2D,

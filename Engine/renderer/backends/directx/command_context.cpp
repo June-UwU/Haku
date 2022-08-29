@@ -1,49 +1,22 @@
 #include "core/logger.hpp"
 #include "command_context.hpp"
 
-#include <platform/platform.hpp>
 
-static ID3D12CommandQueue* directx_queue[HK_COMMAND_MAX];
-static IDXGISwapChain* swapchain;	// directx swap chain
 
-i8 command_context_initialize(ID3D12Device* device, IDXGIFactory6* factory_6)
+typedef enum
+{
+	copy_queue_failure,
+	compute_queue_fail,
+	render_queue_fail
+}command_context_fails;
+
+
+i8 command_context_fail_handler(directx_queue* queue, command_context_fails fail_code);
+
+i8 command_context_initialize(directx_context* context)
 {
 
-// initialization of nessary data
-	// getting win32 platform specfic data
-	void* handle;
-	platform_data_for_render_api(&handle);
-
-	p_prop plat_prop;
-	get_platform_properties(&plat_prop);
-
-	DXGI_SWAP_CHAIN_DESC sdesc{};
-	// swapa chain buffer desc
-	sdesc.BufferDesc.Width = plat_prop.width;
-	sdesc.BufferDesc.Height = plat_prop.height;
-	sdesc.BufferCount = 3u;
-	sdesc.BufferDesc.RefreshRate.Numerator = 0u;
-	sdesc.BufferDesc.RefreshRate.Denominator = 0u;
-	sdesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	sdesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	sdesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-
-	// multi sampling conf , for now MULTI SAMPLING IS OFF
-	sdesc.SampleDesc.Count = 1;
-	sdesc.SampleDesc.Quality = 0;
-
-	// buffer usage
-	sdesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-
-	// swap effect
-	sdesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	sdesc.Windowed = TRUE;
-	sdesc.OutputWindow = *(HWND*)handle;
-
-
-// End of initialization for variables
-
-
+	directx_queue* queue = &context->queue;
 	HLINFO("command queue initialization");
 	i8 ret_code		= H_OK;
 	HRESULT	api_ret_code	= S_OK;
@@ -55,92 +28,72 @@ i8 command_context_initialize(ID3D12Device* device, IDXGIFactory6* factory_6)
 	q_desc.NodeMask	= 0;
 
 	// creating render queue
-	api_ret_code	= device->CreateCommandQueue(&q_desc,__uuidof(ID3D12CommandQueue),(void**)&directx_queue[HK_COMMAND_RENDER]);
+	api_ret_code	= context->logical_device->CreateCommandQueue(&q_desc,__uuidof(ID3D12CommandQueue),(void**)&queue->directx_queue[HK_COMMAND_RENDER]);
 	if(S_OK != api_ret_code)
 	{
-		ret_code= H_FAIL;
 		HLEMER("render queue failure");
-		goto render_queue_fail;
+		ret_code= command_context_fail_handler(queue, render_queue_fail);
+		return ret_code;
 	}
 	HLINFO("render queue initailized");
-	FRIENDLY_NAME(device, L"DirectX Render Queue");
+	FRIENDLY_NAME(queue->directx_queue[HK_COMMAND_RENDER], L"DirectX Render Queue");
 
 
 
 	q_desc.Type	= D3D12_COMMAND_LIST_TYPE_COMPUTE;
 
 	// creating compute queue
-	api_ret_code	= device->CreateCommandQueue(&q_desc,__uuidof(ID3D12CommandQueue),(void**)&directx_queue[HK_COMMAND_COMPUTE]);
+	api_ret_code	= context->logical_device->CreateCommandQueue(&q_desc,__uuidof(ID3D12CommandQueue),(void**)&queue->directx_queue[HK_COMMAND_COMPUTE]);
 	if(S_OK != api_ret_code)
 	{
-		ret_code= H_FAIL;
 		HLEMER("compute queue creation failure");
-		goto compute_queue_fail;
+		ret_code = command_context_fail_handler(queue, compute_queue_fail);
+		return ret_code;
 	}
 	HLINFO("compute queue initailized");
-	FRIENDLY_NAME(device, L"DirectX Compute Queue");
+	FRIENDLY_NAME(queue->directx_queue[HK_COMMAND_COMPUTE], L"DirectX Compute Queue");
 
 	q_desc.Type	= D3D12_COMMAND_LIST_TYPE_COPY;
 
 	// creating copy queue
-	api_ret_code	= device->CreateCommandQueue(&q_desc,__uuidof(ID3D12CommandQueue),(void**)&directx_queue[HK_COMMAND_COPY]);
+	api_ret_code	= context->logical_device->CreateCommandQueue(&q_desc,__uuidof(ID3D12CommandQueue),(void**)&queue->directx_queue[HK_COMMAND_COPY]);
 	if(S_OK != api_ret_code)
 	{
-		ret_code= H_FAIL;
 		HLEMER("copy queue failure");
-		goto copy_queue_failure;
+		ret_code = command_context_fail_handler(queue, copy_queue_failure);
+		return ret_code;
 	}
 	HLINFO("copy queue initailized");
-	FRIENDLY_NAME(device, L"DirectX Copy Queue");
-	
+	FRIENDLY_NAME(queue->directx_queue[HK_COMMAND_COPY], L"DirectX Copy Queue");
 
 
-	api_ret_code = factory_6->CreateSwapChain(directx_queue[HK_COMMAND_RENDER], &sdesc, &swapchain);
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("swapchain creation failure");
-		ret_code = H_FAIL;
-		goto swapchain_fail;
-	}
-	HLINFO("swap chain initailized");
-
-	api_ret_code = factory_6->MakeWindowAssociation(*(HWND*)handle, DXGI_MWA_NO_WINDOW_CHANGES);
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("window assciation failure");
-		ret_code = H_FAIL;
-		goto association_fail;
-	}
-	HLINFO("default behavior set");
-
-	goto h_ok;
-
-
-
-association_fail:
-	swapchain->Release();
-swapchain_fail:
-	directx_queue[HK_COMMAND_COPY]->Release();
-copy_queue_failure:
-	directx_queue[HK_COMMAND_COMPUTE]->Release();
-compute_queue_fail:
-	directx_queue[HK_COMMAND_RENDER]->Release();
-render_queue_fail:
-h_ok:
 	return ret_code;
 }
 
-void command_context_shutdown(void)
+void command_context_shutdown(directx_queue* queue)
 {
 	HLINFO("command queue shutdown");
 	for(u64 i = 0; i< HK_COMMAND_MAX; i++)
 	{
-		directx_queue[i]->Release();
+		queue->directx_queue[i]->Release();
 	}
-	swapchain->Release();
 }
 
 void execute_command(queue_type type)
 {
 
+}
+
+i8 command_context_fail_handler(directx_queue* queue,command_context_fails fail_code)
+{
+	switch (fail_code)
+	{
+	case copy_queue_failure:
+		queue->directx_queue[HK_COMMAND_COMPUTE]->Release();
+	case compute_queue_fail:
+		queue->directx_queue[HK_COMMAND_RENDER]->Release();
+	case render_queue_fail:
+		break;
+	}
+	return H_FAIL;
 }
