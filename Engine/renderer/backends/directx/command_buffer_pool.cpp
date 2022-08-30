@@ -4,16 +4,17 @@
 #include "core/hmemory.hpp"
 
 static u64 pool_capacity;
-directx_allocator* pool[HK_COMMAND_MAX];
+static directx_allocator* pool[HK_COMMAND_MAX];
 
 
 i8 command_pool_fail_handler();
 
 i8 command_buffer_pool(const directx_context* context,const u64 pool_size)
 {
-	pool_capacity	= pool_size;
-	i8 ret_code	= H_OK;
-	HRESULT api_ret_code = S_OK;
+	HLWARN("Pool is being limited to 1 make it to %lld",pool_size);
+	pool_capacity		= 1;
+	i8 ret_code		= H_OK;
+	HRESULT api_ret_code 	= S_OK;
 
 	HLINFO("attempting allcation of command buffer pool");
 	for(u8 i = 0; i < HK_COMMAND_MAX; i++)
@@ -26,12 +27,15 @@ i8 command_buffer_pool(const directx_context* context,const u64 pool_size)
 	directx_allocator* init_allocator = pool[HK_COMMAND_RENDER];
 	for(u64 j = 0; j < pool_size; j++)
 	{	
-		init_allocator->state = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
-		api_ret_code 			= context->logical_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,__uuidof(ID3D12CommandAllocator), (void**)&init_allocator->allocator);
+		init_allocator->type      = HK_COMMAND_RENDER;
+		init_allocator->fence_val = 0;
+		init_allocator->state     = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
+		api_ret_code 		  = context->logical_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
+			__uuidof(ID3D12CommandAllocator), (void**)&init_allocator->allocator);
 		if(S_OK != api_ret_code)
 		{
 			HLEMER("failed to allocate command pools");
-			ret_code 		= command_pool_fail_handler();
+			ret_code  		= command_pool_fail_handler();
 			return ret_code;
 		}
 		swprintf(allocator_name, 256u,L"Direct X %s command allocator %lld ",
@@ -43,8 +47,11 @@ i8 command_buffer_pool(const directx_context* context,const u64 pool_size)
 	init_allocator = pool[HK_COMMAND_COMPUTE];
 	for(u64 j = 0; j < pool_size; j++)
 	{	
-		init_allocator->state = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
-		api_ret_code 			= context->logical_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COMPUTE,__uuidof(ID3D12CommandAllocator), (void**)&init_allocator->allocator);
+		init_allocator->type = HK_COMMAND_COMPUTE;
+		init_allocator->fence_val 	= 0;
+		init_allocator->state 	  	= COMMAND_BUFFER_STATE_NOT_ALLOCATED;
+		api_ret_code 			= context->logical_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COMPUTE,
+				__uuidof(ID3D12CommandAllocator), (void**)&init_allocator->allocator);
 		if(S_OK != api_ret_code)
 		{
 			HLEMER("failed to allocate command pools");
@@ -60,8 +67,10 @@ i8 command_buffer_pool(const directx_context* context,const u64 pool_size)
 	init_allocator = pool[HK_COMMAND_COPY];
 	for (u64 j = 0; j < pool_size; j++)
 	{
-		init_allocator->state = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
-		api_ret_code = context->logical_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY,
+		init_allocator->type = HK_COMMAND_COPY;
+		init_allocator->fence_val	= 0;
+		init_allocator->state 		= COMMAND_BUFFER_STATE_NOT_ALLOCATED;
+		api_ret_code 			= context->logical_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY,
 			__uuidof(ID3D12CommandAllocator), (void**)&init_allocator->allocator);
 		if (S_OK != api_ret_code)
 		{
@@ -83,13 +92,17 @@ i8 command_buffer_pool(const directx_context* context,const u64 pool_size)
 void command_buffer_pool_shutdown(void)
 {
 	HLINFO("command buffer pool shutdown");
+	HLWARN("THE BUFFER POOL WILL THROW REF COUNT WARNING, THIS IS CURRENTLY INTENTIONALLY MADE TO NOT BORK,(POOL SIZE NEEDS TO BE ADJUSTED)");
 	for(u64 i = 0; i < HK_COMMAND_MAX; i++)
 	{
 		directx_allocator* alloc_ptr		= pool[i];
 		for(u64 j = 0; j < pool_capacity; j++)
 		{
+			// this for the safe release
+			//alloc_ptr->allocator->AddRef();
 			alloc_ptr->allocator->Release();
 		}
+		hmemory_free(alloc_ptr, MEM_TAG_RENDERER);
 	}
 }
 
@@ -123,7 +136,7 @@ directx_allocator* request_command_buffer(queue_type type)
 	{
 		if(COMMAND_BUFFER_STATE_NOT_ALLOCATED == ret_ptr->state)
 		{
-			ret_ptr->state= COMMAND_BUFFER_STATE_READY;
+			ret_ptr->state= COMMAND_BUFFER_STATE_RECORDING;
 			return ret_ptr;
 		}
 		ret_ptr					+= 1;
@@ -138,6 +151,22 @@ void return_directx_allocator(directx_allocator* obj)
 	obj->state					= COMMAND_BUFFER_STATE_NOT_ALLOCATED;
 }
 
+void reintroduce_allocator(u64 fence_value)
+{
+	for(u64 i = 0; i < HK_COMMAND_MAX; i++)
+	{
+		directx_allocator* alloc_ptr		= pool[i];
+		for(u64 j = 0; j < pool_capacity; j++)
+		{
+			if( alloc_ptr->fence_val == fence_value)
+			{
+				alloc_ptr->state	= COMMAND_BUFFER_STATE_NOT_ALLOCATED;
+			}
+			// else check if the next command list is completed
+			alloc_ptr			+= 1;
+		}	
+	}
+}
 
 i8 command_pool_fail_handler()
 {

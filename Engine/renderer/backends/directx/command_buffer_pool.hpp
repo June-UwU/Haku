@@ -3,6 +3,8 @@
 #include "defines.hpp"
 #include "directx_types.inl"
 
+// TODO : implement a wait function to do a gpu flush
+
 
 // @breif 	routine to create a command pool of command allocator object
 // @param	: the pool size
@@ -18,4 +20,9 @@ void command_buffer_pool_shutdown(void);
 directx_allocator* request_command_buffer(queue_type type); 
 
 // @breif	routine to make the command allocator object back for request
+// @param	: command allocator object to be reintroduced to the open pool
 void return_directx_allocator(directx_allocator* obj);
+
+// @breif 	routine that reintroduce the allocators thar are done executing in the command queue
+// @param	: completed fence value
+void reintroduce_allocator(u64 fence_value);

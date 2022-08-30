@@ -3,13 +3,6 @@
 #include "defines.hpp"
 #include "directx_types.inl"
 
-
-constexpr const u32 ALLOCATOR_COUNT = 6u;
-
-// internal representation of queue
-
-
-
 // @breif		command queue initializations routine
 // @return		: H_OK on sucess , else H_FAIL
 i8 command_context_initialize(directx_context* context);

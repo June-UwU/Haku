@@ -33,8 +33,6 @@ constexpr const wchar_t* COMMAND_NAME[HK_COMMAND_MAX]
 
 typedef enum
 {
-	/** @brief The command buffer is ready to begin. */
-	COMMAND_BUFFER_STATE_READY,
 	/** @brief The command buffer is currently being recorded to. */
 	COMMAND_BUFFER_STATE_RECORDING,
 	/** @brief The command buffer is has ended recording. */
@@ -62,15 +60,22 @@ typedef enum
 
 typedef struct directx_commandlist
 {
+	// command list current state
 	commandlist_state state;
 
+	// command list object
 	ID3D12GraphicsCommandList* commandlist;
 }directx_command_list;
 
 typedef struct directx_allocator
 {
-	u64 fence_value;
+	//
+	queue_type type;
 
+	// this val is the completed value when the allocator is off flight
+	u64 fence_val;
+
+	// allocator state
 	command_buffer_state state;
 
 	ID3D12CommandAllocator* allocator;
@@ -78,21 +83,35 @@ typedef struct directx_allocator
 
 typedef struct directx_queue
 {
+	// current fence value
+	u64 fence_val;
+
+	// synchronizing objects
+	ID3D12Fence* fence;
+
+	// Event to upgrade to for a gpu flush
+	HANDLE event;
+
+	// command queue list 
 	ID3D12CommandQueue* directx_queue[HK_COMMAND_MAX];
 }directx_queue;
 
 typedef struct directx_swapchain
 {
+	// rtv heap increment size
 	u64 heap_increment;
 
+	// number of write buffer
 	u64 max_in_filght_frames;
 
+	// current back buffer
 	u64 current_back_buffer_index;
 	
 	IDXGISwapChain* swapchain;	// directx swap chain
 	
 	ID3D12Resource* frame_resources[frame_count];
 
+	// rtv heap
 	ID3D12DescriptorHeap* rtv_heap;
 
 }directx_swapchain;
