@@ -184,7 +184,6 @@ i8 create_context(void)
 // helper to create commandlists in context
 i8 create_commandlist(void)
 {
-	// TODO : write a error handler routine
 	i8 ret_code = H_OK;
 	HRESULT api_ret_code  = S_OK;
 
@@ -209,7 +208,7 @@ i8 create_commandlist(void)
 		return ret_code;
 	}
 	commandlist[HK_COMMAND_RENDER].state = COMMANDLIST_STALE;
-
+	return_directx_allocator(allocator);
 
 	// copy list create
 	allocator = request_command_buffer(HK_COMMAND_COPY);
@@ -229,7 +228,7 @@ i8 create_commandlist(void)
 		return ret_code;
 	}
 	commandlist[HK_COMMAND_COPY].state = COMMANDLIST_STALE;
-
+	return_directx_allocator(allocator);
 
 	// compute list create
 	allocator = request_command_buffer(HK_COMMAND_COMPUTE);
@@ -249,7 +248,7 @@ i8 create_commandlist(void)
 		return ret_code;
 	}
 	commandlist[HK_COMMAND_COMPUTE].state = COMMANDLIST_STALE;
-
+	return_directx_allocator(allocator);
 
 	return ret_code;
 }
