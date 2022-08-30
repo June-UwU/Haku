@@ -31,7 +31,7 @@ i8 swapchain_initialize(directx_context* context)
 	directx_swapchain* swapchain 	= &context->swapchain;
 	swapchain->current_back_buffer_index = 0;
 	// max buffer size for back buffer
-	swapchain->max_in_filght_frames = frame_count;
+	swapchain->max_in_filght_frames = frame_count + 1;
 
 
 	DXGI_SWAP_CHAIN_DESC sdesc{};
@@ -100,13 +100,13 @@ i8 swapchain_initialize(directx_context* context)
 	// Create a RTV for each frame.
 	for (u64 n = 0; n < frame_count; n++)
 	{
-		rtvHandle.ptr += n * swapchain->heap_increment;
 		api_ret_code = swapchain->swapchain->GetBuffer(n, IID_PPV_ARGS(&swapchain->frame_resources[n]));
 		if (S_OK != api_ret_code)
 		{
 			ret_code = swapchain_fail_handler(swapchain, rtv_heap_creation_fail, n + 1);
 			return ret_code;
 		}
+		rtvHandle.ptr += swapchain->heap_increment;
 		context->logical_device->CreateRenderTargetView(swapchain->frame_resources[n], nullptr, rtvHandle);
 	}
 

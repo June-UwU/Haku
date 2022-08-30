@@ -1,5 +1,9 @@
 #pragma once
 
+// NOTE : most subsystems have what is defined as fail handlers and fail code , these are used for potential fail handles and 
+//		  early development used gotos and they required c99 style initialization which was then replaced with the fail codes 
+//		  and handlers these are indended to be internal to the subsystems and is unique for each subsystem
+
 #include "renderer/renderer_back_end.hpp"
 
 // @breif	directx initialization
