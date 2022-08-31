@@ -1,6 +1,6 @@
 #include "core/logger.hpp"
 #include "command_context.hpp"
-
+#include "command_buffer_pool.hpp"
 
 
 typedef enum
@@ -13,7 +13,7 @@ typedef enum
 }command_context_fails;
 
 // TODO : this is not a usable function that is usable right now, there are thing need to be done here
-i8 next_frame_synchronization(directx_queue* queue);
+i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* commandlist);
 i8 command_context_fail_handler(directx_queue* queue, command_context_fails fail_code);
 
 i8 command_context_initialize(directx_context* context)
@@ -108,26 +108,71 @@ void command_context_shutdown(directx_queue* queue)
 	CloseHandle(queue->event);
 }
 
-void execute_command(queue_type type)
+void execute_command(directx_context* context, directx_commandlist* commandlist)
 {
-
+	ID3D12CommandList* list[] = { commandlist->commandlist };
+	context->queue.directx_queue[commandlist->type]->ExecuteCommandLists(1, list);
+	commandlist->seeded_allocator->state = COMMAND_BUFFER_STATE_SUBMITTED;
+	next_frame_synchronization(&context->queue,commandlist);
 }
 
-i8 next_frame_synchronization(directx_queue* queue)
+i8 prepare_commandlist_record(directx_commandlist* commandlist)
+{
+	HRESULT api_ret_code = S_OK;
+
+	directx_allocator* alloc_ptr = request_command_buffer(commandlist->type);
+
+	if (nullptr == alloc_ptr)
+	{
+		HLCRIT("command buffer pool returned nullptr for reset");
+		return H_FAIL;
+	}
+	alloc_ptr->state = COMMAND_BUFFER_STATE_RECORDING;
+
+	commandlist->seeded_allocator = alloc_ptr;
+
+	api_ret_code = commandlist->commandlist->Reset(alloc_ptr->allocator, nullptr);
+
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("commandlist result returned an error");
+		return H_FAIL;
+	}
+
+	return H_OK;
+}
+
+i8 end_commandlist_record(directx_commandlist* commandlist)
+{
+	HRESULT api_ret_code = commandlist->commandlist->Close();
+	if (S_OK != api_ret_code)
+	{
+		HLCRIT("command list failed to close");
+		return H_FAIL;
+	}
+	commandlist->seeded_allocator->state = COMMAND_BUFFER_STATE_RECORDING_ENDED;
+	return H_OK;
+}
+
+i8 next_frame_synchronization(directx_queue* queue,directx_commandlist* commandlist)
 {
 	i8 ret_code = H_OK;
 
 	HRESULT api_ret_code = H_OK;
 
 	queue->fence_val++;
-	api_ret_code = queue->directx_queue[HK_COMMAND_RENDER]->Signal(queue->fence, queue->fence_val);
+	api_ret_code = queue->directx_queue[commandlist->type]->Signal(queue->fence, queue->fence_val);
 	if(H_OK != api_ret_code)
 	{
 		HLCRIT("signal failed");
 		ret_code = H_FAIL;
 		return ret_code;
 	}
+	commandlist->seeded_allocator->fence_val = queue->fence_val;
 
+	u64 completed_val = queue->fence->GetCompletedValue();
+
+	reintroduce_allocator(completed_val);
 
 	return ret_code;
 }

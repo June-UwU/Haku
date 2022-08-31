@@ -11,4 +11,8 @@ i8 command_context_initialize(directx_context* context);
 void command_context_shutdown(directx_queue* context);
 
 // @breif c		excute any command 
-void execute_command(queue_type type);
+void execute_command(directx_context* context,directx_commandlist* commandlist);
+
+i8 prepare_commandlist_record(directx_commandlist* commandlist);
+
+i8 end_commandlist_record(directx_commandlist* commanlist);

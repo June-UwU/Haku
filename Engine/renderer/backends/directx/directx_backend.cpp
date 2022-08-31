@@ -11,6 +11,9 @@
 #pragma comment(lib, "D3d12.lib")
 #pragma comment(lib, "DXGI.lib") 
 
+
+// TODO : finish the back buffer clearing 
+
 typedef enum
 {
 	commandlist_fail,
@@ -38,7 +41,8 @@ void commandlist_destroy(void);// command list destroy routine
 void print_adapter_spec(IDXGIAdapter1* adapter); // print gpu specs 
 i8 commandlist_fail_handler(commandlist_fails fail_code); // command list fail handler since labels and gotos push me to c99 and I don't wike it
 i8 context_fail_handler(directx_context* context, context_fails fail_code);// context fail handler
-
+i8 commandlist_record(directx_commandlist* commandlist, queue_type type);
+i8 commandlist_end_recording(directx_commandlist* commandlist, queue_type type);
 // one static instance of directx context 
 static directx_context	context;
 	
@@ -68,7 +72,22 @@ void directx_shutdown(renderer_backend* backend_ptr)
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 {
 	i8 ret_code	= H_OK;
-	
+
+	ret_code  = prepare_commandlist_record(&context.commandlist[HK_COMMAND_RENDER]);
+	if (H_OK != ret_code)
+	{
+		HLWARN("commandlist preparation failure");
+		return H_FAIL;
+	}
+
+	ret_code = set_render_target(&context.swapchain, &context.commandlist[HK_COMMAND_RENDER]);
+	if (H_OK != ret_code)
+	{
+		HLWARN("swapchain preparation failure");
+		return H_FAIL;
+	}
+
+	clear_back_buffer(&context.commandlist[HK_COMMAND_RENDER], &context.swapchain, 0.5f, 0.0f, 0.0f, 1.0f);
 
 	return ret_code;
 }
@@ -77,6 +96,13 @@ i8 directx_end_frame(renderer_backend* backend_ptr,f64 delta_time)
 {
 	i8 ret_code	= H_OK;
 
+	ret_code = set_present_target(&context.swapchain, &context.commandlist[HK_COMMAND_RENDER]);
+	
+	ret_code = end_commandlist_record(&context.commandlist[HK_COMMAND_RENDER]);
+	
+	execute_command(&context, &context.commandlist[HK_COMMAND_RENDER]);
+	
+	ret_code  = present_frame(&context.swapchain);
 
 	return ret_code;
 }
@@ -207,8 +233,11 @@ i8 create_commandlist(void)
 		ret_code = commandlist_fail_handler(copy_commandlist_fail);
 		return ret_code;
 	}
+	commandlist[HK_COMMAND_RENDER].type = HK_COMMAND_RENDER;
+	commandlist[HK_COMMAND_RENDER].seeded_allocator = nullptr;
 	commandlist[HK_COMMAND_RENDER].state = COMMANDLIST_STALE;
 	return_directx_allocator(allocator);
+
 
 	// copy list create
 	allocator = request_command_buffer(HK_COMMAND_COPY);
@@ -227,6 +256,8 @@ i8 create_commandlist(void)
 		ret_code = commandlist_fail_handler(compute_commandlist_fail);
 		return ret_code;
 	}
+	commandlist[HK_COMMAND_COPY].type = HK_COMMAND_COPY;
+	commandlist[HK_COMMAND_COPY].seeded_allocator = nullptr;
 	commandlist[HK_COMMAND_COPY].state = COMMANDLIST_STALE;
 	return_directx_allocator(allocator);
 
@@ -247,6 +278,8 @@ i8 create_commandlist(void)
 		ret_code = commandlist_fail_handler(clean_commandlist_fail);
 		return ret_code;
 	}
+	commandlist[HK_COMMAND_COMPUTE].type = HK_COMMAND_COMPUTE;
+	commandlist[HK_COMMAND_COMPUTE].seeded_allocator = nullptr;
 	commandlist[HK_COMMAND_COMPUTE].state = COMMANDLIST_STALE;
 	return_directx_allocator(allocator);
 
@@ -262,6 +295,39 @@ void commandlist_destroy(void)
 	{
 		commandlist[i].commandlist->Release();
 	}
+}
+
+i8 commandlist_record(directx_commandlist* commandlist,queue_type type)
+{
+	i8 ret_code = H_OK;
+	HRESULT api_ret_code = S_OK;
+
+	directx_allocator* alloc_ptr = request_command_buffer(type);
+
+	api_ret_code = commandlist[type].commandlist->Reset(alloc_ptr->allocator, nullptr);
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("command list is not resetted");
+		return H_FAIL;
+	}
+	commandlist[type].state = COMMANDLIST_RECORDING;
+
+	return ret_code;
+}
+
+i8 commandlist_end_recording(directx_commandlist* commandlist, queue_type type)
+{
+	i8 ret_code = H_OK;
+	HRESULT api_ret_code = S_OK;
+	commandlist[type].state = COMMANDLIST_RECORDING_ENDED;
+	api_ret_code = commandlist[type].commandlist->Close();
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("command list closing fail");
+		return H_FAIL;
+	}
+
+	return ret_code;
 }
 
 // FAIL HANDLERS

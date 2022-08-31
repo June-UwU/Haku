@@ -11,8 +11,8 @@ i8 command_pool_fail_handler();
 
 i8 command_buffer_pool(const directx_context* context,const u64 pool_size)
 {
-	HLWARN("Pool is being limited to 1 make it to %lld",pool_size);
-	pool_capacity		= 1;
+	//HLWARN("Pool is being limited to 1 make it to %lld",pool_size);
+	pool_capacity		= pool_size;
 	i8 ret_code		= H_OK;
 	HRESULT api_ret_code 	= S_OK;
 
@@ -99,7 +99,7 @@ void command_buffer_pool_shutdown(void)
 		for(u64 j = 0; j < pool_capacity; j++)
 		{
 			// this for the safe release
-			//alloc_ptr->allocator->AddRef();
+			alloc_ptr->allocator->AddRef();
 			alloc_ptr->allocator->Release();
 		}
 		hmemory_free(alloc_ptr, MEM_TAG_RENDERER);
@@ -158,7 +158,7 @@ void reintroduce_allocator(u64 fence_value)
 		directx_allocator* alloc_ptr		= pool[i];
 		for(u64 j = 0; j < pool_capacity; j++)
 		{
-			if( alloc_ptr->fence_val == fence_value)
+			if( alloc_ptr->fence_val < fence_value)
 			{
 				alloc_ptr->state	= COMMAND_BUFFER_STATE_NOT_ALLOCATED;
 			}

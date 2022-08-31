@@ -45,9 +45,6 @@ typedef enum
 
 typedef enum
 {
-	// the command list is ready to be reset with an allocator 
-	COMMANDLIST_READY,
-	
 	//the command list  currently recording
 	COMMANDLIST_RECORDING,
 
@@ -58,18 +55,10 @@ typedef enum
 	COMMANDLIST_STALE
 }commandlist_state;
 
-typedef struct directx_commandlist
-{
-	// command list current state
-	commandlist_state state;
-
-	// command list object
-	ID3D12GraphicsCommandList* commandlist;
-}directx_command_list;
 
 typedef struct directx_allocator
 {
-	//
+	//allocator type
 	queue_type type;
 
 	// this val is the completed value when the allocator is off flight
@@ -80,6 +69,21 @@ typedef struct directx_allocator
 
 	ID3D12CommandAllocator* allocator;
 }directx_allocator;
+
+
+typedef struct directx_commandlist
+{
+	queue_type type;
+
+	// command list current state
+	commandlist_state state;
+
+	// command list object
+	ID3D12GraphicsCommandList* commandlist;
+
+
+	directx_allocator* seeded_allocator;
+}directx_command_list;
 
 typedef struct directx_queue
 {
@@ -107,7 +111,7 @@ typedef struct directx_swapchain
 	// current back buffer
 	u64 current_back_buffer_index;
 	
-	IDXGISwapChain* swapchain;	// directx swap chain
+	IDXGISwapChain3* swapchain;	// directx swap chain
 	
 	ID3D12Resource* frame_resources[frame_count];
 
