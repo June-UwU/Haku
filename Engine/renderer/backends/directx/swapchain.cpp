@@ -78,7 +78,6 @@ i8 swapchain_initialize(directx_context* context)
 	}
 	HLINFO("swap chain queried");
 
-
 	api_ret_code = context->factory->MakeWindowAssociation(*(HWND*)handle, DXGI_MWA_NO_WINDOW_CHANGES);
 	if (S_OK != api_ret_code)
 	{
@@ -102,7 +101,7 @@ i8 swapchain_initialize(directx_context* context)
 		ret_code = swapchain_fail_handler(swapchain, rtv_heap_creation_fail,0);
 		return ret_code; 
 	}
-
+	FRIENDLY_NAME(swapchain->rtv_heap, L"render target view heap");
 	swapchain->heap_increment = context->logical_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 
@@ -110,6 +109,7 @@ i8 swapchain_initialize(directx_context* context)
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = swapchain->rtv_heap->GetCPUDescriptorHandleForHeapStart();
 
 	// Create a RTV for each frame.
+	wchar_t rtv_res_name[256u];
 	for (u64 n = 0; n < frame_count; n++)
 	{
 		api_ret_code = swapchain->swapchain->GetBuffer(n, IID_PPV_ARGS(&swapchain->frame_resources[n]));
@@ -118,7 +118,9 @@ i8 swapchain_initialize(directx_context* context)
 			ret_code = swapchain_fail_handler(swapchain, rtv_heap_creation_fail, n + 1);
 			return ret_code;
 		}
+		swprintf(rtv_res_name,256u, L"rtv resource % lld", n);
 		context->logical_device->CreateRenderTargetView(swapchain->frame_resources[n], nullptr, rtvHandle);
+		FRIENDLY_NAME(swapchain->frame_resources[n], rtv_res_name);
 		rtvHandle.ptr += swapchain->heap_increment;
 	}
 	swapchain->current_back_buffer_index = swapchain->swapchain->GetCurrentBackBufferIndex();

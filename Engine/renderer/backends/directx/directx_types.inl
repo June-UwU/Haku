@@ -81,7 +81,7 @@ typedef struct directx_commandlist
 	// command list object
 	ID3D12GraphicsCommandList* commandlist;
 
-
+	// current allocator
 	directx_allocator* seeded_allocator;
 }directx_command_list;
 

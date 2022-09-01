@@ -108,7 +108,8 @@ void command_buffer_pool_shutdown(void)
 
 directx_allocator* request_command_buffer(queue_type type)
 {
-	directx_allocator* ret_ptr  = nullptr;
+	directx_allocator* ret_ptr = nullptr;
+	u64 highest_fence_val = 0;
 
 	switch(type)
 	{
@@ -134,6 +135,10 @@ directx_allocator* request_command_buffer(queue_type type)
 
 	for(u64 i = 0; i < pool_capacity; i++)
 	{
+		if (ret_ptr->fence_val > highest_fence_val)
+		{
+			highest_fence_val = ret_ptr->fence_val;
+		}
 		if(COMMAND_BUFFER_STATE_NOT_ALLOCATED == ret_ptr->state)
 		{
 			ret_ptr->state= COMMAND_BUFFER_STATE_RECORDING;
@@ -143,7 +148,7 @@ directx_allocator* request_command_buffer(queue_type type)
 	}
 
 	// TODO : do a full gpu flush and make all allocators available at this point and issue warning >_<
-	HLCRIT("no allocator available");
+	HLCRIT("no allocator available, highest fence value : %lld",highest_fence_val);
 	return nullptr;
 }
 void return_directx_allocator(directx_allocator* obj)
@@ -156,7 +161,7 @@ void reintroduce_allocator(u64 fence_value)
 	for(u64 i = 0; i < HK_COMMAND_MAX; i++)
 	{
 		directx_allocator* alloc_ptr		= pool[i];
-		for(u64 j = 0; j < pool_capacity; j++)
+		for(u64 j = 0; j <= pool_capacity; j++)
 		{
 			if( alloc_ptr->fence_val < fence_value)
 			{

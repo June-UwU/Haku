@@ -12,7 +12,7 @@ typedef enum
 	render_queue_fail
 }command_context_fails;
 
-// TODO : this is not a usable function that is usable right now, there are thing need to be done here
+i8 queue_flush(directx_queue* queue, queue_type type);
 i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* commandlist);
 i8 command_context_fail_handler(directx_queue* queue, command_context_fails fail_code);
 
@@ -113,7 +113,6 @@ void execute_command(directx_context* context, directx_commandlist* commandlist)
 	ID3D12CommandList* list[] = { commandlist->commandlist };
 	context->queue.directx_queue[commandlist->type]->ExecuteCommandLists(1, list);
 	commandlist->seeded_allocator->state = COMMAND_BUFFER_STATE_SUBMITTED;
-	next_frame_synchronization(&context->queue,commandlist);
 }
 
 i8 prepare_commandlist_record(directx_commandlist* commandlist)
@@ -154,6 +153,20 @@ i8 end_commandlist_record(directx_commandlist* commandlist)
 	return H_OK;
 }
 
+i8 full_gpu_flush(directx_queue* queue, queue_type type)
+{
+	i8 ret_code = H_OK;
+	HLWARN("FULL  GPU FLUSH : if this is called on frame render this is a serious bug..!!");
+	
+	ret_code = queue_flush(queue, type);
+	if (H_OK != ret_code)
+	{
+		return H_FAIL;
+	}
+
+	return ret_code;
+}
+
 i8 next_frame_synchronization(directx_queue* queue,directx_commandlist* commandlist)
 {
 	i8 ret_code = H_OK;
@@ -176,6 +189,29 @@ i8 next_frame_synchronization(directx_queue* queue,directx_commandlist* commandl
 
 	return ret_code;
 }
+
+i8  queue_flush(directx_queue* queue, queue_type type)
+{
+	const UINT64 fence = queue->fence_val++;
+	HRESULT api_ret_code = queue->directx_queue[HK_COMMAND_RENDER]->Signal(queue->fence, fence);
+	if (S_OK != api_ret_code)
+	{
+		HLCRIT("failed to signal to queue");
+		return H_FAIL;
+	}
+	if (queue->fence->GetCompletedValue() < fence)
+	{
+		api_ret_code = queue->fence->SetEventOnCompletion(fence, queue->event);
+		if (S_OK != api_ret_code)
+		{
+			HLCRIT("failed to set synchronizing event");
+			return H_FAIL;
+		}
+		WaitForSingleObject(queue->event, INFINITE);
+	}
+	return H_OK;
+}
+
 
 i8 command_context_fail_handler(directx_queue* queue,command_context_fails fail_code)
 {

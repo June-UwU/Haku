@@ -62,11 +62,13 @@ void directx_shutdown(renderer_backend* backend_ptr)
 {
 	HLINFO("Directx Shutdown");
 	DEBUG_LAYER_SHUTDOWN();
+	full_gpu_flush(&context.queue,HK_COMMAND_RENDER);
+	
 	context_destroy();
 	command_context_shutdown(&context.queue);
-	swapchain_shutdown(&context.swapchain);
-	command_buffer_pool_shutdown();
 	commandlist_destroy();
+	command_buffer_pool_shutdown();
+	swapchain_shutdown(&context.swapchain);
 }
 
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
@@ -102,6 +104,8 @@ i8 directx_end_frame(renderer_backend* backend_ptr,f64 delta_time)
 	
 	execute_command(&context, &context.commandlist[HK_COMMAND_RENDER]);
 	
+	next_frame_synchronization(&context.queue, &context.commandlist[HK_COMMAND_RENDER]);
+
 	ret_code  = present_frame(&context.swapchain);
 
 	return ret_code;
@@ -187,7 +191,7 @@ i8 create_context(void)
 		return ret_code;
 	}
 
-	ret_code = command_buffer_pool(&context, command_allocator_size);
+	ret_code = command_buffer_pool(&context, 2 * command_allocator_size);
 	if (H_FAIL == ret_code)
 	{
 		factory_1->Release();
@@ -220,6 +224,7 @@ i8 create_commandlist(void)
 	// render command list create
 	api_ret_code = context.logical_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator->allocator, nullptr,
 		__uuidof(ID3D12GraphicsCommandList), (void**)&commandlist[HK_COMMAND_RENDER].commandlist);
+	FRIENDLY_NAME(commandlist[HK_COMMAND_RENDER].commandlist, L"render commandlist");
 	if (S_OK != api_ret_code)
 	{
 		HLEMER("render commandlist creation failed");
@@ -256,6 +261,7 @@ i8 create_commandlist(void)
 		ret_code = commandlist_fail_handler(compute_commandlist_fail);
 		return ret_code;
 	}
+	FRIENDLY_NAME(commandlist[HK_COMMAND_RENDER].commandlist, L"copy commandlist");
 	commandlist[HK_COMMAND_COPY].type = HK_COMMAND_COPY;
 	commandlist[HK_COMMAND_COPY].seeded_allocator = nullptr;
 	commandlist[HK_COMMAND_COPY].state = COMMANDLIST_STALE;
@@ -278,6 +284,7 @@ i8 create_commandlist(void)
 		ret_code = commandlist_fail_handler(clean_commandlist_fail);
 		return ret_code;
 	}
+	FRIENDLY_NAME(commandlist[HK_COMMAND_RENDER].commandlist, L"compute commandlist");
 	commandlist[HK_COMMAND_COMPUTE].type = HK_COMMAND_COMPUTE;
 	commandlist[HK_COMMAND_COMPUTE].seeded_allocator = nullptr;
 	commandlist[HK_COMMAND_COMPUTE].state = COMMANDLIST_STALE;
