@@ -32,17 +32,11 @@ typedef struct engine_state
 static timer clock;	    // internal timer
 static engine_state e_state;
 
-void application_run_test(void)
-{
-	logger_test();
-	hmemory_test();
-}
-
-i8 application_exit(void* sender, i64 context)
-{
-	e_state.running 	= false;
-	return H_OK;
-}
+// private events
+void application_run_test(void);
+i8 application_exit(void* sender, i64 context);
+i8 application_resize(void* sender, i64 context);
+i8 application_suspend(void* sender, i64 context);
 
 void* platform_state = nullptr; // store platform dependant data
 
@@ -66,6 +60,15 @@ i8 application_initialize(application_state* app_state)
 		return H_FAIL;
 	}
 
+	haku_ret_code = event_initialize();
+	
+	if (H_OK != haku_ret_code)
+	{
+		HLEMER("event subsystem : H_FAIL");
+		return H_FAIL;
+	}
+
+
 	haku_ret_code = platform_initialize(platform_state , app_state->name , app_state->x , app_state->y , app_state->height , app_state->width);
 
 	if( H_OK != haku_ret_code )
@@ -82,16 +85,10 @@ i8 application_initialize(application_state* app_state)
 		return H_FAIL;
 	}
 
-	haku_ret_code	 = event_initialize();
-
-	if (H_OK != haku_ret_code)
-	{
-		HLEMER("event subsystem : H_FAIL");
-		return H_FAIL;
-	}
 
 	event_register(HK_EXIT,NULL,application_exit);
-
+	event_register(HK_SIZE, NULL, application_resize);
+	event_register(HK_MINIMIZE, nullptr, application_suspend);
 	haku_ret_code	= renderer_initialize(HK_DIRECTX_12);
 
 	if( H_OK != haku_ret_code)
@@ -142,14 +139,49 @@ void application_run(void)
 		service_event();	
 		input_update(clock.elapsed);
 
-		// TODO : push render_packet outta here
-		render_packet packet{};
-		renderer_draw_frame(&packet);
+		if (false == e_state.suspended)
+		{
+			// TODO : push render_packet outta here
+			render_packet packet{};
+			renderer_draw_frame(&packet);
+		}
 	}
 	clock_stop(clock);
 	HLINFO("engine up time : %f", clock.elapsed);
 	application_shutdown();
 }
 
+i8 application_suspend(void* sender, i64 context)
+{
+	HLINFO("resize event");
+	e_state.suspended = true;
+	return H_OK;
+}
 
+void application_run_test(void)
+{
+	logger_test();
+	hmemory_test();
+}
 
+i8 application_exit(void* sender, i64 context)
+{
+	e_state.running = false;
+	return H_OK;
+}
+
+i8 application_resize(void* sender, i64 context)
+{
+	i32 packed_dimensions = LO_DWORD(context);
+	e_state.width = LO_WORD(packed_dimensions);
+	e_state.height = HI_WORD(packed_dimensions);
+	
+	bool is_last = false;
+	event_code code = event_peek();
+	if (HK_SIZE != code)
+	{
+		is_last = true;
+	}
+	renderer_resize(e_state.height, e_state.width, is_last);
+	return H_OK;
+}

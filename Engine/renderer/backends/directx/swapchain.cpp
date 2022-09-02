@@ -209,6 +209,49 @@ i8 present_frame(directx_swapchain* swapchain)
 	return H_OK;
 }
 
+i8 swapchain_resize(directx_context* context,directx_swapchain* swapchain,u16 width, u16 height)
+{
+	HRESULT api_ret_code = S_OK;
+
+	for (size_t i = 0; i < frame_count; i++)
+	{
+		swapchain->frame_resources[i]->Release();
+	}
+	DXGI_SWAP_CHAIN_DESC desc{};
+	api_ret_code = swapchain->swapchain->GetDesc(&desc);
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("failed to get the directx swapchain descriptions");
+		return H_FAIL;
+	}
+	api_ret_code = swapchain->swapchain->ResizeBuffers(frame_count, width, height, desc.BufferDesc.Format, desc.Flags);
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("failed to get the directx swapchain descriptions");
+		return H_FAIL;
+	}
+	swapchain->current_back_buffer_index = swapchain->swapchain->GetCurrentBackBufferIndex();
+	
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = swapchain->rtv_heap->GetCPUDescriptorHandleForHeapStart();
+
+	wchar_t rtv_res_name[256u];
+	for (u64 n = 0; n < frame_count; n++)
+	{
+		api_ret_code = swapchain->swapchain->GetBuffer(n, IID_PPV_ARGS(&swapchain->frame_resources[n]));
+		if (S_OK != api_ret_code)
+		{
+			HLEMER("swapchain buffer failed");
+			return H_FAIL;
+		}
+		swprintf(rtv_res_name, 256u, L"rtv resource % lld", n);
+		context->logical_device->CreateRenderTargetView(swapchain->frame_resources[n], nullptr, rtvHandle);
+		FRIENDLY_NAME(swapchain->frame_resources[n], rtv_res_name);
+		rtvHandle.ptr += swapchain->heap_increment;
+	}
+
+	return H_OK;
+}
+
 
 
 i8 swapchain_fail_handler(directx_swapchain* swapchain, swapchain_fails fail_code, u64 context)

@@ -10,7 +10,6 @@
 	exit(-1);\
 }
 
-
 // objects that are intended to be opaque
 
 #define 	opaque	void
@@ -35,11 +34,13 @@
 #define 	f32 	float
 #define 	f64 	double
 
+
 //HAKU RETURN CODES
 
 constexpr i8 	H_OK	= 0 ;
 constexpr i8 	H_FAIL	= -1;
 constexpr i8	H_ERR	= -2;
+constexpr i8    H_NOERR = 1;
 
 constexpr u64 BYTESINKiB(u64 scale)
 {

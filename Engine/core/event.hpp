@@ -21,6 +21,8 @@ typedef enum
 	HK_MOUSE_BUTTON,
 	HK_MOUSE_MOVE,
 	HK_MOUSE_WHEEL,
+	HK_SIZE,
+	HK_MINIMIZE,
 
 	MAX_EVENT_CODES // event code used to count the maximum number of event code
 }event_code;
@@ -33,6 +35,8 @@ constexpr const char* HK_EVENT_STRING[MAX_EVENT_CODES]
 	"mouse button event", 
 	"mouse move",
 	"mouse wheel",
+	"size event"
+	"minimize event"
 };
 
 // @brief	event subsystem initialization routine
@@ -67,3 +71,73 @@ HAPI i8 event_unregister(event_code code,void* listener,H_call_back callback);
 // @param	: context to sent to the callback function
 // @return 	: H_OK on sucess, else H_FAIL
 HAPI i8 event_fire(event_code code, void* sender,i64 context);
+
+// breif	peek the queue to find the next event type
+HAPI event_code event_peek(void);
+
+// @breif	context packing and unpacking functions that are used for the event systems
+
+// @breif	packs two 16 bit values to generate a 32 bit value
+// @param   : high 16 bits
+// @param   : low 16 bits
+// @return  : packed 32 bit value
+constexpr u32 PACK_16BIT_VALS(u16 hiword, u16 loword)
+{
+	return ((hiword << 16) | loword);
+}
+
+// @breif	packs two 32 bit values to generate a 64 bit value
+// @param   : high 32 bits
+// @param   : low 32 bits
+// @return  : packed 64 bit value
+constexpr u64 PACK_32BIT_VALS(i32 hiword, i32 loword)
+{
+	u64 ret_val = ((hiword << 31) | loword);
+	return ret_val;
+}
+
+// @breif	packs four 16 bit values to generate a 64 bit value
+// @param   : high 16 bits
+// @param   : mid high 16 bits
+// @param   : mid low 16 bits
+// @param	: low 16 bits
+// @return  : packed 64 bit value
+constexpr u64 PACK_64BIT_VALS(u16 hibyte, u16 mid_hi_byte, u16 mid_lo_byte, u16 lobyte)
+{
+	u32 loword = PACK_16BIT_VALS(mid_lo_byte, lobyte);
+	u32 hiword = PACK_16BIT_VALS(hibyte, mid_hi_byte);
+	u64 ret_val = PACK_32BIT_VALS(hiword, loword);
+	return ret_val;
+}
+
+// @breif	returns the high word of the packed value
+// @param   : packed 32 bit value
+// @return  : high word of packed value
+constexpr u16 HI_WORD(u32 pack_val)
+{
+	return (u16)(pack_val >> 16);
+}
+
+// @breif	returns the low word of the packed value
+// @param   : packed 32 bit value
+// @return  : low word of packed value
+constexpr u16 LO_WORD(u32 pack_val)
+{
+	return (u16)pack_val;
+}
+
+// @breif	returns the high double word of the packed value
+// @param   : packed 64 bit value
+// @return  : high double word of packed value
+constexpr u32 HI_DWORD(u64 pack_val)
+{
+	return (u32)(pack_val >> 32);
+}
+
+// @breif	returns the high double word of the packed value
+// @param   : packed 64 bit value
+// @return  : low double word of packed value
+constexpr u32 LO_DWORD(u64 pack_val)
+{
+	return (u32)pack_val;
+}

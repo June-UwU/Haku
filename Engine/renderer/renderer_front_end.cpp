@@ -27,6 +27,23 @@ void renderer_shutdown(void)
 	hmemory_free(backend,MEM_TAG_RENDERER);
 }
 
+i8 renderer_resize(u16 height, u16 width, bool is_last)
+{
+	if (!is_last)
+	{
+		HLINFO("skipped backend reize event (height/width) : %d/%d", height, width);
+		return H_NOERR;
+	}
+	if (backend && is_last)
+	{
+		HLINFO("backend reize event (height/width) : %d/%d", height, width);
+		backend->resize(backend, height, width);
+		return H_OK;
+	}
+	HLEMER("backend doesn't exist to handle reize event (height/width) : %d/%d", height, width);
+	return H_FAIL;
+}
+
 // TODO : update delta_time of packet
 i8 renderer_draw_frame(render_packet* packet)
 {

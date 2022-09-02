@@ -15,7 +15,7 @@ i8 backend_initialize(renderer_backend* backend_ptr,backends api_type)
 				backend_ptr->begin_frame	= directx_begin_frame;
 			    backend_ptr->end_frame		= directx_end_frame;
 				backend_ptr->shutdown		= directx_shutdown;
-				
+				backend_ptr->resize         = directx_resize;
 				ret_code					= backend_ptr->initialize(backend_ptr);
 
 				break;

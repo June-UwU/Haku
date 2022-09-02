@@ -25,6 +25,10 @@ i8 prepare_commandlist_record(directx_commandlist* commandlist);
 // @return		: H_OK on sucess
 i8 end_commandlist_record(directx_commandlist* commanlist);
 
+// @breif 		synchronize the command list and prepare for next frame
+// @param		: queue pointer 
+// @param 		: commandlist to execute
+// @return 		: H_OK on sucess 
 i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* commandlist);
 
 // @breif 		do a full gpu flush for clearing

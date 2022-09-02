@@ -47,6 +47,13 @@ typedef struct renderer_backend
 	// @param	: delta time taken to complete the frame
 	i8 (*end_frame)(renderer_backend* backend_ptr,f64 delta_time);
 
+	// @breif	function to resize the renderer backend
+	// @param	: pointer to the backend
+	// @param	: height to resize to
+	// @param	: width to resize to 
+	// @return	: H_OK on sucess
+	i8(*resize)(renderer_backend* backend_ptr, u16 height, u16 width);
+
 }renderer_backend;
 
 

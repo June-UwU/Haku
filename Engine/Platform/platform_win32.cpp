@@ -293,8 +293,25 @@ static LRESULT win32_msg_proc(HWND handle ,UINT msg, WPARAM wparam, LPARAM lpara
 				event_fire(HK_EXIT,NULL, 0);
 				return 0;
 			}
+		case WM_SIZE:
+			{
+				u16 p_width 	= LOWORD(lparam);
+				u16 p_height 	= HIWORD(lparam);
+				i64 context = PACK_64BIT_VALS(0, 0, p_height, p_width);
+			    	switch (wparam)
+				{
+					case SIZE_MINIMIZED:
+						{
+							event_fire(HK_MINIMIZE,nullptr,context);
+						}
+					default:
+						{
+							event_fire(HK_SIZE,nullptr,context);
+						}
+				}
+			}
 	}
-		return DefWindowProc(handle, msg, wparam, lparam);
+	return DefWindowProc(handle, msg, wparam, lparam);
 }
 
 f64 platform_time(void)

@@ -111,6 +111,24 @@ i8 directx_end_frame(renderer_backend* backend_ptr,f64 delta_time)
 	return ret_code;
 }
 
+i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width)
+{
+	i8 ret_code  = full_gpu_flush(&context.queue, HK_COMMAND_RENDER);
+	if (H_OK != ret_code)
+	{
+		HLWARN("directx gpu flush failed");
+		return H_FAIL;
+	}
+
+	ret_code = swapchain_resize(&context, &context.swapchain, width, height);
+	if (H_OK != ret_code)
+	{
+		HLWARN("swapchain resize failure");
+		return H_FAIL;
+	}
+	return H_OK;
+}
+
 
 // helper function to destroy device 
 void context_destroy(void)

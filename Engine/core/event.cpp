@@ -128,3 +128,9 @@ i8 event_fire(event_code code, void* sender,i64 context)
 
 	return ret_code;
 }
+
+HAPI event_code event_peek(void)
+{
+	event_packet* packet_ptr = (event_packet*)peek(ep_queue);
+	return packet_ptr->code;
+}

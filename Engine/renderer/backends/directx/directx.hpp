@@ -26,3 +26,10 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time);
 // @param	: delta time 
 // @return 	: H_OK on sucess, H_FAIL is  critical condition
 i8 directx_end_frame(renderer_backend* backend_ptr,f64 delta_time);
+
+// @breif	function to resize the directx backend
+// @param	: pointer to the backend
+// @param	: height to resize to
+// @param	: width to resize to 
+// @return	: H_OK on sucess
+i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width);
