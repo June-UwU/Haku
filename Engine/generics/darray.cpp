@@ -1,6 +1,6 @@
 #include "darray.hpp"
-#include "core/hmemory.hpp"
 #include "core/logger.hpp"
+#include "memory/hmemory.hpp"
 
 // TODO : subtle bug on size(darray ptr function)
 

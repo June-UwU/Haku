@@ -1,3 +1,4 @@
+#include "misc.hpp"
 #include "swapchain.hpp"
 #include "core\logger.hpp"
 #include "platform\platform.hpp"
@@ -6,6 +7,8 @@
 
 typedef enum
 {
+	dsv_resource_creation_fail,
+	dsv_heap_creation_fail,
 	swapchain_query_fail,
 	rtv_heap_creation_fail,
 	association_fail,
@@ -102,7 +105,7 @@ i8 swapchain_initialize(directx_context* context)
 		return ret_code; 
 	}
 	FRIENDLY_NAME(swapchain->rtv_heap, L"render target view heap");
-	swapchain->heap_increment = context->logical_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	swapchain->rtv_heap_increment = context->logical_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 
 	
@@ -121,14 +124,77 @@ i8 swapchain_initialize(directx_context* context)
 		swprintf(rtv_res_name,256u, L"rtv resource % lld", n);
 		context->logical_device->CreateRenderTargetView(swapchain->frame_resources[n], nullptr, rtvHandle);
 		FRIENDLY_NAME(swapchain->frame_resources[n], rtv_res_name);
-		rtvHandle.ptr += swapchain->heap_increment;
+		rtvHandle.ptr += swapchain->rtv_heap_increment;
 	}
 	swapchain->current_back_buffer_index = swapchain->swapchain->GetCurrentBackBufferIndex();
 
 	tswapchain->Release();
 
-	return ret_code;
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+	dsvHeapDesc.NumDescriptors = 1;
+	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	api_ret_code = context->logical_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&swapchain->dsv_heap));
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("failed to create dsv heap");
+		ret_code = swapchain_fail_handler(swapchain, dsv_heap_creation_fail, frame_count);
+		return ret_code;
+	}
+	FRIENDLY_NAME(swapchain->dsv_heap, L"depth stencil view heap");
+	swapchain->dsv_heap_increment = context->logical_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
+	D3D12_DEPTH_STENCIL_VIEW_DESC depth_stencil_view_desc = {};
+	depth_stencil_view_desc.Format = DXGI_FORMAT_D32_FLOAT;
+	depth_stencil_view_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	depth_stencil_view_desc.Flags = D3D12_DSV_FLAG_NONE;
+
+	swapchain->depth_stencil_clear_value.Format = DXGI_FORMAT_D32_FLOAT;
+	swapchain->depth_stencil_clear_value.DepthStencil.Depth = 1.0f;
+	swapchain->depth_stencil_clear_value.DepthStencil.Stencil = 0;
+	
+	D3D12_RESOURCE_DESC dsv_desc{};
+	dsv_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	dsv_desc.Format = DXGI_FORMAT_D32_FLOAT;
+	dsv_desc.MipLevels = 0;
+	dsv_desc.Alignment = 0;
+	dsv_desc.Width = plat_prop.width;
+	dsv_desc.Height = plat_prop.height;
+	dsv_desc.DepthOrArraySize = 1;
+	dsv_desc.SampleDesc.Count = 1;
+	dsv_desc.SampleDesc.Quality = 0;
+	dsv_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	
+	D3D12_HEAP_PROPERTIES dsv_heap_prop{};
+	dsv_heap_prop.Type = D3D12_HEAP_TYPE_DEFAULT;
+	dsv_heap_prop.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	dsv_heap_prop.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	dsv_heap_prop.CreationNodeMask = 0;
+	dsv_heap_prop.VisibleNodeMask = 0;
+	
+	
+	api_ret_code = context->logical_device->CreateCommittedResource(
+		&dsv_heap_prop,
+		D3D12_HEAP_FLAG_NONE,
+		&dsv_desc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&swapchain->depth_stencil_clear_value,
+		IID_PPV_ARGS(&swapchain->depth_stencil_resource));
+
+
+	context->logical_device->CreateDepthStencilView(swapchain->depth_stencil_resource, &depth_stencil_view_desc, 
+		swapchain->dsv_heap->GetCPUDescriptorHandleForHeapStart());
+	
+	
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("failed to create dsv resource");
+		ret_code = swapchain_fail_handler(swapchain, dsv_resource_creation_fail, frame_count);
+		return ret_code;
+	}
+
+
+	return ret_code;
 }
 
 void swapchain_shutdown(directx_swapchain* swapchain)
@@ -136,10 +202,13 @@ void swapchain_shutdown(directx_swapchain* swapchain)
 	HLINFO("Releasing swap chain");
 	swapchain->swapchain->Release();
 	swapchain->rtv_heap->Release();
+	swapchain->dsv_heap->Release();
 	for (int i = 0; i < frame_count; i++)
 	{
 		swapchain->frame_resources[i]->Release();
 	}
+	swapchain->depth_stencil_resource->Release();
+
 }
 
 i8 set_render_target(directx_swapchain* swapchain,directx_commandlist* commandlist)
@@ -162,7 +231,7 @@ i8 set_render_target(directx_swapchain* swapchain,directx_commandlist* commandli
 
 	D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = swapchain->rtv_heap->GetCPUDescriptorHandleForHeapStart();
 
-	rtv_handle.ptr += (swapchain->current_back_buffer_index * swapchain->heap_increment);
+	rtv_handle.ptr += (swapchain->current_back_buffer_index * swapchain->rtv_heap_increment);
 
 	return ret_code;
 }
@@ -191,7 +260,7 @@ void clear_back_buffer(directx_commandlist* commandlist,directx_swapchain* swapc
 {
 	D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle =  swapchain->rtv_heap->GetCPUDescriptorHandleForHeapStart();
 
-	rtv_handle.ptr  +=  (swapchain->current_back_buffer_index * swapchain->heap_increment);
+	rtv_handle.ptr  +=  (swapchain->current_back_buffer_index * swapchain->rtv_heap_increment);
 
 	f32 RGBA[4] = { r,g,b,a };
 
@@ -213,10 +282,20 @@ i8 swapchain_resize(directx_context* context,directx_swapchain* swapchain,u16 wi
 {
 	HRESULT api_ret_code = S_OK;
 
+	u16 min_width = 8u;
+	u16 min_height = 8u;
+
+
+	width = hmax(width, min_width);
+	height = hmax(min_height, height);
+
+
 	for (size_t i = 0; i < frame_count; i++)
 	{
 		swapchain->frame_resources[i]->Release();
 	}
+	swapchain->depth_stencil_resource->Release();
+	
 	DXGI_SWAP_CHAIN_DESC desc{};
 	api_ret_code = swapchain->swapchain->GetDesc(&desc);
 	if (S_OK != api_ret_code)
@@ -224,6 +303,7 @@ i8 swapchain_resize(directx_context* context,directx_swapchain* swapchain,u16 wi
 		HLEMER("failed to get the directx swapchain descriptions");
 		return H_FAIL;
 	}
+	
 	api_ret_code = swapchain->swapchain->ResizeBuffers(frame_count, width, height, desc.BufferDesc.Format, desc.Flags);
 	if (S_OK != api_ret_code)
 	{
@@ -246,10 +326,66 @@ i8 swapchain_resize(directx_context* context,directx_swapchain* swapchain,u16 wi
 		swprintf(rtv_res_name, 256u, L"rtv resource % lld", n);
 		context->logical_device->CreateRenderTargetView(swapchain->frame_resources[n], nullptr, rtvHandle);
 		FRIENDLY_NAME(swapchain->frame_resources[n], rtv_res_name);
-		rtvHandle.ptr += swapchain->heap_increment;
+		rtvHandle.ptr += swapchain->rtv_heap_increment;
 	}
 
+	D3D12_DEPTH_STENCIL_VIEW_DESC depth_stencil_view_desc = {};
+	depth_stencil_view_desc.Format = DXGI_FORMAT_D32_FLOAT;
+	depth_stencil_view_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	depth_stencil_view_desc.Flags = D3D12_DSV_FLAG_NONE;
+
+	swapchain->depth_stencil_clear_value.Format = DXGI_FORMAT_D32_FLOAT;
+	swapchain->depth_stencil_clear_value.DepthStencil.Depth = 1.0f;
+	swapchain->depth_stencil_clear_value.DepthStencil.Stencil = 0;
+
+	D3D12_RESOURCE_DESC dsv_desc{};
+	dsv_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	dsv_desc.Format = DXGI_FORMAT_D32_FLOAT;
+	dsv_desc.MipLevels = 0;
+	dsv_desc.Alignment = 0;
+	dsv_desc.Width = width;
+	dsv_desc.Height = height;
+	dsv_desc.DepthOrArraySize = 1;
+	dsv_desc.SampleDesc.Count = 1;
+	dsv_desc.SampleDesc.Quality = 0;
+	dsv_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+	D3D12_HEAP_PROPERTIES dsv_heap_prop{};
+	dsv_heap_prop.Type = D3D12_HEAP_TYPE_DEFAULT;
+	dsv_heap_prop.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	dsv_heap_prop.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	dsv_heap_prop.CreationNodeMask = 0;
+	dsv_heap_prop.VisibleNodeMask = 0;
+
+
+	api_ret_code = context->logical_device->CreateCommittedResource(
+		&dsv_heap_prop,
+		D3D12_HEAP_FLAG_NONE,
+		&dsv_desc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&swapchain->depth_stencil_clear_value,
+		IID_PPV_ARGS(&swapchain->depth_stencil_resource));
+
+	context->logical_device->CreateDepthStencilView(swapchain->depth_stencil_resource, &depth_stencil_view_desc,
+		swapchain->dsv_heap->GetCPUDescriptorHandleForHeapStart());
+
+
+
 	return H_OK;
+}
+
+void clear_depth_stencil(directx_commandlist* commandlist, directx_swapchain* swapchain)
+{
+	commandlist->commandlist->ClearDepthStencilView(swapchain->dsv_heap->GetCPUDescriptorHandleForHeapStart(),
+		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, swapchain->depth_stencil_clear_value.DepthStencil.Depth,
+		swapchain->depth_stencil_clear_value.DepthStencil.Stencil, 0, nullptr
+	);
+}
+
+void set_depth_stencil(directx_swapchain* swapchain, f32 depth, u8 stencil)
+{
+	swapchain->depth_stencil_clear_value.DepthStencil.Depth = depth;
+	swapchain->depth_stencil_clear_value.DepthStencil.Stencil = stencil;
 }
 
 
@@ -258,6 +394,10 @@ i8 swapchain_fail_handler(directx_swapchain* swapchain, swapchain_fails fail_cod
 {
 	switch (fail_code)
 	{
+	case dsv_resource_creation_fail:
+		swapchain->dsv_heap->Release();
+	case dsv_heap_creation_fail:
+		swapchain->rtv_heap->Release();
 	case rtv_heap_creation_fail:
 		for (int i = 0; i < context; i++)
 		{

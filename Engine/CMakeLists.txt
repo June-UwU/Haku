@@ -23,6 +23,12 @@ file(GLOB_RECURSE renderer_src	${CMAKE_CURRENT_SOURCE_DIR}/renderer/*.cpp)
 file(GLOB_RECURSE renderer_backends_inc	${CMAKE_CURRENT_SOURCE_DIR}/renderer/backends/*.hpp)
 file(GLOB_RECURSE renderer_backends_src	${CMAKE_CURRENT_SOURCE_DIR}/renderer/backends/*.cpp)
 
+file(GLOB_RECURSE renderer_backends_inc	${CMAKE_CURRENT_SOURCE_DIR}/memory/*.hpp)
+file(GLOB_RECURSE renderer_backends_src	${CMAKE_CURRENT_SOURCE_DIR}/memory/*.cpp)
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${memory_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${memory_src})
+
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_backends_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_backends_src})
 
@@ -56,6 +62,8 @@ add_library(${PROJECT_NAME}
 	${renderer_src}
 	${renderer_backends_inc}
 	${renderer_backends_src}
+	${memory_inc}
+	${memory_src}
 	)
 
 

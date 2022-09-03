@@ -103,7 +103,10 @@ typedef struct directx_queue
 typedef struct directx_swapchain
 {
 	// rtv heap increment size
-	u64 heap_increment;
+	u64 rtv_heap_increment;
+
+	// rtv heap increment size
+	u64 dsv_heap_increment;
 
 	// number of write buffer
 	u64 max_in_filght_frames;
@@ -113,20 +116,26 @@ typedef struct directx_swapchain
 	
 	IDXGISwapChain3* swapchain;	// directx swap chain
 	
+	ID3D12Resource* depth_stencil_resource;
+	
 	ID3D12Resource* frame_resources[frame_count];
+
+	D3D12_CLEAR_VALUE depth_stencil_clear_value;
 
 	// rtv heap
 	ID3D12DescriptorHeap* rtv_heap;
 
+	// dsv heap
+	ID3D12DescriptorHeap* dsv_heap;
 }directx_swapchain;
 
 // directx renderer backend has releated information for a context
 typedef struct directx_context
 {
-	ID3D12Device* 			logical_device;			// logical device does all the gpu functions
-	IDXGIFactory6*			factory;			// factory that creates the sub function
-	IDXGIAdapter1* 			physical_device;		// the current physical device that is in use
-	directx_swapchain		swapchain;
 	directx_queue			queue;
+	IDXGIFactory6*			factory;			// factory that creates the sub function
+	directx_swapchain		swapchain;
+	ID3D12Device* 			logical_device;			// logical device does all the gpu functions
+	IDXGIAdapter1* 			physical_device;		// the current physical device that is in use
 	directx_commandlist     commandlist[HK_COMMAND_MAX];
 }directx_context;

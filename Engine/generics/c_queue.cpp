@@ -1,6 +1,6 @@
 #include "c_queue.hpp"
-#include "core\hmemory.hpp"
 #include "core\logger.hpp"
+#include "memory\hmemory.hpp"
 
 // TODO : test
 

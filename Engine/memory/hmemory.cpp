@@ -1,6 +1,6 @@
-#include "logger.hpp"
 #include "hmemory.hpp"
-#include "platform\platform.hpp"
+#include "core/logger.hpp"
+#include "platform/platform.hpp"
 
 // TODO : write a read write test and check test for the memory subsystem
 

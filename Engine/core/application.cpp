@@ -2,8 +2,8 @@
 #include "input.hpp"
 #include "timer.hpp"
 #include "logger.hpp"
-#include "hmemory.hpp"
 #include "application.hpp"
+#include "memory/hmemory.hpp"
 #include "platform/platform.hpp"
 
 #include "renderer/renderer_front_end.hpp"

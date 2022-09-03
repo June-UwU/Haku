@@ -1,6 +1,6 @@
 
 #include "core/logger.hpp"
-#include "core/hmemory.hpp"
+#include "memory/hmemory.hpp"
 #include "renderer_front_end.hpp"
 #include "renderer_back_end.hpp"
 

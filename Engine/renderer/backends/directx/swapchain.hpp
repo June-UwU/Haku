@@ -45,3 +45,15 @@ i8 present_frame(directx_swapchain* swapchain);
 // @param	: height of the swapchain
 // @return	: H_OK on sucess
 i8 swapchain_resize(directx_context* context, directx_swapchain* swapchain, u16 width, u16 height);
+
+
+// @breif	routine to clear depth stencil up
+// @param	: pointer to swapchain
+// @param	: pointer to commandlist
+void clear_depth_stencil(directx_commandlist* commandlist, directx_swapchain* swapchain);
+
+// @breif	routine to set the depth stencil up
+// @param	: pointer to swapchain
+// @param	: depth value
+// @param	: stencil value
+void set_depth_stencil(directx_swapchain* swapchain, f32 depth, u8 stencil);

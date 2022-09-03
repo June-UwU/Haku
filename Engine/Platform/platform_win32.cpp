@@ -3,9 +3,9 @@
 #ifdef HWIN32
 
 #include "core/logger.hpp"
-#include "core/hmemory.hpp"
 #include "core/event.hpp"
 #include "core/input.hpp"
+#include "memory/hmemory.hpp"
 
 #include <stdlib.h>
 #include <string.h>

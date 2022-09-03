@@ -1,7 +1,7 @@
 #include "command_buffer_pool.hpp"
 
 #include "core/logger.hpp"
-#include "core/hmemory.hpp"
+#include "memory/hmemory.hpp"
 
 static u64 pool_capacity;
 static directx_allocator* pool[HK_COMMAND_MAX];
