@@ -98,11 +98,10 @@ void command_buffer_pool_shutdown(void)
 		directx_allocator* alloc_ptr		= pool[i];
 		for(u64 j = 0; j < pool_capacity; j++)
 		{
-			// this for the safe release
-			alloc_ptr->allocator->AddRef();
 			alloc_ptr->allocator->Release();
+			alloc_ptr += 1;
 		}
-		hmemory_free(alloc_ptr, MEM_TAG_RENDERER);
+		hmemory_free(pool[i], MEM_TAG_RENDERER);
 	}
 }
 
