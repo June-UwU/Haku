@@ -52,8 +52,35 @@ i8 swapchain_resize(directx_context* context, directx_swapchain* swapchain, u16 
 // @param	: pointer to commandlist
 void clear_depth_stencil(directx_commandlist* commandlist, directx_swapchain* swapchain);
 
+// @breif	routine to bind view port to the pipeline 
+// @param	: pointer to swapchain
+// @param	: pointer to commandlist
+void bind_view_port(directx_commandlist* commandlist, directx_swapchain* swapchain);
+
+// @breif	routine to bind view port to the pipeline 
+// @param	: pointer to swapchain
+// @param	: pointer to commandlist
+void bind_scissor_rect(directx_commandlist* commandlist, directx_swapchain* swapchain);
+
+// @breif	routine to set the depth stencil up
+// @param	: pointer to swapchain
+// @param	: left
+// @param	: top
+// @param	: right
+// @param	: bottom
+void set_view_port(directx_swapchain* swapchain, i32 left, i32 top, i32 right, i32 bottom);
+
+// @breif	routine to set the depth stencil up
+// @param	: pointer to swapchain
+// @param	: width
+// @param	: height
+// @param	: top left X coord
+// @param	: top left Y coord
+void set_view_port(directx_swapchain* swapchain, f32 width, f32 height, f32 topX, f32 topY );
+
 // @breif	routine to set the depth stencil up
 // @param	: pointer to swapchain
 // @param	: depth value
 // @param	: stencil value
 void set_depth_stencil(directx_swapchain* swapchain, f32 depth, u8 stencil);
+

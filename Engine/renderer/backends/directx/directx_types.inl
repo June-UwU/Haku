@@ -122,6 +122,10 @@ typedef struct directx_swapchain
 
 	D3D12_CLEAR_VALUE depth_stencil_clear_value;
 
+	D3D12_RECT scissor_rect;
+
+	D3D12_VIEWPORT viewport;
+
 	// rtv heap
 	ID3D12DescriptorHeap* rtv_heap;
 

@@ -92,6 +92,8 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 
 	clear_back_buffer(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain, 0.1f, 0.1f, 0.1f, 1.0f);
 	clear_depth_stencil(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
+	bind_scissor_rect(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
+	bind_view_port(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
 
 	return ret_code;
 }

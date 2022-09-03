@@ -37,6 +37,13 @@ i8 swapchain_initialize(directx_context* context)
 	// max buffer size for back buffer
 	swapchain->max_in_filght_frames = frame_count - 1;
 
+	swapchain->viewport.Height = plat_prop.height;
+	swapchain->viewport.Width = plat_prop.width;
+	swapchain->viewport.MinDepth = 0.0f;
+	swapchain->viewport.MaxDepth = 1.0f;
+	swapchain->viewport.TopLeftX = 0;
+	swapchain->viewport.TopLeftY = 0;
+
 
 	DXGI_SWAP_CHAIN_DESC sdesc{};
 	// swapa chain buffer desc
@@ -193,6 +200,8 @@ i8 swapchain_initialize(directx_context* context)
 		return ret_code;
 	}
 
+	swapchain->viewport = { 0.0f, 0.0f, static_cast<f32>(plat_prop.width), static_cast<f32>(plat_prop.height) };
+	swapchain->scissor_rect = { 0, 0, (i32)plat_prop.width, (i32)plat_prop.height };
 
 	return ret_code;
 }
@@ -278,7 +287,7 @@ i8 present_frame(directx_swapchain* swapchain)
 	return H_OK;
 }
 
-i8 swapchain_resize(directx_context* context,directx_swapchain* swapchain,u16 width, u16 height)
+i8 swapchain_resize(directx_context* context, directx_swapchain* swapchain, u16 width, u16 height)
 {
 	HRESULT api_ret_code = S_OK;
 
@@ -295,7 +304,7 @@ i8 swapchain_resize(directx_context* context,directx_swapchain* swapchain,u16 wi
 		swapchain->frame_resources[i]->Release();
 	}
 	swapchain->depth_stencil_resource->Release();
-	
+
 	DXGI_SWAP_CHAIN_DESC desc{};
 	api_ret_code = swapchain->swapchain->GetDesc(&desc);
 	if (S_OK != api_ret_code)
@@ -303,7 +312,7 @@ i8 swapchain_resize(directx_context* context,directx_swapchain* swapchain,u16 wi
 		HLEMER("failed to get the directx swapchain descriptions");
 		return H_FAIL;
 	}
-	
+
 	api_ret_code = swapchain->swapchain->ResizeBuffers(frame_count, width, height, desc.BufferDesc.Format, desc.Flags);
 	if (S_OK != api_ret_code)
 	{
@@ -311,7 +320,7 @@ i8 swapchain_resize(directx_context* context,directx_swapchain* swapchain,u16 wi
 		return H_FAIL;
 	}
 	swapchain->current_back_buffer_index = swapchain->swapchain->GetCurrentBackBufferIndex();
-	
+
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = swapchain->rtv_heap->GetCPUDescriptorHandleForHeapStart();
 
 	wchar_t rtv_res_name[256u];
@@ -365,13 +374,20 @@ i8 swapchain_resize(directx_context* context,directx_swapchain* swapchain,u16 wi
 		D3D12_RESOURCE_STATE_DEPTH_WRITE,
 		&swapchain->depth_stencil_clear_value,
 		IID_PPV_ARGS(&swapchain->depth_stencil_resource));
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("failed to create depth stencil resource");
+		return H_FAIL;
+	}
 
 	context->logical_device->CreateDepthStencilView(swapchain->depth_stencil_resource, &depth_stencil_view_desc,
 		swapchain->dsv_heap->GetCPUDescriptorHandleForHeapStart());
 
-
+	swapchain->viewport = { 0.0f, 0.0f, static_cast<f32>(width), static_cast<f32>(height) };
+	swapchain->scissor_rect = { 0, 0, width, height };
 
 	return H_OK;
+
 }
 
 void clear_depth_stencil(directx_commandlist* commandlist, directx_swapchain* swapchain)
@@ -380,6 +396,29 @@ void clear_depth_stencil(directx_commandlist* commandlist, directx_swapchain* sw
 		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, swapchain->depth_stencil_clear_value.DepthStencil.Depth,
 		swapchain->depth_stencil_clear_value.DepthStencil.Stencil, 0, nullptr
 	);
+}
+
+void bind_view_port(directx_commandlist* commandlist, directx_swapchain* swapchain)
+{
+	commandlist->commandlist->RSSetViewports(1, &swapchain->viewport);
+}
+
+void bind_scissor_rect(directx_commandlist* commandlist, directx_swapchain* swapchain)
+{
+	commandlist->commandlist->RSSetScissorRects(1, &swapchain->scissor_rect);
+}
+
+void set_view_port(directx_swapchain* swapchain, i32 left, i32 top, i32 right, i32 bottom)
+{
+	swapchain->scissor_rect = { left,top,right,bottom };
+}
+
+void set_view_port(directx_swapchain* swapchain, f32 width, f32 height, f32 topX, f32 topY)
+{
+	swapchain->viewport.Height = height;
+	swapchain->viewport.Width = width;
+	swapchain->viewport.TopLeftX = topX;
+	swapchain->viewport.TopLeftY = topY;
 }
 
 void set_depth_stencil(directx_swapchain* swapchain, f32 depth, u8 stencil)
