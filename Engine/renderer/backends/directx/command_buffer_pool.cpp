@@ -92,7 +92,6 @@ i8 command_buffer_pool(const directx_context* context,const u64 pool_size)
 void command_buffer_pool_shutdown(void)
 {
 	HLINFO("command buffer pool shutdown");
-	HLWARN("THE BUFFER POOL WILL THROW REF COUNT WARNING, THIS IS CURRENTLY INTENTIONALLY MADE TO NOT BORK,(POOL SIZE NEEDS TO BE ADJUSTED)");
 	for(u64 i = 0; i < HK_COMMAND_MAX; i++)
 	{
 		directx_allocator* alloc_ptr		= pool[i];

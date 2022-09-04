@@ -89,5 +89,14 @@ typedef struct p_prop
 	// @param	pointer to fill the data
 	void platform_data_for_render_api(void** ptr);
 
-
+	// @breif	routine to set platform generic data to api 
+	// @param	pointer to fill the data
 	void get_platform_properties(p_prop* ptr);
+
+	// @breif	routine to abort process
+	void platform_abort(void);
+	
+	// @breif	routine to exit with clean up
+	// @param	return code
+	void platform_exit(i32 exit_code);
+	

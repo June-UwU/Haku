@@ -19,9 +19,23 @@ typedef enum memory_tag
 	MEM_TAG_GAME,		// game allocations
 	MEM_TAG_DARRAY,		// generic darray
 	MEM_TAG_CQUEUE,		// generic c_queue
+	MEM_TAG_ALLOCATOR,  // allcators allocation
 
 	MEMORY_TAG_COUNT 	// last enum for size purposes
 }memory_tag;
+
+
+constexpr const char* memory_tag_lookup[MEMORY_TAG_COUNT]
+{
+	"\t Logger 		: %d %s",
+	"\t Memory 		: %d %s",
+	"\t Platform	: %d %s",
+	"\t Renderer	: %d %s",
+	"\t Game		: %d %s",
+	"\t Darray		: %d %s",
+	"\t CQueue		: %d %s",
+	"\t Allocators  : %d %s"
+};
 
 // @breif	memory subsystem initialize
 i8   hmemory_initialize();

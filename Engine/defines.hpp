@@ -4,11 +4,15 @@
 
 //HAKU TYPE DEFINES
 
+// TODO : find a more elegant way for runtime assert 
 #define HASSERT(condition) if(!condition)\
 {\
 	HLEMER("Assertion Failure..!\n File : %s \n Line : %d",__FILE__ , __LINE__);\
-	exit(-1);\
+	habort(-1);\
 }
+
+// _Static_assert is  a c11 keyword
+#define HSTATIC_ASSERT(condition,message) _Static_assert(condition,message)
 
 // objects that are intended to be opaque
 

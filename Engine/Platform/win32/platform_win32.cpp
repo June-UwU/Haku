@@ -1,4 +1,4 @@
-#include "platform.hpp"
+#include "platform/platform.hpp"
 
 #ifdef HWIN32
 
@@ -331,6 +331,20 @@ void get_platform_properties(p_prop* ptr)
 {
 	ptr->height = p_height;
 	ptr->width  = p_width;
+}
+
+void platform_abort(void)
+{
+	ExitProcess(H_FAIL);
+}
+
+void platform_exit(i32 exit_code)
+{
+	bool api_ret = PostMessageA(state_ptr->hwnd, WM_CLOSE, 0, 0);
+	if (false == api_ret)
+	{
+		HLCRIT("exit has been call failed ");
+	}
 }
 
 
