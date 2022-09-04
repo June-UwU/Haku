@@ -4,7 +4,7 @@
 #include "renderer_front_end.hpp"
 #include "renderer_back_end.hpp"
 
-
+// TODO : migrate to linear allocator
 // back end pointer
 static renderer_backend* backend;
 

@@ -12,6 +12,8 @@ typedef struct p_prop
 
 	//TODO : don't export the platform code
 
+    void platform_requirement(u64* memory_requirement);
+
 	// @breif	 platform initialzation
 	// @param state : generic structure that is defined per platform inside the transation unit
 	// @param name  : application name

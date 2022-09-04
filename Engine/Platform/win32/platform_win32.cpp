@@ -19,15 +19,14 @@ typedef struct platform_state
 {
 	HINSTANCE hinstance;
 	HWND 	  hwnd;
+	u32          p_height;
+	u32          p_width;
+	f64		    start_time;
 }platform_state;
 
 static platform_state* 	state_ptr; // platform dependant state
-
-static u32          p_height;
-static u32          p_width;
 static HANDLE 		private_heap; 	  // windows specfic heaps
 static DWORD  		heap_flags = HEAP_GENERATE_EXCEPTIONS;  // generate exception if heap_allocation fails
-static f64		start_time;
 
 static constexpr WORD platform_level_lookup[LOG_LVL_COUNT]
 {
@@ -61,14 +60,17 @@ void win32_get_error_string(DWORD error_code)
 	
 }
 
+void platform_requirement(u64* memory_requirement)
+{
+	*memory_requirement = sizeof(platform_state);
+}
+
 i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, u32  width)
 {	
-	p_height        = height;
-	p_width         = width;
-
-	state_ptr 		= (platform_state*)hmemory_alloc(sizeof(platform_state),MEM_TAG_PLATFORM);
-
-	state 			= state_ptr;
+	state_ptr       = (platform_state*)state;
+	
+	state_ptr->p_height        = height;
+	state_ptr->p_width         = width;
 
 	state_ptr->hinstance 	= GetModuleHandle(nullptr);
 
@@ -107,14 +109,14 @@ i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, 
 		HLCRIT("Timer  failed to initialize");
 	}
 
-	start_time = (f64)timer.QuadPart/1000.0f;
+	state_ptr->start_time = (f64)timer.QuadPart/1000.0f;
 
 	return H_OK;
 }
 
 void platform_shutdown()
 {
-	hmemory_free(state_ptr,MEM_TAG_PLATFORM);
+	state_ptr = 0;
 }
 
 i8 platform_pump_messages(void)
@@ -140,7 +142,7 @@ i8 platform_memory_initialize()
 	// 	64 bit system : 1024 KB
 	private_heap = HeapCreate(heap_flags,0,0);
 	
-	if(!private_heap)
+	if(nullptr == private_heap)
 	{
 		DWORD error = GetLastError();
 		win32_get_error_string(error);
@@ -157,7 +159,7 @@ void platform_memory_shutdown()
 
 void* platform_allocate(u64 size, bool aligned)
 {
-	void* ret_ptr = HeapAlloc(private_heap,heap_flags,size);
+	void* ret_ptr = HeapAlloc(private_heap, heap_flags,size);
 
 	if(nullptr == ret_ptr)
 	{
@@ -172,7 +174,7 @@ void* platform_allocate(u64 size, bool aligned)
 
 void platform_free(void* block, bool aligned)
 {
-	HeapFree(private_heap,heap_flags,block);
+	HeapFree(private_heap, heap_flags,block);
 }
 
 u64   platform_alloc_size(void* block)
@@ -321,7 +323,7 @@ f64 platform_time(void)
 
 	f64 ret_val	= (f64)tick.QuadPart/1000.0f;
 
-	return  ret_val - start_time;
+	return  ret_val - state_ptr->start_time;
 }
 void platform_data_for_render_api(void** ptr)
 {
@@ -329,8 +331,8 @@ void platform_data_for_render_api(void** ptr)
 }
 void get_platform_properties(p_prop* ptr)
 {
-	ptr->height = p_height;
-	ptr->width  = p_width;
+	ptr->height = state_ptr->p_height;
+	ptr->width  = state_ptr->p_width;
 }
 
 void platform_abort(void)

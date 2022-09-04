@@ -18,8 +18,21 @@
 		LOG_LVL_COUNT // a enum for log level count
 	} log_level;
 
+	constexpr u32 OUT_BUFFER_SIZE =  32000u; // internal constexpr that manages the maximum length of log buffer
+
+	constexpr const char* log_level_indicator[LOG_LVL_COUNT] //  string map for log level
+	{
+		"[EMERGENCY]",
+		"[CRITICAL]",
+		"[ERROR]",
+		"[WARN]",
+		"[INFO]"
+	};
+
+	void logger_requirement(u64* memory_requirement);
+
 	//initialization and shutdown
-	i8   logger_initialize(void);
+	i8   logger_initialize(void* state);
 	void logger_shutdown(void);
 
 	//logging function : DONOT CALL THIS DIRECTLY IN ANY PART

@@ -4,10 +4,8 @@
 
 typedef struct linear_allocator
 {
+	// current offset
 	u64 offset;
-
-	// total allocated size
-	u64 allocated;
 
 	// total size of the memory 
 	u64 size_in_bytes;
@@ -31,4 +29,5 @@ HAPI void destroy_linear_allocator(linear_allocator* alloc_ptr);
 // @return 	: pointer to the block for allocated memory
 HAPI void* linear_allocate(linear_allocator* allocator, u64 size);
 
-
+// @breif	routine to reset all allocation
+HAPI i8 linear_allocator_reset(linear_allocator* allocator);

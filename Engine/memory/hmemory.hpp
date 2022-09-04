@@ -10,6 +10,9 @@
 // x64		: 1024 KB
 
 
+constexpr u32 page_slice = 10;	// forcing atleast two pages of memory
+constexpr u32 single_alloc_cap = 512; 	// using x86 mem cap 
+
 typedef enum memory_tag
 {
 	MEM_TAG_LOGGER,		// logger subsystem allocations
@@ -24,6 +27,14 @@ typedef enum memory_tag
 	MEMORY_TAG_COUNT 	// last enum for size purposes
 }memory_tag;
 
+
+constexpr const char* unit_map[]
+{
+	"Bytes",
+	"KiB",
+	"MiB",
+	"GiB"
+};
 
 constexpr const char* memory_tag_lookup[MEMORY_TAG_COUNT]
 {

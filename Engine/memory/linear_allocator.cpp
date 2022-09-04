@@ -1,5 +1,5 @@
-#include "linear_allocator.hpp"
 #include "hmemory.hpp"	Î
+#include "linear_allocator.hpp"
 
 
 linear_allocator* create_linear_allocator(u64 size )
@@ -17,10 +17,17 @@ void destroy_linear_allocator(linear_allocator* alloc_ptr)
 	hmemory_free(alloc_ptr->memory,MEM_TAG_ALLOCATOR);
 	hmemory_free(alloc_ptr, MEM_TAG_ALLOCATOR);
 }
+
 void* linear_allocate(linear_allocator* allocator, u64 size)
 {
 	void* ret_ptr 			= nullptr;
-	if((allocator->allocated + size) >= allocator->size_in_bytes)
+	// don't try to cheese the system >w<
+	if (0 == size)
+	{
+		return ret_ptr;
+	}
+
+	if((allocator->offset + size) >= allocator->size_in_bytes)
 	{
 		return ret_ptr;
 	}
@@ -29,4 +36,9 @@ void* linear_allocate(linear_allocator* allocator, u64 size)
 	return ret_ptr;
 }
 
+i8 linear_allocator_reset(linear_allocator* allocator)
+{
+	allocator->offset = 0;
 
+	return H_OK;
+}

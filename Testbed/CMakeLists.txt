@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 message("Building Testbed")
 
-set(PROJECT_NAME "Test")
+set(PROJECT_NAME "TestBed")
 
 file(GLOB_RECURSE g_inc ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 file(GLOB_RECURSE g_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)

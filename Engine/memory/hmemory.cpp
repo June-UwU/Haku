@@ -7,29 +7,6 @@
 static u64 total_allocated = 0;
 static u64 memory_tracker_array[MEMORY_TAG_COUNT]{};
 
-constexpr u32 page_slice 		= 10;	// forcing atleast two pages of memory
-constexpr u32 single_alloc_cap 	= 512; 	// using x86 mem cap 
-
-static const char* memory_tag_lookup[MEMORY_TAG_COUNT]
-{
-	"\t Logger 		: %d %s",
-	"\t Memory 		: %d %s",
-	"\t Platform	: %d %s",
-	"\t Renderer	: %d %s",
-	"\t Game		: %d %s",
-	"\t Darray		: %d %s",
-	"\t CQueue		: %d %s",
-};
-
-static const char* unit_map[]
-{
-	"Bytes",
-	"KiB",
-	"MiB",
-	"GiB"
-};
-
-
 i8   hmemory_initialize()
 {
 	i8 ret = platform_memory_initialize();

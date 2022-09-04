@@ -5,20 +5,35 @@
 #include <cstdarg>
 #include "platform\platform.hpp"
 
-static i8 initialized = false; // Internal Variable that keeps track of the initialization status
-static constexpr u32 OUT_BUFFER_SIZE = 32000u; // internal constexpr that manages the maximum length of log buffer
   
+typedef struct logger_state
+{
+	i8 initialized = false; // Internal Variable that keeps track of the initialization status
+}logger_state;
+
+static logger_state* log_state;
+
+void logger_requirement(u64* memory_requirement)
+{
+	*memory_requirement = sizeof(logger_state);
+}
 
 //initialization and shutdown
-i8 logger_initialize(void)
+i8 logger_initialize(void* state)
 {
-	initialized = true;		
+	if (nullptr == state)
+	{
+		HLEMER("memory allocation failure");
+		return H_FAIL;
+	}
+	log_state = (logger_state*)state;
+	log_state->initialized = true;
 	return H_OK;
 }
 
 void logger_shutdown(void)
 {
-
+	log_state = 0;
 }
 
 
@@ -26,21 +41,12 @@ void logger_shutdown(void)
 	
 void log(log_level level,const char* message,...)
 {
-	static const char* log_level_indicator[LOG_LVL_COUNT] //  string map for log level
-	{
-		"[EMERGENCY]",
-		"[CRITICAL]",
-		"[ERROR]",
-		"[WARN]",
-		"[INFO]"
-	};
-
 	static char outbuffer[OUT_BUFFER_SIZE]; // declared static and cleared every log
 	
 	//clear the memory and keep the offset alive
 	u32 offset = 0; // offset to current write
 
-	platform_set_memory(outbuffer,0,OUT_BUFFER_SIZE); 
+	platform_set_memory(outbuffer,0, OUT_BUFFER_SIZE);
 
 	i32  indicator_len = strlen(log_level_indicator[level]);
 

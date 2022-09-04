@@ -8,7 +8,7 @@
 #define HASSERT(condition) if(!condition)\
 {\
 	HLEMER("Assertion Failure..!\n File : %s \n Line : %d",__FILE__ , __LINE__);\
-	habort(-1);\
+	abort();\
 }
 
 // _Static_assert is  a c11 keyword

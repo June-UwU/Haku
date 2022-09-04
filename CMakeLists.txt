@@ -30,3 +30,4 @@ message("Cmake C++ standard : ${CMAKE_CXX_STANDARD}")
 
 add_subdirectory("Engine")
 add_subdirectory("Testbed")
+add_subdirectory("test")
