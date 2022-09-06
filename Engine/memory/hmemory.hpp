@@ -23,6 +23,7 @@ typedef enum memory_tag
 	MEM_TAG_DARRAY,		// generic darray
 	MEM_TAG_CQUEUE,		// generic c_queue
 	MEM_TAG_ALLOCATOR,  // allcators allocation
+	MEM_TAG_CORE,       // allocation done by core routines
 
 	MEMORY_TAG_COUNT 	// last enum for size purposes
 }memory_tag;
@@ -45,7 +46,8 @@ constexpr const char* memory_tag_lookup[MEMORY_TAG_COUNT]
 	"\t Game		: %d %s",
 	"\t Darray		: %d %s",
 	"\t CQueue		: %d %s",
-	"\t Allocators  : %d %s"
+	"\t Allocators  : %d %s",
+	"\t Core        : %d %s"
 };
 
 // @breif	memory subsystem initialize
@@ -54,7 +56,7 @@ i8   hmemory_initialize();
 // @brief	memory subsystem shutdown
 void hmemory_shutdown();
 
-// @breif 	memory allocation routine
+// @breif 	: memory allocation routine
 // @param	: size of allocation
 // @param	: memory tag
 // @return 	: void pointer to memory

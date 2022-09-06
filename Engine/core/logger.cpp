@@ -3,15 +3,19 @@
 #include <string.h>
 #include <stdio.h>
 #include <cstdarg>
+#include "core/file_system.hpp"
 #include "platform\platform.hpp"
-
   
 typedef struct logger_state
 {
-	i8 initialized = false; // Internal Variable that keeps track of the initialization status
+	file* logger_file;
 }logger_state;
 
 static logger_state* log_state;
+
+// @breif	: routine to write to log buffer
+// @param	: pointer to message
+void logger_file_write(char* message);
 
 void logger_requirement(u64* memory_requirement)
 {
@@ -27,12 +31,13 @@ i8 logger_initialize(void* state)
 		return H_FAIL;
 	}
 	log_state = (logger_state*)state;
-	log_state->initialized = true;
+	log_state->logger_file = file_open("Haku.log", WRITE);
 	return H_OK;
 }
 
 void logger_shutdown(void)
 {
+	file_close(log_state->logger_file);
 	log_state = 0;
 }
 
@@ -62,6 +67,10 @@ void log(log_level level,const char* message,...)
 	va_end(varadic_list);
 	
 	platform_console_write(outbuffer,level);
+	if (nullptr != log_state)
+	{
+		logger_file_write(outbuffer);
+	}
 }
 
 void logger_test(void)
@@ -72,3 +81,14 @@ void logger_test(void)
 	HLWARN("Warning %d", 4);
 	HLINFO("Information %d", 5);
 }
+
+void logger_file_write(char* message)
+{
+	if (log_state->logger_file)
+	{
+		u64 size = strlen(message);
+		message[size] = '\n';
+		file_write(log_state->logger_file, sizeof(char), size + 1, message);
+	}
+}
+

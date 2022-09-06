@@ -2,6 +2,7 @@
 
 #ifdef HWIN32
 
+#include "core/file_system.hpp"
 #include "core/logger.hpp"
 #include "core/event.hpp"
 #include "core/input.hpp"
@@ -347,6 +348,129 @@ void platform_exit(i32 exit_code)
 	{
 		HLCRIT("exit has been call failed ");
 	}
+}
+
+
+void* platform_file_open(const char* file_name,const u64 mode)
+{
+	OFSTRUCT file_prop{0};
+	HFILE ret_ptr = 0;
+	UINT style{0};
+
+	//READ = BIT(0),
+	//WRITE = BIT(1),
+	//APPEND = BIT(2),
+	//READ_EXTENDED = BIT(3),
+	//WRITE_EXTENDED = BIT(4),
+	//APPEND_EXTENDED = BIT(5)
+		
+	switch (mode)
+	{
+		case READ:
+		{
+			style = OF_READ | OF_CREATE;
+			break;
+		}
+		case WRITE:
+		{
+			style = OF_WRITE | OF_CREATE;
+			break;
+		}
+		case APPEND:
+		{
+			HFILE api_ret_ptr  = OpenFile(file_name, &file_prop, OF_EXIST);
+			if (HFILE_ERROR == ret_ptr)
+			{
+				style = OF_WRITE | OF_CREATE;
+			}
+			else
+			{
+				style = OF_WRITE;
+			}
+			break;
+		}
+		case READ_EXTENDED:
+		{
+			style = OF_READWRITE;
+			break;
+		}
+		case WRITE_EXTENDED:
+		{
+			style = OF_READWRITE | OF_CREATE;
+			break;
+		}
+		case APPEND_EXTENDED:
+		{
+			HFILE api_ret_ptr = OpenFile(file_name, &file_prop, OF_EXIST);
+			if (HFILE_ERROR == ret_ptr)
+			{
+				style = OF_WRITE | OF_CREATE;
+			}
+			else
+			{
+				style = OF_WRITE;
+			}
+			break;
+		}
+		default:
+		{
+			HLCRIT("unknown file option for file open\n\t file name : %s ",file_name);
+			return nullptr;
+		}
+	}
+
+	ret_ptr  = OpenFile(file_name,&file_prop,style);
+	if (HFILE_ERROR == ret_ptr)
+	{
+		DWORD err_code = GetLastError();
+		win32_get_error_string(err_code);
+		return nullptr;
+	}
+
+	HLINFO("file open : %s \n\tpermission : %s",file_prop.szPathName,file_perm(mode));
+
+	return reinterpret_cast<void*>(ret_ptr);
+}
+
+void platform_file_close(void* file_ptr)
+{
+	bool api_ret_val =  CloseHandle((HANDLE)file_ptr);
+	if (false == api_ret_val)
+	{
+		DWORD err_code = GetLastError();
+		win32_get_error_string(err_code);
+		return;
+	}
+}
+
+u64 platform_file_read(void* buffer, u64 size, const void* file_ptr)
+{
+	DWORD ret_val = 0;
+	bool api_ret_val =  ReadFile((HANDLE)file_ptr,buffer,size,&ret_val,nullptr);
+
+	if (false == api_ret_val)
+	{
+		DWORD err_code = GetLastError();
+		win32_get_error_string(err_code);
+		return 0;
+	}
+
+	return ret_val;
+}
+
+u64 platform_file_write(void* file_ptr, u64 size, const void* buffer)
+{
+	DWORD ret_val = 0;
+	bool api_ret_val =  WriteFile((HANDLE)file_ptr,buffer,size,&ret_val,nullptr);
+
+	if (false == api_ret_val)
+	{
+		DWORD err_code = GetLastError();
+		win32_get_error_string(err_code);
+		return 0;
+	}
+
+	return ret_val;
 }
 
 

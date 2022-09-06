@@ -12,6 +12,8 @@ typedef struct p_prop
 
 	//TODO : don't export the platform code
 
+	// @breif	 platform memory requirement
+	// @param    : pointer to be filled out
     void platform_requirement(u64* memory_requirement);
 
 	// @breif	 platform initialzation
@@ -101,4 +103,27 @@ typedef struct p_prop
 	// @breif	routine to exit with clean up
 	// @param	return code
 	void platform_exit(i32 exit_code);
-	
+
+	// @breif 	platform specfic routine to open a file
+	// @param 	: pointer to file name
+	// @param	: mode bit feild
+	// @return 	: pointer to the file that was opened. nullptr on fail 
+	void* platform_file_open(const char* file_name,const u64 mode);
+
+	// @breif 	platform specfic routine to close a file
+	// @param 	: file pointer to the file;
+	void platform_file_close(void* file_ptr);
+
+	// @breif	platform specific file read function
+	// @param	: pointer to the buffer to be filled
+	// @param	: size to read in bytes
+	// @param	: file to read form
+	// @return  : size that is read
+	u64 platform_file_read(void* buffer, u64 size, const void* file_ptr);
+
+	// @breif	platform specific file write function
+	// @param	: pointer to the buffer to be filled
+	// @param	: size to write in bytes
+	// @param	: file to write from
+	// @return  : size that is written
+	u64 platform_file_write(void* file_ptr, u64 size, const void* buffer);

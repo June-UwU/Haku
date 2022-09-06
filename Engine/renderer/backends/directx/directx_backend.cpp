@@ -70,6 +70,7 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	commandlist_destroy();
 	command_buffer_pool_shutdown();
 	swapchain_shutdown(&context->swapchain);
+	hmemory_free(context, MEM_TAG_RENDERER);
 }
 
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)

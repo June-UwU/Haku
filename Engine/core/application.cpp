@@ -33,6 +33,9 @@ typedef struct engine_state
 
 	u64   platform_mem_require;
 	void* platform_state;
+
+	u64   renderer_mem_require;
+	void* renderer_state;
 }engine_state;
 
 linear_allocator* allocator; // allocator for subsystem memory
@@ -90,7 +93,7 @@ i8 application_initialize(application_state* app_state)
 
 
 	platform_requirement(&e_state->platform_mem_require);
-	e_state->platform_state = linear_allocate(allocator, e_state->logger_mem_require);
+	e_state->platform_state = linear_allocate(allocator, e_state->platform_mem_require);
 
 	haku_ret_code = platform_initialize(e_state->platform_state, app_state->name , app_state->x , app_state->y , app_state->height , app_state->width);
 
@@ -112,7 +115,11 @@ i8 application_initialize(application_state* app_state)
 	event_register(HK_EXIT,NULL,application_exit);
 	event_register(HK_SIZE, NULL, application_resize);
 	event_register(HK_MINIMIZE, nullptr, application_suspend);
-	haku_ret_code	= renderer_initialize(HK_DIRECTX_12);
+
+	renderer_requirement(&e_state->renderer_mem_require);
+	e_state->renderer_state = linear_allocate(allocator, e_state->renderer_mem_require);
+
+	haku_ret_code	= renderer_initialize(e_state->renderer_state,HK_DIRECTX_12);
 
 	if( H_OK != haku_ret_code)
 	{

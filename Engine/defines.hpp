@@ -2,6 +2,10 @@
 #include <cstdlib>
 #include <cstdint>
 
+// Bit feild macros
+#define BIT(x)	0x1 << x
+
+
 //HAKU TYPE DEFINES
 
 // TODO : find a more elegant way for runtime assert 

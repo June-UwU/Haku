@@ -4,17 +4,21 @@
 #include "renderer_front_end.hpp"
 #include "renderer_back_end.hpp"
 
-// TODO : migrate to linear allocator
+// TODO : migrate to linear allocator	
 // back end pointer
 static renderer_backend* backend;
 
+void renderer_requirement(u64* memory_requirement)
+{
+	*memory_requirement = sizeof(renderer_backend);
+}
 
 
-i8 renderer_initialize(backends api_type)
+i8 renderer_initialize(void* state,backends api_type)
 {
 	i8 ret_code	= H_OK;
 	
-	backend		= (renderer_backend*)hmemory_alloc(sizeof(renderer_backend),MEM_TAG_RENDERER);
+	backend     = (renderer_backend*)state;
 
 	ret_code	= backend_initialize(backend,api_type);
 	
@@ -24,7 +28,7 @@ i8 renderer_initialize(backends api_type)
 void renderer_shutdown(void)
 {
 	backend_shutdown(backend);
-	hmemory_free(backend,MEM_TAG_RENDERER);
+	backend = 0;
 }
 
 i8 renderer_resize(u16 height, u16 width, bool is_last)
