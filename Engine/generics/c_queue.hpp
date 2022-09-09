@@ -6,15 +6,14 @@
 
 typedef struct c_queue
 {
-	u64 	capacity;		// capacity of the queue
-	i64	front;			// index of front 
-	i64 	rear;			// index of rear
-	u64 	size;			// size of the queue
-	u64	element_size;		// element size of the queue [size of queue in bytes  = element size * size]
-	void* 	cq_ptr;			// queue ptr
-	bool 	purge;		// push to the front of by adjusting the queue front
-}c_queue;
-
+	u64	  capacity;		// capacity of the queue
+	i64	  front;		// index of front
+	i64	  rear;			// index of rear
+	u64	  size;			// size of the queue
+	u64	  element_size; // element size of the queue [size of queue in bytes  = element size * size]
+	void* cq_ptr;		// queue ptr
+	bool  purge;		// push to the front of by adjusting the queue front
+} c_queue;
 
 // @breif 	routine to initialize the queue
 // @param 	: size of the queue
@@ -45,7 +44,7 @@ HAPI void* dequeue(c_queue* q_ptr);
 
 // @breif	routine to get the current size of c_queue
 // @param	: pointer to c_queue
-// @return	: current size of the buffer 
+// @return	: current size of the buffer
 HAPI u64 size(const c_queue* q_ptr);
 
 // @breif	routine to get the capacit of c_queue

@@ -5,11 +5,11 @@
 #include <cstdarg>
 #include "core/file_system.hpp"
 #include "platform\platform.hpp"
-  
+
 typedef struct logger_state
 {
 	file* logger_file;
-}logger_state;
+} logger_state;
 
 static logger_state* log_state;
 
@@ -22,7 +22,7 @@ void logger_requirement(u64* memory_requirement)
 	*memory_requirement = sizeof(logger_state);
 }
 
-//initialization and shutdown
+// initialization and shutdown
 i8 logger_initialize(void* state)
 {
 	if (nullptr == state)
@@ -30,7 +30,7 @@ i8 logger_initialize(void* state)
 		HLEMER("memory allocation failure");
 		return H_FAIL;
 	}
-	log_state = (logger_state*)state;
+	log_state			   = (logger_state*)state;
 	log_state->logger_file = file_open("Haku.log", WRITE);
 	return H_OK;
 }
@@ -41,32 +41,31 @@ void logger_shutdown(void)
 	log_state = 0;
 }
 
+// logging function
 
-//logging function
-	
-void log(log_level level,const char* message,...)
+void log(log_level level, const char* message, ...)
 {
 	static char outbuffer[OUT_BUFFER_SIZE]; // declared static and cleared every log
-	
-	//clear the memory and keep the offset alive
+
+	// clear the memory and keep the offset alive
 	u32 offset = 0; // offset to current write
 
-	platform_set_memory(outbuffer,0, OUT_BUFFER_SIZE);
+	platform_set_memory(outbuffer, 0, OUT_BUFFER_SIZE);
 
-	i32  indicator_len = strlen(log_level_indicator[level]);
+	i32 indicator_len = strlen(log_level_indicator[level]);
 
-	platform_copy_memory(outbuffer,(void*)log_level_indicator[level],indicator_len);
-	
+	platform_copy_memory(outbuffer, (void*)log_level_indicator[level], indicator_len);
+
 	offset += indicator_len;
 
 	va_list varadic_list;
-	va_start(varadic_list,message);
+	va_start(varadic_list, message);
 
 	vsnprintf((outbuffer + offset), (OUT_BUFFER_SIZE - offset), message, varadic_list);
 
 	va_end(varadic_list);
-	
-	platform_console_write(outbuffer,level);
+
+	platform_console_write(outbuffer, level);
 	if (nullptr != log_state)
 	{
 		logger_file_write(outbuffer);
@@ -86,9 +85,8 @@ void logger_file_write(char* message)
 {
 	if (log_state->logger_file)
 	{
-		u64 size = strlen(message);
+		u64 size	  = strlen(message);
 		message[size] = '\n';
 		file_write(log_state->logger_file, sizeof(char), size + 1, message);
 	}
 }
-

@@ -10,11 +10,12 @@ static ID3D12Debug* debug_interface;
 i8 debug_layer_initialize(void)
 {
 	HRESULT ret_code;
-	ret_code	= D3D12GetDebugInterface(__uuidof(ID3D12Debug),(void**)&debug_interface);
-	if(S_OK	== ret_code)
+	ret_code = D3D12GetDebugInterface(__uuidof(ID3D12Debug), (void**)&debug_interface);
+	if (S_OK == ret_code)
 	{
 		debug_interface->EnableDebugLayer();
-		HLWARN("DirectX debug layer enabled, This make the application slower if shown on release built, TREAT AS ERROR");
+		HLWARN(
+			"DirectX debug layer enabled, This make the application slower if shown on release built, TREAT AS ERROR");
 	}
 	return H_OK;
 }

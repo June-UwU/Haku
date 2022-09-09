@@ -2,7 +2,6 @@
 #include "command_context.hpp"
 #include "command_buffer_pool.hpp"
 
-
 typedef enum
 {
 	event_fail,
@@ -10,7 +9,7 @@ typedef enum
 	copy_queue_failure,
 	compute_queue_fail,
 	render_queue_fail
-}command_context_fails;
+} command_context_fails;
 
 i8 queue_flush(directx_queue* queue, queue_type type);
 i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* commandlist);
@@ -18,37 +17,36 @@ i8 command_context_fail_handler(directx_queue* queue, command_context_fails fail
 
 i8 command_context_initialize(directx_context* context)
 {
-
 	directx_queue* queue = &context->queue;
-	queue->fence_val     = 0;
+	queue->fence_val	 = 0;
 	HLINFO("command queue initialization");
-	i8 ret_code		= H_OK;
-	HRESULT	api_ret_code	= S_OK;
+	i8		ret_code	 = H_OK;
+	HRESULT api_ret_code = S_OK;
 
 	D3D12_COMMAND_QUEUE_DESC q_desc{};
-	q_desc.Type	= D3D12_COMMAND_LIST_TYPE_DIRECT;
+	q_desc.Type		= D3D12_COMMAND_LIST_TYPE_DIRECT;
 	q_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 	q_desc.Flags	= D3D12_COMMAND_QUEUE_FLAG_NONE;
-	q_desc.NodeMask	= 0;
+	q_desc.NodeMask = 0;
 
 	// creating render queue
-	api_ret_code	= context->logical_device->CreateCommandQueue(&q_desc,__uuidof(ID3D12CommandQueue),(void**)&queue->directx_queue[HK_COMMAND_RENDER]);
-	if(S_OK != api_ret_code)
+	api_ret_code = context->logical_device->CreateCommandQueue(
+		&q_desc, __uuidof(ID3D12CommandQueue), (void**)&queue->directx_queue[HK_COMMAND_RENDER]);
+	if (S_OK != api_ret_code)
 	{
 		HLEMER("render queue failure");
-		ret_code= command_context_fail_handler(queue, render_queue_fail);
+		ret_code = command_context_fail_handler(queue, render_queue_fail);
 		return ret_code;
 	}
 	HLINFO("render queue initailized");
 	FRIENDLY_NAME(queue->directx_queue[HK_COMMAND_RENDER], L"DirectX Render Queue");
 
-
-
 	// creating compute queue
-	q_desc.Type	= D3D12_COMMAND_LIST_TYPE_COMPUTE;
+	q_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
 
-	api_ret_code	= context->logical_device->CreateCommandQueue(&q_desc,__uuidof(ID3D12CommandQueue),(void**)&queue->directx_queue[HK_COMMAND_COMPUTE]);
-	if(S_OK != api_ret_code)
+	api_ret_code = context->logical_device->CreateCommandQueue(
+		&q_desc, __uuidof(ID3D12CommandQueue), (void**)&queue->directx_queue[HK_COMMAND_COMPUTE]);
+	if (S_OK != api_ret_code)
 	{
 		HLEMER("compute queue creation failure");
 		ret_code = command_context_fail_handler(queue, compute_queue_fail);
@@ -57,12 +55,12 @@ i8 command_context_initialize(directx_context* context)
 	HLINFO("compute queue initailized");
 	FRIENDLY_NAME(queue->directx_queue[HK_COMMAND_COMPUTE], L"DirectX Compute Queue");
 
-	
 	// creating copy queue
-	q_desc.Type	= D3D12_COMMAND_LIST_TYPE_COPY;
+	q_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
 
-	api_ret_code	= context->logical_device->CreateCommandQueue(&q_desc,__uuidof(ID3D12CommandQueue),(void**)&queue->directx_queue[HK_COMMAND_COPY]);
-	if(S_OK != api_ret_code)
+	api_ret_code = context->logical_device->CreateCommandQueue(
+		&q_desc, __uuidof(ID3D12CommandQueue), (void**)&queue->directx_queue[HK_COMMAND_COPY]);
+	if (S_OK != api_ret_code)
 	{
 		HLEMER("copy queue failure");
 		ret_code = command_context_fail_handler(queue, copy_queue_failure);
@@ -71,8 +69,8 @@ i8 command_context_initialize(directx_context* context)
 	HLINFO("copy queue initailized");
 	FRIENDLY_NAME(queue->directx_queue[HK_COMMAND_COPY], L"DirectX Copy Queue");
 
-	api_ret_code = context->logical_device->CreateFence(queue->fence_val, D3D12_FENCE_FLAG_NONE,
-		__uuidof(ID3D12Fence), (void**)&queue->fence);
+	api_ret_code = context->logical_device->CreateFence(
+		queue->fence_val, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&queue->fence);
 	if (S_OK != api_ret_code)
 	{
 		HLEMER("synchronizing fence failure");
@@ -97,13 +95,13 @@ i8 command_context_initialize(directx_context* context)
 void command_context_shutdown(directx_queue* queue)
 {
 	HLINFO("command queue shutdown");
-	for(u64 i = 0; i< HK_COMMAND_MAX; i++)
+	for (u64 i = 0; i < HK_COMMAND_MAX; i++)
 	{
 		queue->directx_queue[i]->Release();
 	}
 	HLINFO("releasing fence ");
 	queue->fence->Release();
-	
+
 	HLINFO("releasing event");
 	CloseHandle(queue->event);
 }
@@ -157,7 +155,7 @@ i8 full_gpu_flush(directx_queue* queue, queue_type type)
 {
 	i8 ret_code = H_OK;
 	HLWARN("FULL  GPU FLUSH : if this is called on frame render this is a serious bug..!!");
-	
+
 	ret_code = queue_flush(queue, type);
 	if (H_OK != ret_code)
 	{
@@ -167,7 +165,7 @@ i8 full_gpu_flush(directx_queue* queue, queue_type type)
 	return ret_code;
 }
 
-i8 next_frame_synchronization(directx_queue* queue,directx_commandlist* commandlist)
+i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* commandlist)
 {
 	i8 ret_code = H_OK;
 
@@ -175,7 +173,7 @@ i8 next_frame_synchronization(directx_queue* queue,directx_commandlist* commandl
 
 	queue->fence_val++;
 	api_ret_code = queue->directx_queue[commandlist->type]->Signal(queue->fence, queue->fence_val);
-	if(H_OK != api_ret_code)
+	if (H_OK != api_ret_code)
 	{
 		HLCRIT("signal failed");
 		ret_code = H_FAIL;
@@ -190,10 +188,10 @@ i8 next_frame_synchronization(directx_queue* queue,directx_commandlist* commandl
 	return ret_code;
 }
 
-i8  queue_flush(directx_queue* queue, queue_type type)
+i8 queue_flush(directx_queue* queue, queue_type type)
 {
-	const UINT64 fence = queue->fence_val++;
-	HRESULT api_ret_code = queue->directx_queue[HK_COMMAND_RENDER]->Signal(queue->fence, fence);
+	const UINT64 fence		  = queue->fence_val++;
+	HRESULT		 api_ret_code = queue->directx_queue[HK_COMMAND_RENDER]->Signal(queue->fence, fence);
 	if (S_OK != api_ret_code)
 	{
 		HLCRIT("failed to signal to queue");
@@ -212,8 +210,7 @@ i8  queue_flush(directx_queue* queue, queue_type type)
 	return H_OK;
 }
 
-
-i8 command_context_fail_handler(directx_queue* queue,command_context_fails fail_code)
+i8 command_context_fail_handler(directx_queue* queue, command_context_fails fail_code)
 {
 	switch (fail_code)
 	{

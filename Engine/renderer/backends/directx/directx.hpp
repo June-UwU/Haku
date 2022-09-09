@@ -1,8 +1,9 @@
 #pragma once
 
-// NOTE : most subsystems have what is defined as fail handlers and fail code , these are used for potential fail handles and 
-//		  early development used gotos and they required c99 style initialization which was then replaced with the fail codes 
-//		  and handlers these are indended to be internal to the subsystems and is unique for each subsystem
+// NOTE : most subsystems have what is defined as fail handlers and fail code , these are used for potential fail
+// handles and
+//		  early development used gotos and they required c99 style initialization which was then replaced with the fail
+//codes 		  and handlers these are indended to be internal to the subsystems and is unique for each subsystem
 
 #include "renderer/renderer_back_end.hpp"
 
@@ -11,25 +12,25 @@
 // @return 	: H_OK on sucess
 i8 directx_initialize(renderer_backend* backend_ptr);
 
-// @breif	directx shutdown 
+// @breif	directx shutdown
 // @param	: pointer to backend struct
 void directx_shutdown(renderer_backend* backend_ptr);
 
 // @breif 	routine to begin frame
 // @param	: backend pointer
-// @param	: delta time 
+// @param	: delta time
 // @return 	: H_OK on sucess
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time);
 
 // @breif 	routine to end frame
 // @param	: backend pointer
-// @param	: delta time 
+// @param	: delta time
 // @return 	: H_OK on sucess, H_FAIL is  critical condition
-i8 directx_end_frame(renderer_backend* backend_ptr,f64 delta_time);
+i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time);
 
 // @breif	function to resize the directx backend
 // @param	: pointer to the backend
 // @param	: height to resize to
-// @param	: width to resize to 
+// @param	: width to resize to
 // @return	: H_OK on sucess
 i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width);

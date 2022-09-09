@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * \file   directx_types.INL
+ * \brief  directx implementations typedefs and other important macros
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #pragma once
 
 // TODO : remove the string lib 
@@ -6,24 +13,62 @@
 #include "defines.hpp"
 #include <D3d12.h>
 #include <dxgi1_6.h>
+#include <d3dcompiler.h>
 
-
+/** macro to set friendly names to directx 12 objects */
 #define FRIENDLY_NAME(ID3D12Obj,name) ID3D12Obj->SetName(name)
 
+/** frame count for the directx backend */
 constexpr u64 frame_count = 3u;
+/** command allcator size for the command allocator pool */
 constexpr u64 command_allocator_size = 4u;
-// different queue types
-typedef enum
+
+/** enumeration to signify the different programmable shader stage */
+typedef enum shader_stages
 {
-	HK_COMMAND_RENDER = 0x0,// render queue
-	HK_COMMAND_COMPUTE,// compute queue
-	HK_COMMAND_COPY,// copy queue
+	/** vertex shader stage */
+	HK_VERTEX_SHADER,
+	/** hull shader stage */
+	HK_HULL_SHADER,
+	/** domain shader stage */
+	HK_DOMAIN_SHADER,
+	/** geometry shader stage */
+	HK_GEOMETRY_SHADER,
+	/** pixel shader stage */
+	HK_PIXEL_SHADER,
+	/** compute shader stage */
+	HK_COMPUTE_SHADER,
 
+	/** max shader count */
+	HK_SHADER_MAX
+}shader_stages;
+
+/** shader_stages enumration translation vector */
+constexpr const char* SHADER_STAGE_NAME[HK_SHADER_MAX]
+{
+	"vertex shader",
+	"hull shader",
+	"domain shader",
+	"geometry shader",
+	"pixel shader",
+	"compute shader"
+};
+
+/** enumeration to signify the different types of command list,queue and allocator types */
+typedef enum  queue_type
+{
+	/** render queue */
+	HK_COMMAND_RENDER = 0x0,
+	/** compute queue */
+	HK_COMMAND_COMPUTE,
+	/** copy queue */
+	HK_COMMAND_COPY,
+
+	/** max queue type count */
 	HK_COMMAND_MAX
-
 }queue_type;
 
-
+/** queue_type enumeration translation vector */
 constexpr const wchar_t* COMMAND_NAME[HK_COMMAND_MAX]
 {
 	L"render",
@@ -31,7 +76,8 @@ constexpr const wchar_t* COMMAND_NAME[HK_COMMAND_MAX]
 	L"copy"
 };
 
-typedef enum
+/** command_buffer state signifying enumerations */
+typedef enum command_buffer_state
 {
 	/** @brief The command buffer is currently being recorded to. */
 	COMMAND_BUFFER_STATE_RECORDING,
@@ -43,103 +89,138 @@ typedef enum
 	COMMAND_BUFFER_STATE_NOT_ALLOCATED
 }command_buffer_state;
 
-typedef enum
+
+/** commandlist state signifying enumerations */
+typedef enum commandlist_state
 {
-	//the command list  currently recording
+	/** the command list  currently recording */
 	COMMANDLIST_RECORDING,
 
-	// the command list is currently ended its recording
+	/** the command list is currently ended its recording */
 	COMMANDLIST_RECORDING_ENDED,
 
-	// the command list is submitted for execution , it needs to resetted to be ready again
+	/**  the command list is submitted for execution, it needs to resetted to be ready again */
 	COMMANDLIST_STALE
 }commandlist_state;
 
-
+/** directx command allocators */
 typedef struct directx_allocator
 {
-	//allocator type
+	/** allocator type */
 	queue_type type;
 
-	// this val is the completed value when the allocator is off flight
+	/** this val is the completed value when the allocator is off flight */
 	u64 fence_val;
 
-	// allocator state
+	/** current allocator state */
 	command_buffer_state state;
 
+	/** directx  12 specfic command allocator object */
 	ID3D12CommandAllocator* allocator;
 }directx_allocator;
 
-
+/** directx commandlist , uses command allocators to record command list */
 typedef struct directx_commandlist
 {
+	/** commandlist type */
 	queue_type type;
 
-	// command list current state
+	/**  command list current state */
 	commandlist_state state;
 
-	// command list object
+	/** directx 12 command list object */
 	ID3D12GraphicsCommandList* commandlist;
 
-	// current allocator
+	/**  internal current allocator */
 	directx_allocator* seeded_allocator;
 }directx_command_list;
 
+/** directx command queue used to execute command lists that are closed after recording */
 typedef struct directx_queue
 {
-	// current fence value
+	/** current fence value */
 	u64 fence_val;
 
-	// synchronizing objects
+	/** synchronizing objects */
 	ID3D12Fence* fence;
 
-	// Event to upgrade to for a gpu flush
+	/**  Event to upgrade to for a gpu flush */
 	HANDLE event;
 
-	// command queue list 
+	/** command queue list , equal to HK_COMMAND_MAX */
 	ID3D12CommandQueue* directx_queue[HK_COMMAND_MAX];
 }directx_queue;
 
+/** directx swapchain object */
 typedef struct directx_swapchain
 {
-	// rtv heap increment size
+	/** rtv heap increment size */
 	u64 rtv_heap_increment;
 
-	// rtv heap increment size
+	/** rtv heap increment size */
 	u64 dsv_heap_increment;
 
-	// number of write buffer
+	/** number of buffers that are possible off-flight */
 	u64 max_in_filght_frames;
 
-	// current back buffer
+	/** current back buffer index in resource array */
 	u64 current_back_buffer_index;
 	
-	IDXGISwapChain3* swapchain;	// directx swap chain
+	/** directx swapchain object */
+	IDXGISwapChain3* swapchain;	
 	
+	/** directx 12 depth stencil resource */
 	ID3D12Resource* depth_stencil_resource;
 	
+	/** render target view resource */
 	ID3D12Resource* frame_resources[frame_count];
 
+	/** directx depth stencil optimized clear value */
 	D3D12_CLEAR_VALUE depth_stencil_clear_value;
 
+	/** directx scissor rect */
 	D3D12_RECT scissor_rect;
 
+	/** directx view port */
 	D3D12_VIEWPORT viewport;
 
-	// rtv heap
+	/** directx descriptor heap for rendertarget views */
 	ID3D12DescriptorHeap* rtv_heap;
 
-	// dsv heap
+	/** directx descriptor heap for depth stencil views */
 	ID3D12DescriptorHeap* dsv_heap;
 }directx_swapchain;
 
-// directx renderer backend has releated information for a context
+/** directx renderer backend has releated information for a context */
 typedef struct directx_context
 {
+	/** direct queue object */
 	directx_queue			queue;
-	IDXGIFactory6*			factory;			// factory that creates the sub function
+
+	/** factory that creates the sub function */
+	IDXGIFactory6*			factory;		
+
+	/** directx swapchain instance */
 	directx_swapchain		swapchain;
-	ID3D12Device* 			logical_device;			// logical device does all the gpu functions
-	IDXGIAdapter1* 			physical_device;		// the current physical device that is in use
+
+	/** logical device does all the gpu functions */
+	ID3D12Device* 			logical_device;			
+
+	/** the current physical device that is in use */
+	IDXGIAdapter1* 			physical_device;		
+
+	/** all directx commandlist types */
 	directx_commandlist     commandlist[HK_COMMAND_MAX];
 }directx_context;
+
+/** directx shader module  */
+typedef struct directx_shader_module
+{
+	/** all directx shader for a module, nullptr if its absent */
+	ID3DBlob* compiled_shaders[HK_SHADER_MAX];
+}directx_shader_module;
+
+typedef struct directx_pipeline
+{
+
+}directx_pipeline;

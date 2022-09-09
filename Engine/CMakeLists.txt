@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.20)
 message("${API}")
 message("Building Haku Shared Library")
 
+
+
 set(PROJECT_NAME "Haku_Engine")
 
 file(GLOB_RECURSE global_inc ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)

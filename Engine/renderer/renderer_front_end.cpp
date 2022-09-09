@@ -1,11 +1,16 @@
-
+/*****************************************************************//**
+ * \file   renderer_front_end.cpp
+ * \brief  renderer front end implementation, this communicates with the backend
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #include "core/logger.hpp"
 #include "memory/hmemory.hpp"
 #include "renderer_front_end.hpp"
 #include "renderer_back_end.hpp"
 
-// TODO : migrate to linear allocator	
-// back end pointer
+/** backend pointer of the current backend */
 static renderer_backend* backend;
 
 void renderer_requirement(u64* memory_requirement)
@@ -13,15 +18,14 @@ void renderer_requirement(u64* memory_requirement)
 	*memory_requirement = sizeof(renderer_backend);
 }
 
-
-i8 renderer_initialize(void* state,backends api_type)
+i8 renderer_initialize(void* state, backends api_type)
 {
-	i8 ret_code	= H_OK;
-	
-	backend     = (renderer_backend*)state;
+	i8 ret_code = H_OK;
 
-	ret_code	= backend_initialize(backend,api_type);
-	
+	backend = (renderer_backend*)state;
+
+	ret_code = backend_initialize(backend, api_type);
+
 	return ret_code;
 }
 
@@ -53,15 +57,15 @@ i8 renderer_draw_frame(render_packet* packet)
 {
 	i8 ret_code = backend->begin_frame(backend, packet->delta_time);
 
-	if(H_OK == ret_code)
+	if (H_OK == ret_code)
 	{
-		ret_code	= backend->end_frame(backend,packet->delta_time);
+		ret_code = backend->end_frame(backend, packet->delta_time);
 
-		if( H_FAIL == ret_code)
+		if (H_FAIL == ret_code)
 		{
 			HLEMER("end frame failed");
 			return H_ERR;
-		}	
+		}
 	}
 	return ret_code;
 }

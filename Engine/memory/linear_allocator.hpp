@@ -7,17 +7,17 @@ typedef struct linear_allocator
 	// current offset
 	u64 offset;
 
-	// total size of the memory 
+	// total size of the memory
 	u64 size_in_bytes;
 
 	// void pointer to memory
 	void* memory;
-}linear_allocator;
+} linear_allocator;
 
 // @breif 	routine to create allocator
 // @param	: size of the backend memory a pool
-// @return	: pointer to the allocator 
-HAPI linear_allocator* create_linear_allocator(u64 size );
+// @return	: pointer to the allocator
+HAPI linear_allocator* create_linear_allocator(u64 size);
 
 // @breif 	routine to destroy a allocator
 // @param 	: pointer  to the allocator

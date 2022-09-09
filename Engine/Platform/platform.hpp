@@ -6,124 +6,129 @@ typedef struct p_prop
 {
 	u32 height;
 	u32 width;
-}p_prop;
+} p_prop;
 
 // Haku platform subsystem
 
-	//TODO : don't export the platform code
+// TODO : don't export the platform code
 
-	// @breif	 platform memory requirement
-	// @param    : pointer to be filled out
-    void platform_requirement(u64* memory_requirement);
+// @breif	 platform memory requirement
+// @param    : pointer to be filled out
+void platform_requirement(u64* memory_requirement);
 
-	// @breif	 platform initialzation
-	// @param state : generic structure that is defined per platform inside the transation unit
-	// @param name  : application name
-	// @param x 	: position x for the window
-	// @param y	: position y for the window 
-	// @param height: height of the window
-	// @param width	: width of the window
-	// @return 	: true on sucess and false on failure
-	i8 platform_initialize( void* state, const char* name, u32 x, u32 y, u32 height, u32  width);
-	
-	// @breif  	 platform clean up
-	// @param state 	: platform state 
-	void platform_shutdown();
+// @breif	 platform initialzation
+// @param state : generic structure that is defined per platform inside the transation unit
+// @param name  : application name
+// @param x 	: position x for the window
+// @param y	: position y for the window
+// @param height: height of the window
+// @param width	: width of the window
+// @return 	: true on sucess and false on failure
+i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, u32 width);
 
-	// @brief 	 routine to pump messages
-	i8 platform_pump_messages(void);
+// @breif  	 platform clean up
+// @param state 	: platform state
+void platform_shutdown();
 
-	// @breif	 platform specfic memory initialize
-	i8    platform_memory_initialize();
+// @brief 	 routine to pump messages
+i8 platform_pump_messages(void);
 
-	// @breif	 platform specfic memory shutdown
-	void  platform_memory_shutdown();
+// @breif	 platform specfic memory initialize
+i8 platform_memory_initialize();
 
-	// @breif	 allocation platform  specfic
-	// @param size	 : size of the pointer to return
-	// @param aligned: bool for making the size align
-	// @return 	 : void pointer to the allocated the memory
-	void* platform_allocate(u64 size, bool aligned);
+// @breif	 platform specfic memory shutdown
+void platform_memory_shutdown();
 
-	// @breif	 free for platform specfic allocate
-	// @param block  : pointer to the allocated memory
-	// @param aligned: bool to indicate if its aligned
-	void platform_free(void* block, bool aligned);
+// @breif	 allocation platform  specfic
+// @param size	 : size of the pointer to return
+// @param aligned: bool for making the size align
+// @return 	 : void pointer to the allocated the memory
+void* platform_allocate(u64 size, bool aligned);
 
-	// @breif 	routine for getting heap allocated mem size for supporting platform (win32 HeapSize())
-	// @param	: pointer to the previously allocated block
-	// @return	: size of the block
-	u64   platform_alloc_size(void* block);
+// @breif	 free for platform specfic allocate
+// @param block  : pointer to the allocated memory
+// @param aligned: bool to indicate if its aligned
+void platform_free(void* block, bool aligned);
 
-	// @breif	 routine to zero out a block of memory
-	// @param block	: pointer to the block
-	// @param size	: size of the block
-	void platform_zero_memory(void* block, u64 size);
+// @breif 	routine for getting heap allocated mem size for supporting platform (win32 HeapSize())
+// @param	: pointer to the previously allocated block
+// @return	: size of the block
+u64 platform_alloc_size(void* block);
 
-	// @breif 	 routine to copy a block of memory
-	// @param dest	: destination of the copy 
-	// @param src	: source of the copy
-	// @param size	: size in bytes to copy 
-	void platform_copy_memory(void* dest, void* src, u64 size);
+// @breif	 routine to zero out a block of memory
+// @param block	: pointer to the block
+// @param size	: size of the block
+void platform_zero_memory(void* block, u64 size);
 
-	// @breif	 routine to set memory to a value
-	// @param block	: destination of memset
-	// @param value	: value to set block
-	// @param size	: size of memory block to write
-	void platform_set_memory(void* block, i8 value, u64 size);
+// @breif 	 routine to copy a block of memory
+// @param dest	: destination of the copy
+// @param src	: source of the copy
+// @param size	: size in bytes to copy
+void platform_copy_memory(void* dest, void* src, u64 size);
 
-	// @breif 	 routine to write to console
-	// @param message: message to write to console
-	// @param color  : color enum  
-	void platform_console_write(const char* message, u8 color);
+// @breif	 routine to set memory to a value
+// @param block	: destination of memset
+// @param value	: value to set block
+// @param size	: size of memory block to write
+void platform_set_memory(void* block, i8 value, u64 size);
 
-	// @breif 	routine to write to error console
-	//  @param message: message to write
-	//  @param color  : color enum 
-	void platform_console_write_error(const char* message, u8 color);
+// @breif 	 routine to write to console
+// @param message: message to write to console
+// @param color  : color enum
+void platform_console_write(const char* message, u8 color);
 
-	// @breif 	routine to return the number of cores available
-	i32 get_number_of_logical_procressor(void);
+// @breif 	routine to write to error console
+//  @param message: message to write
+//  @param color  : color enum
+void platform_console_write_error(const char* message, u8 color);
 
-	// @breif	routine to return performance counter
-	// @return	: float timer
-	f64 platform_time(void);
+// @breif 	routine to return the number of cores available
+i32 get_number_of_logical_procressor(void);
 
-	// @breif	routine to set platform specfic data to api 
-	// @param	pointer to fill the data
-	void platform_data_for_render_api(void** ptr);
+// @breif	routine to return performance counter
+// @return	: float timer
+f64 platform_time(void);
 
-	// @breif	routine to set platform generic data to api 
-	// @param	pointer to fill the data
-	void get_platform_properties(p_prop* ptr);
+// @breif	routine to set platform specfic data to api
+// @param	pointer to fill the data
+void platform_data_for_render_api(void** ptr);
 
-	// @breif	routine to abort process
-	void platform_abort(void);
-	
-	// @breif	routine to exit with clean up
-	// @param	return code
-	void platform_exit(i32 exit_code);
+// @breif	routine to set platform generic data to api
+// @param	pointer to fill the data
+void get_platform_properties(p_prop* ptr);
 
-	// @breif 	platform specfic routine to open a file
-	// @param 	: pointer to file name
-	// @param	: mode bit feild
-	// @return 	: pointer to the file that was opened. nullptr on fail 
-	void* platform_file_open(const char* file_name,const u64 mode);
+// @breif	routine to abort process
+void platform_abort(void);
 
-	// @breif 	platform specfic routine to close a file
-	// @param 	: file pointer to the file;
-	void platform_file_close(void* file_ptr);
+// @breif	routine to exit with clean up
+// @param	return code
+void platform_exit(i32 exit_code);
 
-	// @breif	platform specific file read function
-	// @param	: pointer to the buffer to be filled
-	// @param	: size to read in bytes
-	// @param	: file to read form
-	// @return  : size that is read
-	u64 platform_file_read(void* buffer, u64 size, const void* file_ptr);
+// @breif 	platform specfic routine to open a file
+// @param 	: pointer to file name
+// @param	: mode bit feild
+// @return 	: pointer to the file that was opened. nullptr on fail
+void* platform_file_open(const char* file_name, const u64 mode);
 
-	// @breif	platform specific file write function
-	// @param	: pointer to the buffer to be filled
-	// @param	: size to write in bytes
-	// @param	: file to write from
-	// @return  : size that is written
-	u64 platform_file_write(void* file_ptr, u64 size, const void* buffer);
+// @breif 	platform specfic routine to close a file
+// @param 	: file pointer to the file;
+void platform_file_close(void* file_ptr);
+
+// @breif	platform specific file read function
+// @param	: pointer to the buffer to be filled
+// @param	: size to read in bytes
+// @param	: file to read form
+// @return  : size that is read
+u64 platform_file_read(void* buffer, u64 size, const void* file_ptr);
+
+// @breif	platform specific file write function
+// @param	: pointer to the buffer to be filled
+// @param	: size to write in bytes
+// @param	: file to write from
+// @return  : size that is written
+u64 platform_file_write(void* file_ptr, u64 size, const void* buffer);
+
+// @breif	platform specific routine to get the file size of a file
+// @param	: pointer to the file
+// @return	: size of the file in bytes or zero
+u64 platform_get_file_size(void* file_ptr);

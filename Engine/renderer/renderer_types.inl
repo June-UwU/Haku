@@ -1,64 +1,62 @@
+/*****************************************************************//**
+ * \file   renderer_types.inl
+ * \brief  types and general defines and includes used by the renderer front-end
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #pragma once
-// types that are used by renderer
-
 
 #include "defines.hpp"
 
-typedef enum
+/** enums that points the backend used */
+typedef enum backends
 {
-	HK_DIRECTX_12,
-	HK_VULKAN,
+	/** direct x 12 backend is used */
+	HK_DIRECTX_12, 
+	/** vulkan backend is used */
+	HK_VULKAN,     
 
-
+	/** maximum number of backends used */
 	HK_BACKEND_MAX
 }backends;
 
+/** compile time string translation look up table for backends */
 constexpr const char* BACKEND_STRING[HK_BACKEND_MAX]
 {
+	/** for HK_DIRECTX_12 */
 	"DirectX 12",
+	/** for HK_VULKAN */
 	"Vulkan"
 };
 
-// @breif 	renderer backend abstract struct
+/** renderer backend representations structure */
 typedef struct renderer_backend
 {
-	// @breif	frame count 
+	/** current frame count */
 	u64         frame_count;
-	// @breif	backend type enum
+	/** backend type enum */
 	backends 	api_type;
 
-	// @breif 	function pointer to initialize respective backends
-	// @param 	: pointer to the backend struct that is filled out for further calls
-	// @return	: H_OK on sucess
+	/** function pointer to be implemented for each backend type for initializations */
 	i8 (*initialize)(renderer_backend* backend_ptr);
 
-	// @breif	function pointer to the respective backend shutdown routine
-	// @param 	: pointer to backend struct that is used for clean up
+	/** function pointer to be implemented for each backend type for shutdown */
 	void (*shutdown)(renderer_backend* backend_ptr);
 
-	// @breif	function pointer to function that is initiating a frame
-	// @param	: pointer to the backend
-	// @param	: time elapsed
-	// @return	: H_OK on sucess (this is allowed to fail and can reject to initiate a frame
+	/** function pointer to function that is initiating a frame */
 	i8 (*begin_frame)(renderer_backend* backend_ptr,f64 delta_time);
 
-	// @breif	function pointer to function that cleans up the function
-	// @param	: pointer to the backend
-	// @param	: delta time taken to complete the frame
+	/** function pointer to function that cleans up the function */
 	i8 (*end_frame)(renderer_backend* backend_ptr,f64 delta_time);
 
-	// @breif	function to resize the renderer backend
-	// @param	: pointer to the backend
-	// @param	: height to resize to
-	// @param	: width to resize to 
-	// @return	: H_OK on sucess
+	/** function to handle resize events in the renderer_backend  */
 	i8(*resize)(renderer_backend* backend_ptr, u16 height, u16 width);
-
 }renderer_backend;
 
-
-// @breif 	a packet of information that is used to render each frame
+/** a frame's entire data needed for rendering */
 typedef struct render_packet
 {
-	f64	delta_time;		// timing variable
+	/** timing variable */
+	f64	delta_time;		
 }render_packet;

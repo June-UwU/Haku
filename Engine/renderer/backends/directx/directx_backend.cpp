@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * \file   directx_backend.cpp
+ * \brief  directx 12 backend for directx
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #include "directx.hpp"
 #include "swapchain.hpp"
 #include "debuglayer.hpp"
@@ -6,56 +13,108 @@
 #include "memory/hmemory.hpp"
 #include "command_buffer_pool.hpp"
 
-#include "directx_types.inl"
-
+#include "directx_types.INL"
 
 #pragma comment(lib, "D3d12.lib")
-#pragma comment(lib, "DXGI.lib") 
+#pragma comment(lib, "DXGI.lib")
 
+// TODO : finish the back buffer clearing
 
-// TODO : finish the back buffer clearing 
-
-typedef enum
+/** directx context creation failure codes */
+typedef enum context_fails
 {
+	/** directx_commandlist creation failure */
 	commandlist_fail,
+	/** directx_command_allocator creation failure */
 	command_allocator_fail,
+	/** directx_swapchain failure */
 	swapchain_fail,
+	/** directx_queue creation failure */
 	command_fail,
+	/** device creation failure (logical device) */
 	fail_device,
+	/** device creation failure (physical device) */
 	fail_adapter,
+	/** dxgi factory creation failure */
 	fail_factory_6
 } context_fails;
 
-typedef enum
+/** directx_commandlist creation failure codes */
+typedef enum commandlist_fails
 {
+	/** directx_commandlist HK_RENDER commandlist failure */
 	render_commandlist_fail,
+	/** copy commandlist HK_COPY commandlist failure */
 	copy_commandlist_fail,
+	/** compute commandlist HK_COMPUTE commandlist failure */
 	compute_commandlist_fail,
+	/** code to clean all commandlist on failure */
 	clean_commandlist_fail
 } commandlist_fails;
 
 // internal functions that are used to sent up context and help with other things
-i8 create_context(void); // context creator
-i8 create_commandlist(void); // command list creator routine
-void context_destroy(void);  // context destroy routine
-void commandlist_destroy(void);// command list destroy routine
-void print_adapter_spec(IDXGIAdapter1* adapter); // print gpu specs 
-i8 commandlist_fail_handler(commandlist_fails fail_code); // command list fail handler since labels and gotos push me to c99 and I don't wike it
-i8 context_fail_handler(directx_context* context, context_fails fail_code);// context fail handler
+/**
+ * the initial routine part of the initialization code that is resposible for directx_context creation.
+ */
+i8	 create_context(void);						 // context creator
+/**
+ * create all 3 type of directx_commandlist for further processing \see queue_type.
+ */
+i8	 create_commandlist(void);					 // command list creator routine
+/**
+ * context destroy routine that is part of the shutdown routine.
+ */
+void context_destroy(void);						 // context destroy routine
+/**
+ * command list destroy routine that is part of the backend shutdown.
+ */
+void commandlist_destroy(void);					 // command list destroy routine
+/**
+ * helper function to print the gpu specs to the console .
+ *
+ * \param adapter pointer to queried physical_device in directx_context
+ */
+void print_adapter_spec(IDXGIAdapter1* adapter); // print gpu specs
+/**
+ * directx_commandlist failure handle routine.
+ * 
+ * \param fail_code corresponding commandlist_fails enum
+ */
+i8	 commandlist_fail_handler(
+	  commandlist_fails fail_code); // command list fail handler since labels and gotos push me to c99 and I don't wike it
+/**
+ * directx_context creation failure handle routine.
+ *
+ * \param context pointer to the corresponding directx_context 
+ * \param fail_code failure code for specfic instance for context_fails
+ */
+i8 context_fail_handler(directx_context* context, context_fails fail_code); // context fail handler
+/**
+ * commandlist record function, this resets the commandlist with a new allocator and makes a it state to recording.
+ * 
+ * \param commandlist* corresponding direct_commandlist pointer
+ * \param type	type of queue used , used to get the approiate allocators
+ */
 i8 commandlist_record(directx_commandlist* commandlist, queue_type type);
+/**
+ * commandlist routine to end command allocation and close it for execution.
+ * 
+ * \param	commandlist pointer to the concerned directx_commandlist
+ * \param	type commandlist type concerned
+ */
 i8 commandlist_end_recording(directx_commandlist* commandlist, queue_type type);
-// one static instance of directx context 
-static directx_context*	context;
-	
+/** singleton instance of directx context */
+static directx_context* context;
+
 i8 directx_initialize(renderer_backend* backend_ptr)
 {
-	i8 ret_code		= H_OK;
-	
+	i8 ret_code = H_OK;
+
 	HLINFO("Directx initialize");
-	ENABLE_DEBUG_LAYER();	
-	
+	ENABLE_DEBUG_LAYER();
+
 	ret_code = create_context();
-	
+
 	return ret_code;
 }
 
@@ -63,8 +122,8 @@ void directx_shutdown(renderer_backend* backend_ptr)
 {
 	HLINFO("Directx Shutdown");
 	DEBUG_LAYER_SHUTDOWN();
-	full_gpu_flush(&context->queue,HK_COMMAND_RENDER);
-	
+	full_gpu_flush(&context->queue, HK_COMMAND_RENDER);
+
 	context_destroy();
 	command_context_shutdown(&context->queue);
 	commandlist_destroy();
@@ -75,9 +134,9 @@ void directx_shutdown(renderer_backend* backend_ptr)
 
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 {
-	i8 ret_code	= H_OK;
+	i8 ret_code = H_OK;
 
-	ret_code  = prepare_commandlist_record(&context->commandlist[HK_COMMAND_RENDER]);
+	ret_code = prepare_commandlist_record(&context->commandlist[HK_COMMAND_RENDER]);
 	if (H_OK != ret_code)
 	{
 		HLWARN("commandlist preparation failure");
@@ -99,26 +158,26 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 	return ret_code;
 }
 
-i8 directx_end_frame(renderer_backend* backend_ptr,f64 delta_time)
+i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 {
-	i8 ret_code	= H_OK;
+	i8 ret_code = H_OK;
 
 	ret_code = set_present_target(&context->swapchain, &context->commandlist[HK_COMMAND_RENDER]);
-	
+
 	ret_code = end_commandlist_record(&context->commandlist[HK_COMMAND_RENDER]);
-	
+
 	execute_command(context, &context->commandlist[HK_COMMAND_RENDER]);
-	
+
 	next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_RENDER]);
 
-	ret_code  = present_frame(&context->swapchain);
+	ret_code = present_frame(&context->swapchain);
 
 	return ret_code;
 }
 
 i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width)
 {
-	i8 ret_code  = full_gpu_flush(&context->queue, HK_COMMAND_RENDER);
+	i8 ret_code = full_gpu_flush(&context->queue, HK_COMMAND_RENDER);
 	if (H_OK != ret_code)
 	{
 		HLWARN("directx gpu flush failed");
@@ -134,8 +193,7 @@ i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width)
 	return H_OK;
 }
 
-
-// helper function to destroy device 
+// helper function to destroy device
 void context_destroy(void)
 {
 	HLINFO("context shutdown");
@@ -143,7 +201,6 @@ void context_destroy(void)
 	context->physical_device->Release();
 	context->factory->Release();
 }
-
 
 // helper function to create device and swap chain
 i8 create_context(void)
@@ -156,7 +213,6 @@ i8 create_context(void)
 	context = (directx_context*)hmemory_alloc(sizeof(directx_context), MEM_TAG_RENDERER);
 
 	IDXGIFactory1* factory_1 = nullptr;
-
 
 	api_ret_code = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&factory_1);
 
@@ -189,7 +245,8 @@ i8 create_context(void)
 	}
 	print_adapter_spec(context->physical_device);
 
-	api_ret_code = D3D12CreateDevice(context->physical_device, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), (void**)&context->logical_device);
+	api_ret_code = D3D12CreateDevice(
+		context->physical_device, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), (void**)&context->logical_device);
 	if (S_OK != api_ret_code)
 	{
 		HLEMER("device creation failure");
@@ -239,16 +296,20 @@ i8 create_context(void)
 // helper to create commandlists in context
 i8 create_commandlist(void)
 {
-	i8 ret_code = H_OK;
-	HRESULT api_ret_code  = S_OK;
+	i8		ret_code	 = H_OK;
+	HRESULT api_ret_code = S_OK;
 
 	directx_commandlist* commandlist = context->commandlist;
-	directx_allocator* allocator = request_command_buffer(HK_COMMAND_RENDER);
-
+	directx_allocator*	 allocator	 = request_command_buffer(HK_COMMAND_RENDER);
 
 	// render command list create
-	api_ret_code = context->logical_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator->allocator, nullptr,
-		__uuidof(ID3D12GraphicsCommandList), (void**)&commandlist[HK_COMMAND_RENDER].commandlist);
+	api_ret_code = context->logical_device->CreateCommandList(
+		0,
+		D3D12_COMMAND_LIST_TYPE_DIRECT,
+		allocator->allocator,
+		nullptr,
+		__uuidof(ID3D12GraphicsCommandList),
+		(void**)&commandlist[HK_COMMAND_RENDER].commandlist);
 	FRIENDLY_NAME(commandlist[HK_COMMAND_RENDER].commandlist, L"render commandlist");
 	if (S_OK != api_ret_code)
 	{
@@ -263,16 +324,20 @@ i8 create_commandlist(void)
 		ret_code = commandlist_fail_handler(copy_commandlist_fail);
 		return ret_code;
 	}
-	commandlist[HK_COMMAND_RENDER].type = HK_COMMAND_RENDER;
+	commandlist[HK_COMMAND_RENDER].type				= HK_COMMAND_RENDER;
 	commandlist[HK_COMMAND_RENDER].seeded_allocator = nullptr;
-	commandlist[HK_COMMAND_RENDER].state = COMMANDLIST_STALE;
+	commandlist[HK_COMMAND_RENDER].state			= COMMANDLIST_STALE;
 	return_directx_allocator(allocator);
 
-
 	// copy list create
-	allocator = request_command_buffer(HK_COMMAND_COPY);
-	api_ret_code = context->logical_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, allocator->allocator, nullptr,
-		__uuidof(ID3D12GraphicsCommandList), (void**)&commandlist[HK_COMMAND_COPY].commandlist);
+	allocator	 = request_command_buffer(HK_COMMAND_COPY);
+	api_ret_code = context->logical_device->CreateCommandList(
+		0,
+		D3D12_COMMAND_LIST_TYPE_COPY,
+		allocator->allocator,
+		nullptr,
+		__uuidof(ID3D12GraphicsCommandList),
+		(void**)&commandlist[HK_COMMAND_COPY].commandlist);
 	if (S_OK != api_ret_code)
 	{
 		HLEMER("copy commandlist creation failed");
@@ -287,15 +352,20 @@ i8 create_commandlist(void)
 		return ret_code;
 	}
 	FRIENDLY_NAME(commandlist[HK_COMMAND_RENDER].commandlist, L"copy commandlist");
-	commandlist[HK_COMMAND_COPY].type = HK_COMMAND_COPY;
+	commandlist[HK_COMMAND_COPY].type			  = HK_COMMAND_COPY;
 	commandlist[HK_COMMAND_COPY].seeded_allocator = nullptr;
-	commandlist[HK_COMMAND_COPY].state = COMMANDLIST_STALE;
+	commandlist[HK_COMMAND_COPY].state			  = COMMANDLIST_STALE;
 	return_directx_allocator(allocator);
 
 	// compute list create
-	allocator = request_command_buffer(HK_COMMAND_COMPUTE);
-	api_ret_code = context->logical_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, allocator->allocator, nullptr,
-		__uuidof(ID3D12GraphicsCommandList), (void**)&commandlist[HK_COMMAND_COMPUTE].commandlist);
+	allocator	 = request_command_buffer(HK_COMMAND_COMPUTE);
+	api_ret_code = context->logical_device->CreateCommandList(
+		0,
+		D3D12_COMMAND_LIST_TYPE_COMPUTE,
+		allocator->allocator,
+		nullptr,
+		__uuidof(ID3D12GraphicsCommandList),
+		(void**)&commandlist[HK_COMMAND_COMPUTE].commandlist);
 	if (S_OK != api_ret_code)
 	{
 		HLEMER("compute commandlist creation failed");
@@ -310,9 +380,9 @@ i8 create_commandlist(void)
 		return ret_code;
 	}
 	FRIENDLY_NAME(commandlist[HK_COMMAND_RENDER].commandlist, L"compute commandlist");
-	commandlist[HK_COMMAND_COMPUTE].type = HK_COMMAND_COMPUTE;
+	commandlist[HK_COMMAND_COMPUTE].type			 = HK_COMMAND_COMPUTE;
 	commandlist[HK_COMMAND_COMPUTE].seeded_allocator = nullptr;
-	commandlist[HK_COMMAND_COMPUTE].state = COMMANDLIST_STALE;
+	commandlist[HK_COMMAND_COMPUTE].state			 = COMMANDLIST_STALE;
 	return_directx_allocator(allocator);
 
 	return ret_code;
@@ -329,9 +399,9 @@ void commandlist_destroy(void)
 	}
 }
 
-i8 commandlist_record(directx_commandlist* commandlist,queue_type type)
+i8 commandlist_record(directx_commandlist* commandlist, queue_type type)
 {
-	i8 ret_code = H_OK;
+	i8		ret_code	 = H_OK;
 	HRESULT api_ret_code = S_OK;
 
 	directx_allocator* alloc_ptr = request_command_buffer(type);
@@ -349,10 +419,10 @@ i8 commandlist_record(directx_commandlist* commandlist,queue_type type)
 
 i8 commandlist_end_recording(directx_commandlist* commandlist, queue_type type)
 {
-	i8 ret_code = H_OK;
-	HRESULT api_ret_code = S_OK;
+	i8		ret_code		= H_OK;
+	HRESULT api_ret_code	= S_OK;
 	commandlist[type].state = COMMANDLIST_RECORDING_ENDED;
-	api_ret_code = commandlist[type].commandlist->Close();
+	api_ret_code			= commandlist[type].commandlist->Close();
 	if (S_OK != api_ret_code)
 	{
 		HLEMER("command list closing fail");
@@ -381,7 +451,6 @@ i8 commandlist_fail_handler(commandlist_fails fail_code)
 	return H_FAIL;
 }
 
-
 i8 context_fail_handler(directx_context* context, context_fails fail_code)
 {
 	switch (fail_code)
@@ -404,7 +473,6 @@ i8 context_fail_handler(directx_context* context, context_fails fail_code)
 
 	return H_FAIL;
 }
-
 
 // MISC
 
