@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * \file   darray.cpp
+ * \brief  darray implementation
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #include "darray.hpp"
 #include "core/logger.hpp"
 #include "memory/hmemory.hpp"
@@ -148,6 +155,17 @@ darray pop_back(darray ptr)
 	attr->size -= 1;
 
 	return ptr;
+}
+
+HAPI u64 count(darray ptr)
+{
+	u64 ret_val = 0;
+
+	ret_val = size(ptr);
+	darray_attr* attr = get_darray_attr(ptr);
+	ret_val = ret_val / attr->element_size;
+
+	return ret_val;
 }
 
 void darray_test()

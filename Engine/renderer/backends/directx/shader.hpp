@@ -32,6 +32,8 @@ constexpr const char* SHADER_PROFILE_10_0[HK_SHADER_MAX]{
 	"cs_4_0"  // compute shader stage enumerations
 };
 
+i8 create_shader_module(directx_shader_module** ppmodule);
+
 /**
  * function to compile shaders at runtime.
  * 
@@ -52,6 +54,6 @@ i8 compile_shader(const directx_context* context, const char* path, shader_stage
  * \param module module to compile and place the shader into
  * \return H_OK on sucess else H_FAIL
  */
-i8 create_shader_byte_code(const directx_context* context, const char* path, shader_stages stage, directx_shader_module* module);
+i8 create_shader_byte_code(const directx_context* context, const wchar_t* path, shader_stages stage, directx_shader_module* module);
 
 
