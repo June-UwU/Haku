@@ -10,10 +10,12 @@
 // TODO : remove the string lib 
 #include <cwchar>
 
+#include <types.hpp>
 #include "defines.hpp"
 #include <D3d12.h>
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
+#include "generics/darray.hpp"
 
 /** macro to set friendly names to directx 12 objects */
 #define FRIENDLY_NAME(ID3D12Obj,name) ID3D12Obj->SetName(name)
@@ -213,6 +215,64 @@ typedef struct directx_context
 	directx_commandlist     commandlist[HK_COMMAND_MAX];
 }directx_context;
 
+
+/** rootsignature max capacity */
+constexpr const u64 ROOT_PARAM_MAX = 64u;
+/** root signature structure */
+typedef struct directx_root_signature
+{
+	/** constant buffer view base register */
+	u64 cbv_base;
+
+	/** unordered access view base register */
+	u64 uav_base;
+
+	/** current shader resource view base */
+	u64 srv_base;
+
+	/** current sampler base register */
+	u64 sampler_base;
+
+	/** number of parameter in a root signature */
+	u64 parameter_count;
+
+	/** size of the parameter size allocated */
+	u64 allocate_parameter;
+
+	/** sampler array for carrying samplers */
+	darray sampler_array;
+	
+	/** root parameter darray */
+	darray parameter_array;
+	
+	/** root signature of directx api */
+	ID3D12RootSignature* root_signature;
+
+	/** default shader visibility used */
+	D3D12_SHADER_VISIBILITY default_visibility;
+}directx_root_signature;
+
+/** directx resource types */
+typedef enum descriptor_type
+{
+	/** constant buffer view */
+	CBV,
+	
+	/** unordered buffer view */
+	UAV,
+
+	/** shader resource view */
+	SRV,
+
+	/** sampler */
+	SAMPLER,
+
+	/** maximum descriptor count */
+	DESCRIPTOR_COUNT
+
+}descriptor_type;
+
+
 /** directx shader module  */
 typedef struct directx_shader_module
 {
@@ -220,7 +280,26 @@ typedef struct directx_shader_module
 	ID3DBlob* compiled_shaders[HK_SHADER_MAX];
 }directx_shader_module;
 
+/** directx pipeline state structure */
 typedef struct directx_pipeline
 {
+	/** the pipeline state created */
+	ID3D12PipelineState* state;
 
+	/** the shader structure */
+	directx_shader_module* shaders;
+
+	/** the root signature assioated with the pipeline */
+	directx_root_signature* signature;
 }directx_pipeline;
+
+
+/** haku's vertex types */
+typedef struct hk_vertex
+{
+	/** variable that holds the point coordinates */
+	vector3d point;
+
+	/** variable that hold the color data */
+	vector4d color;
+}hk_vertex;
