@@ -1,0 +1,3 @@
+[submodule "vendor/Haku_math"]
+	path = vendor/Haku_math
+	url = https://github.com/June-UwU/Haku_math.git
