@@ -13,12 +13,19 @@
 #include "memory/hmemory.hpp"
 #include "command_buffer_pool.hpp"
 
+#include "pipeline_state.hpp"
+#include "shader.hpp"
+
+
 #include "directx_types.INL"
 
 #pragma comment(lib, "D3d12.lib")
 #pragma comment(lib, "DXGI.lib")
 
 // TODO : finish the back buffer clearing
+// TEST
+directx_shader_module* module;
+
 
 /** directx context creation failure codes */
 typedef enum context_fails
@@ -288,6 +295,11 @@ i8 create_context(void)
 		ret_code = context_fail_handler(context, commandlist_fail);
 		return ret_code;
 	}
+
+	create_shader_module(&module);
+	create_shader_byte_code(context, L"D:\\Haku\\bin\\BuiltIn_Vertex.cso", HK_VERTEX_SHADER, module);
+	create_shader_byte_code(context, L"D:\\Haku\\bin\\BuiltIn_Pixel.cso", HK_PIXEL_SHADER, module);
+	create_pipeline_state(context, module);
 
 	factory_1->Release();
 	return ret_code;

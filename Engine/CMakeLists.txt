@@ -49,6 +49,8 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_src})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_src})
 
+set(DEPEND_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../vendor)
+
 add_compile_definitions(HAKU_API_BUILD)
 add_library(${PROJECT_NAME} 
 	SHARED 
@@ -70,3 +72,5 @@ add_library(${PROJECT_NAME}
 
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE ${DEPEND_DIR}/Haku_math/include)
+add_dependencies(${PROJECT_NAME} shaders)

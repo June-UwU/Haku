@@ -30,6 +30,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message("Cmake C++ standard : ${CMAKE_CXX_STANDARD}")
 
+add_subdirectory("assets")
 add_subdirectory("Engine")
 add_subdirectory("Testbed")
 add_subdirectory("test")
+add_subdirectory("vendor/Haku_math")
