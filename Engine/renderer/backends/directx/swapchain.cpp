@@ -51,6 +51,7 @@ i8 swapchain_initialize(directx_context* context)
 	p_prop plat_prop;
 	get_platform_properties(&plat_prop);
 
+	directx_device* device = &context->device;
 	directx_queue*	   queue			 = &context->queue;
 	directx_swapchain* swapchain		 = &context->swapchain;
 	swapchain->current_back_buffer_index = 0;
@@ -88,7 +89,7 @@ i8 swapchain_initialize(directx_context* context)
 	sdesc.OutputWindow = *(HWND*)handle;
 
 	IDXGISwapChain* tswapchain;
-	api_ret_code = context->factory->CreateSwapChain(queue->directx_queue[HK_COMMAND_RENDER], &sdesc, &tswapchain);
+	api_ret_code = device->factory->CreateSwapChain(queue->directx_queue[HK_COMMAND_RENDER], &sdesc, &tswapchain);
 
 	if (S_OK != api_ret_code)
 	{
@@ -107,7 +108,7 @@ i8 swapchain_initialize(directx_context* context)
 	}
 	HLINFO("swap chain queried");
 
-	api_ret_code = context->factory->MakeWindowAssociation(*(HWND*)handle, DXGI_MWA_NO_WINDOW_CHANGES);
+	api_ret_code = device->factory->MakeWindowAssociation(*(HWND*)handle, DXGI_MWA_NO_WINDOW_CHANGES);
 	if (S_OK != api_ret_code)
 	{
 		HLEMER("window assciation failure");
@@ -122,7 +123,7 @@ i8 swapchain_initialize(directx_context* context)
 	rtvHeapDesc.Type					   = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	rtvHeapDesc.Flags					   = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-	api_ret_code = context->logical_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&swapchain->rtv_heap));
+	api_ret_code = device->logical_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&swapchain->rtv_heap));
 	if (S_OK != api_ret_code)
 	{
 		HLEMER("window assciation failure");
@@ -131,7 +132,7 @@ i8 swapchain_initialize(directx_context* context)
 	}
 	FRIENDLY_NAME(swapchain->rtv_heap, L"render target view heap");
 	swapchain->rtv_heap_increment =
-		context->logical_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		device->logical_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = swapchain->rtv_heap->GetCPUDescriptorHandleForHeapStart();
 
@@ -146,7 +147,7 @@ i8 swapchain_initialize(directx_context* context)
 			return ret_code;
 		}
 		swprintf(rtv_res_name, 256u, L"rtv resource % lld", n);
-		context->logical_device->CreateRenderTargetView(swapchain->frame_resources[n], nullptr, rtvHandle);
+		device->logical_device->CreateRenderTargetView(swapchain->frame_resources[n], nullptr, rtvHandle);
 		FRIENDLY_NAME(swapchain->frame_resources[n], rtv_res_name);
 		rtvHandle.ptr += swapchain->rtv_heap_increment;
 	}
@@ -158,7 +159,7 @@ i8 swapchain_initialize(directx_context* context)
 	dsvHeapDesc.NumDescriptors			   = 1;
 	dsvHeapDesc.Type					   = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	dsvHeapDesc.Flags					   = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	api_ret_code = context->logical_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&swapchain->dsv_heap));
+	api_ret_code = device->logical_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&swapchain->dsv_heap));
 	if (S_OK != api_ret_code)
 	{
 		HLEMER("failed to create dsv heap");
@@ -167,7 +168,7 @@ i8 swapchain_initialize(directx_context* context)
 	}
 	FRIENDLY_NAME(swapchain->dsv_heap, L"depth stencil view heap");
 	swapchain->dsv_heap_increment =
-		context->logical_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		device->logical_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 	D3D12_DEPTH_STENCIL_VIEW_DESC depth_stencil_view_desc = {};
 	depth_stencil_view_desc.Format						  = DXGI_FORMAT_D32_FLOAT;
@@ -197,7 +198,7 @@ i8 swapchain_initialize(directx_context* context)
 	dsv_heap_prop.CreationNodeMask	   = 0;
 	dsv_heap_prop.VisibleNodeMask	   = 0;
 
-	api_ret_code = context->logical_device->CreateCommittedResource(
+	api_ret_code = device->logical_device->CreateCommittedResource(
 		&dsv_heap_prop,
 		D3D12_HEAP_FLAG_NONE,
 		&dsv_desc,
@@ -205,7 +206,7 @@ i8 swapchain_initialize(directx_context* context)
 		&swapchain->depth_stencil_clear_value,
 		IID_PPV_ARGS(&swapchain->depth_stencil_resource));
 
-	context->logical_device->CreateDepthStencilView(
+	device->logical_device->CreateDepthStencilView(
 		swapchain->depth_stencil_resource,
 		&depth_stencil_view_desc,
 		swapchain->dsv_heap->GetCPUDescriptorHandleForHeapStart());
@@ -306,6 +307,8 @@ i8 swapchain_resize(directx_context* context, directx_swapchain* swapchain, u16 
 {
 	HRESULT api_ret_code = S_OK;
 
+	directx_device* device = &context->device;
+
 	u16 min_width  = 8u;
 	u16 min_height = 8u;
 
@@ -346,7 +349,7 @@ i8 swapchain_resize(directx_context* context, directx_swapchain* swapchain, u16 
 			return H_FAIL;
 		}
 		swprintf(rtv_res_name, 256u, L"rtv resource % lld", n);
-		context->logical_device->CreateRenderTargetView(swapchain->frame_resources[n], nullptr, rtvHandle);
+		device->logical_device->CreateRenderTargetView(swapchain->frame_resources[n], nullptr, rtvHandle);
 		FRIENDLY_NAME(swapchain->frame_resources[n], rtv_res_name);
 		rtvHandle.ptr += swapchain->rtv_heap_increment;
 	}
@@ -379,7 +382,7 @@ i8 swapchain_resize(directx_context* context, directx_swapchain* swapchain, u16 
 	dsv_heap_prop.CreationNodeMask	   = 0;
 	dsv_heap_prop.VisibleNodeMask	   = 0;
 
-	api_ret_code = context->logical_device->CreateCommittedResource(
+	api_ret_code = device->logical_device->CreateCommittedResource(
 		&dsv_heap_prop,
 		D3D12_HEAP_FLAG_NONE,
 		&dsv_desc,
@@ -392,7 +395,7 @@ i8 swapchain_resize(directx_context* context, directx_swapchain* swapchain, u16 
 		return H_FAIL;
 	}
 
-	context->logical_device->CreateDepthStencilView(
+	device->logical_device->CreateDepthStencilView(
 		swapchain->depth_stencil_resource,
 		&depth_stencil_view_desc,
 		swapchain->dsv_heap->GetCPUDescriptorHandleForHeapStart());

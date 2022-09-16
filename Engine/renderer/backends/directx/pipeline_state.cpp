@@ -9,10 +9,10 @@
 #include "pipeline_state.hpp"
 #include "core/logger.hpp"
 #include "memory/hmemory.hpp"
+#include "rootsignature.hpp"
+ // TODO : remove creation of root signature from here
 
-// TODO : check switching rootsignature and make a default root sig for all directx_pipeline
-
-directx_pipeline* create_pipeline_state(directx_context* context, directx_shader_module* module)
+directx_pipeline* create_pipeline_state(directx_device* device, directx_shader_module* module)
 {
 	directx_pipeline* ret_ptr = (directx_pipeline*)hmemory_alloc(sizeof(directx_pipeline), MEM_TAG_RENDERER);
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline_desc{};
@@ -107,7 +107,11 @@ directx_pipeline* create_pipeline_state(directx_context* context, directx_shader
 
 	D3D12_INPUT_LAYOUT_DESC inputdesc{ InputElementDesc, 2 };
 
-	pipeline_desc.pRootSignature = nullptr;
+// TODO : remove creation of root signature from here
+	CREATE_PSO_ROOT_SIGNATURE(ret_ptr);
+	create_root_signature(device, ret_ptr->signature);
+
+	pipeline_desc.pRootSignature = ret_ptr->signature->root_signature;
 	pipeline_desc.BlendState = blend_state;
 	pipeline_desc.SampleMask = UINT_MAX;
 	pipeline_desc.RasterizerState = raster_desc;
@@ -125,8 +129,7 @@ directx_pipeline* create_pipeline_state(directx_context* context, directx_shader
 	pipeline_desc.CachedPSO.CachedBlobSizeInBytes = 0;
 	pipeline_desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-	// TODO : finish this
-	HRESULT api_ret_val = context->logical_device->CreateGraphicsPipelineState(
+	HRESULT api_ret_val = device->logical_device->CreateGraphicsPipelineState(
 		&pipeline_desc, __uuidof(ID3D12PipelineState), (void**)&ret_ptr->state);
 
 	if (S_OK != api_ret_val)
@@ -142,10 +145,15 @@ directx_pipeline* create_pipeline_state(directx_context* context, directx_shader
 void destroy_pipeline_state(directx_pipeline* pipeline)
 {
 	pipeline->state->Release();
+	destroy_root_signature(pipeline->signature);
+	destroy_darray(pipeline->signature->parameter_array);
+	destroy_darray(pipeline->signature->sampler_array);
+	hmemory_free(pipeline->signature, MEM_TAG_RENDERER);
 	hmemory_free(pipeline, MEM_TAG_RENDERER);
 }
 
 void bind_pipeline_state(directx_commandlist* commandlist, directx_pipeline* pipeline)
 {
+	bind_root_signature(commandlist, pipeline->signature);
 	commandlist->commandlist->SetPipelineState(pipeline->state);
 }

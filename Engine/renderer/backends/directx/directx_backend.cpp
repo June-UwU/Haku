@@ -25,6 +25,7 @@
 // TODO : finish the back buffer clearing
 // TEST
 directx_shader_module* module;
+directx_pipeline* pipeline;
 
 
 /** directx context creation failure codes */
@@ -59,6 +60,12 @@ typedef enum commandlist_fails
 	clean_commandlist_fail
 } commandlist_fails;
 
+
+/**
+ * helper function to create a directx_device for internal purpose.
+ */
+i8 create_device(void);
+
 // internal functions that are used to sent up context and help with other things
 /**
  * the initial routine part of the initialization code that is resposible for directx_context creation.
@@ -67,7 +74,7 @@ i8	 create_context(void);						 // context creator
 /**
  * create all 3 type of directx_commandlist for further processing \see queue_type.
  */
-i8	 create_commandlist(void);					 // command list creator routine
+i8	 create_commandlist(directx_device* device);					 // command list creator routine
 /**
  * context destroy routine that is part of the shutdown routine.
  */
@@ -89,6 +96,15 @@ void print_adapter_spec(IDXGIAdapter1* adapter); // print gpu specs
  */
 i8	 commandlist_fail_handler(
 	  commandlist_fails fail_code); // command list fail handler since labels and gotos push me to c99 and I don't wike it
+
+/**
+ * routine to clean up and handle potential directx_device failures.
+ * 
+ * \param fail_code failure code for direct_device 
+ * \return haku return code
+ */
+i8 device_fail_handler(context_fails fail_code);
+
 /**
  * directx_context creation failure handle routine.
  *
@@ -137,6 +153,9 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	command_buffer_pool_shutdown();
 	swapchain_shutdown(&context->swapchain);
 	hmemory_free(context, MEM_TAG_RENDERER);
+
+// TEST
+	destroy_pipeline_state(pipeline);
 }
 
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
@@ -156,7 +175,9 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 		HLWARN("swapchain preparation failure");
 		return H_FAIL;
 	}
-
+// TEST
+	bind_pipeline_state(&context->commandlist[HK_COMMAND_RENDER],pipeline);
+	
 	clear_back_buffer(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain, 0.1f, 0.1f, 0.1f, 1.0f);
 	clear_depth_stencil(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
 	bind_scissor_rect(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
@@ -200,13 +221,15 @@ i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width)
 	return H_OK;
 }
 
+// INTERNAL HELPERS
+
 // helper function to destroy device
 void context_destroy(void)
 {
 	HLINFO("context shutdown");
-	context->logical_device->Release();
-	context->physical_device->Release();
-	context->factory->Release();
+	context->device.logical_device->Release();
+	context->device.physical_device->Release();
+	context->device.factory->Release();
 }
 
 // helper function to create device and swap chain
@@ -219,94 +242,63 @@ i8 create_context(void)
 
 	context = (directx_context*)hmemory_alloc(sizeof(directx_context), MEM_TAG_RENDERER);
 
-	IDXGIFactory1* factory_1 = nullptr;
-
-	api_ret_code = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&factory_1);
-
-	if (S_OK != api_ret_code)
+	ret_code = create_device();
+	if (H_FAIL == ret_code)
 	{
-		HLEMER("Factory 1 dxgi creation failure");
-		ret_code = H_FAIL;
+		HLEMER("directx device creation failure");
+		ret_code = context_fail_handler(context, command_fail);
 		return ret_code;
 	}
-
-	api_ret_code = factory_1->QueryInterface(__uuidof(IDXGIFactory6), (void**)&context->factory);
-
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("dxgi factory 6 is not supported");
-		factory_1->Release();
-		ret_code = context_fail_handler(context, fail_factory_6);
-		return ret_code;
-	}
-
-	api_ret_code = context->factory->EnumAdapterByGpuPreference(
-		0, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter1), (void**)&context->physical_device);
-
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("enumeration of adapter failure");
-		factory_1->Release();
-		ret_code = context_fail_handler(context, fail_adapter);
-		return ret_code;
-	}
-	print_adapter_spec(context->physical_device);
-
-	api_ret_code = D3D12CreateDevice(
-		context->physical_device, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), (void**)&context->logical_device);
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("device creation failure");
-		factory_1->Release();
-		ret_code = context_fail_handler(context, fail_device);
-		return ret_code;
-	}
-	HLINFO("Device initailized");
-	FRIENDLY_NAME(context->logical_device, L"DirectX device");
+	HLINFO("directx device created");
 
 	ret_code = command_context_initialize(context);
 	if (H_FAIL == ret_code)
 	{
-		factory_1->Release();
+		HLEMER("directx command context creation failure");
 		ret_code = context_fail_handler(context, command_fail);
 		return ret_code;
 	}
+	HLINFO("directx command context created");
 
 	ret_code = swapchain_initialize(context);
 	if (H_FAIL == ret_code)
 	{
-		factory_1->Release();
+		HLEMER("directx command context creation failure");
 		ret_code = context_fail_handler(context, swapchain_fail);
 		return ret_code;
 	}
+	HLINFO("directx command context created");
 
-	ret_code = command_buffer_pool(context, 2 * command_allocator_size);
+
+	ret_code = command_buffer_pool(&context->device, 2 * command_allocator_size);
 	if (H_FAIL == ret_code)
 	{
-		factory_1->Release();
+		HLEMER("haku command buffer pool creation failure");
 		ret_code = context_fail_handler(context, command_allocator_fail);
 		return ret_code;
 	}
+	HLEMER("haku command buffer pool created");
 
-	ret_code = create_commandlist();
+	ret_code = create_commandlist(&context->device);
 	if (H_FAIL == ret_code)
 	{
-		factory_1->Release();
+		HLEMER("commandlist creation failure");
 		ret_code = context_fail_handler(context, commandlist_fail);
 		return ret_code;
 	}
+	HLEMER("commandlist created");
 
+// TEST
 	create_shader_module(&module);
 	create_shader_byte_code(context, L"D:\\Haku\\bin\\BuiltIn_Vertex.cso", HK_VERTEX_SHADER, module);
 	create_shader_byte_code(context, L"D:\\Haku\\bin\\BuiltIn_Pixel.cso", HK_PIXEL_SHADER, module);
-	create_pipeline_state(context, module);
+	pipeline = create_pipeline_state(&context->device, module);
 
-	factory_1->Release();
 	return ret_code;
 }
 
 // helper to create commandlists in context
-i8 create_commandlist(void)
+i8 create_commandlist(directx_device* device)
 {
 	i8		ret_code	 = H_OK;
 	HRESULT api_ret_code = S_OK;
@@ -315,7 +307,7 @@ i8 create_commandlist(void)
 	directx_allocator*	 allocator	 = request_command_buffer(HK_COMMAND_RENDER);
 
 	// render command list create
-	api_ret_code = context->logical_device->CreateCommandList(
+	api_ret_code = device->logical_device->CreateCommandList(
 		0,
 		D3D12_COMMAND_LIST_TYPE_DIRECT,
 		allocator->allocator,
@@ -343,7 +335,7 @@ i8 create_commandlist(void)
 
 	// copy list create
 	allocator	 = request_command_buffer(HK_COMMAND_COPY);
-	api_ret_code = context->logical_device->CreateCommandList(
+	api_ret_code = device->logical_device->CreateCommandList(
 		0,
 		D3D12_COMMAND_LIST_TYPE_COPY,
 		allocator->allocator,
@@ -371,7 +363,7 @@ i8 create_commandlist(void)
 
 	// compute list create
 	allocator	 = request_command_buffer(HK_COMMAND_COMPUTE);
-	api_ret_code = context->logical_device->CreateCommandList(
+	api_ret_code = device->logical_device->CreateCommandList(
 		0,
 		D3D12_COMMAND_LIST_TYPE_COMPUTE,
 		allocator->allocator,
@@ -444,7 +436,76 @@ i8 commandlist_end_recording(directx_commandlist* commandlist, queue_type type)
 	return ret_code;
 }
 
+i8 create_device(void)
+{
+	i8 ret_code = H_OK;
+
+	directx_device* device = &context->device;
+
+	IDXGIFactory1* factory_1 = nullptr;
+
+	HRESULT api_ret_code = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&factory_1);
+
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("Factory 1 dxgi creation failure");
+		ret_code = H_FAIL;
+		return ret_code;
+	}
+
+	api_ret_code = factory_1->QueryInterface(__uuidof(IDXGIFactory6), (void**)&device->factory);
+
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("dxgi factory 6 is not supported");
+		factory_1->Release();
+		ret_code  = device_fail_handler(fail_factory_6);
+		return ret_code;
+	}
+
+	api_ret_code = device->factory->EnumAdapterByGpuPreference(
+		0, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter1), (void**)&device->physical_device);
+
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("enumeration of adapter failure");
+		factory_1->Release();
+		ret_code = device_fail_handler(fail_adapter);
+		return ret_code;
+	}
+	print_adapter_spec(device->physical_device);
+
+	api_ret_code = D3D12CreateDevice(
+		device->physical_device, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), (void**)&device->logical_device);
+	if (S_OK != api_ret_code)
+	{
+		HLEMER("device creation failure");
+		factory_1->Release();
+		ret_code = device_fail_handler(fail_device);
+		return ret_code;
+	}
+	HLINFO("Device initailized");
+	FRIENDLY_NAME(device->logical_device, L"DirectX device");
+
+	factory_1->Release();
+
+}
+
 // FAIL HANDLERS
+
+i8 device_fail_handler(context_fails fail_code)
+{
+	switch (fail_code)
+	{
+	case fail_device:
+		context->device.factory->Release();
+	case fail_adapter:
+		context->device.physical_device->Release();
+	case fail_factory_6:
+		break;
+	}
+	return H_FAIL;
+}
 
 i8 commandlist_fail_handler(commandlist_fails fail_code)
 {
@@ -475,14 +536,8 @@ i8 context_fail_handler(directx_context* context, context_fails fail_code)
 		command_context_shutdown(&context->queue);
 	case command_fail:
 		context_destroy();
-	case fail_device:
-		context->factory->Release();
-	case fail_adapter:
-		context->physical_device->Release();
-	case fail_factory_6:
 		break;
 	}
-
 	return H_FAIL;
 }
 

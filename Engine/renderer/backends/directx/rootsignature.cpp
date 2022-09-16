@@ -8,7 +8,7 @@
 #include "rootsignature.hpp"
 #include "core/logger.hpp"
 
-i8 create_root_signature(directx_context* context,directx_root_signature* signature)
+i8 create_root_signature(directx_device* device,directx_root_signature* signature)
 {
     ID3DBlob* serialized_root_sig;
     ID3DBlob* error_blob;
@@ -19,18 +19,19 @@ i8 create_root_signature(directx_context* context,directx_root_signature* signat
     root_desc.Desc_1_1.pParameters = (D3D12_ROOT_PARAMETER1*)signature->parameter_array;
     root_desc.Desc_1_1.NumStaticSamplers = count(signature->sampler_array);
     root_desc.Desc_1_1.pStaticSamplers = (D3D12_STATIC_SAMPLER_DESC*)signature->sampler_array;
+    root_desc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
     HRESULT api_ret_val = D3D12SerializeVersionedRootSignature(&root_desc, &serialized_root_sig, &error_blob);
-    if (H_OK != api_ret_val)
+    if (S_OK != api_ret_val)
     {
         HLEMER("root signature serialization failure");
         HLEMER("\t cause : %s", (char*)error_blob->GetBufferPointer());
         return H_FAIL;
     }
     
-    api_ret_val = context->logical_device->CreateRootSignature(0, serialized_root_sig->GetBufferPointer(), serialized_root_sig->GetBufferSize(),
+    api_ret_val = device->logical_device->CreateRootSignature(0, serialized_root_sig->GetBufferPointer(), serialized_root_sig->GetBufferSize(),
         __uuidof(ID3D12RootSignature), (void**)&signature->root_signature);
-    if (H_OK != api_ret_val)
+    if (S_OK != api_ret_val)
     {
         serialized_root_sig->Release();
         HLEMER("root signature creation failure");
@@ -211,5 +212,11 @@ i8 add_table_parameter(directx_root_signature* signature, darray* table,
 
     *table = push_back(table, &range);
 
+    return H_OK;
+}
+
+i8 bind_root_signature(directx_commandlist* commandlist,directx_root_signature* signature)
+{
+    commandlist->commandlist->SetGraphicsRootSignature(signature->root_signature);
     return H_OK;
 }

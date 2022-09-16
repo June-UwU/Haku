@@ -8,7 +8,7 @@ static directx_allocator* pool[HK_COMMAND_MAX];
 
 i8 command_pool_fail_handler();
 
-i8 command_buffer_pool(const directx_context* context, const u64 pool_size)
+i8 command_buffer_pool(const directx_device* device, const u64 pool_size)
 {
 	// HLWARN("Pool is being limited to 1 make it to %lld",pool_size);
 	pool_capacity		 = pool_size;
@@ -29,7 +29,7 @@ i8 command_buffer_pool(const directx_context* context, const u64 pool_size)
 		init_allocator->type	  = HK_COMMAND_RENDER;
 		init_allocator->fence_val = 0;
 		init_allocator->state	  = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
-		api_ret_code			  = context->logical_device->CreateCommandAllocator(
+		api_ret_code			  = device->logical_device->CreateCommandAllocator(
 			 D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator), (void**)&init_allocator->allocator);
 		if (S_OK != api_ret_code)
 		{
@@ -48,7 +48,7 @@ i8 command_buffer_pool(const directx_context* context, const u64 pool_size)
 		init_allocator->type	  = HK_COMMAND_COMPUTE;
 		init_allocator->fence_val = 0;
 		init_allocator->state	  = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
-		api_ret_code			  = context->logical_device->CreateCommandAllocator(
+		api_ret_code			  = device->logical_device->CreateCommandAllocator(
 			 D3D12_COMMAND_LIST_TYPE_COMPUTE, __uuidof(ID3D12CommandAllocator), (void**)&init_allocator->allocator);
 		if (S_OK != api_ret_code)
 		{
@@ -67,7 +67,7 @@ i8 command_buffer_pool(const directx_context* context, const u64 pool_size)
 		init_allocator->type	  = HK_COMMAND_COPY;
 		init_allocator->fence_val = 0;
 		init_allocator->state	  = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
-		api_ret_code			  = context->logical_device->CreateCommandAllocator(
+		api_ret_code			  = device->logical_device->CreateCommandAllocator(
 			 D3D12_COMMAND_LIST_TYPE_COPY, __uuidof(ID3D12CommandAllocator), (void**)&init_allocator->allocator);
 		if (S_OK != api_ret_code)
 		{

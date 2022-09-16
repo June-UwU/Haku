@@ -2,22 +2,56 @@
 #include "command_context.hpp"
 #include "command_buffer_pool.hpp"
 
-typedef enum
+/** enum to poiut out the context creation failure that occured to handle it properly */
+typedef enum command_context_fails
 {
+	/** event creation failure */
 	event_fail,
+
+	/** fence creation failure */
 	fence_fail,
+
+	/** copy queue creation failure */
 	copy_queue_failure,
+
+	/** compute context creation failure */
 	compute_queue_fail,
+
+	/** render context creation failure */
 	render_queue_fail
 } command_context_fails;
 
+/**
+ * internal routine to do a full queue flush.
+ * 
+ * \param queue queue to flush
+ * \param type type of queue to flush
+ * \return H_OK on sucess
+ */
 i8 queue_flush(directx_queue* queue, queue_type type);
+
+/**
+ * internal method to do a next frame flush.
+ * 
+ * \param queue queue to flush
+ * \param commandlist that is used to determine the type
+ * \return H_OK on sucess
+ */
 i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* commandlist);
+
+/**
+ * command context failhandler.
+ * 
+ * \param queue queue to handle 
+ * \param fail_code code to point failure point
+ * \return H_FAIL
+ */
 i8 command_context_fail_handler(directx_queue* queue, command_context_fails fail_code);
 
 i8 command_context_initialize(directx_context* context)
 {
 	directx_queue* queue = &context->queue;
+	directx_device* device = &context->device;
 	queue->fence_val	 = 0;
 	HLINFO("command queue initialization");
 	i8		ret_code	 = H_OK;
@@ -30,7 +64,7 @@ i8 command_context_initialize(directx_context* context)
 	q_desc.NodeMask = 0;
 
 	// creating render queue
-	api_ret_code = context->logical_device->CreateCommandQueue(
+	api_ret_code = device->logical_device->CreateCommandQueue(
 		&q_desc, __uuidof(ID3D12CommandQueue), (void**)&queue->directx_queue[HK_COMMAND_RENDER]);
 	if (S_OK != api_ret_code)
 	{
@@ -44,7 +78,7 @@ i8 command_context_initialize(directx_context* context)
 	// creating compute queue
 	q_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
 
-	api_ret_code = context->logical_device->CreateCommandQueue(
+	api_ret_code = device->logical_device->CreateCommandQueue(
 		&q_desc, __uuidof(ID3D12CommandQueue), (void**)&queue->directx_queue[HK_COMMAND_COMPUTE]);
 	if (S_OK != api_ret_code)
 	{
@@ -58,7 +92,7 @@ i8 command_context_initialize(directx_context* context)
 	// creating copy queue
 	q_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
 
-	api_ret_code = context->logical_device->CreateCommandQueue(
+	api_ret_code = device->logical_device->CreateCommandQueue(
 		&q_desc, __uuidof(ID3D12CommandQueue), (void**)&queue->directx_queue[HK_COMMAND_COPY]);
 	if (S_OK != api_ret_code)
 	{
@@ -69,7 +103,7 @@ i8 command_context_initialize(directx_context* context)
 	HLINFO("copy queue initailized");
 	FRIENDLY_NAME(queue->directx_queue[HK_COMMAND_COPY], L"DirectX Copy Queue");
 
-	api_ret_code = context->logical_device->CreateFence(
+	api_ret_code = device->logical_device->CreateFence(
 		queue->fence_val, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&queue->fence);
 	if (S_OK != api_ret_code)
 	{

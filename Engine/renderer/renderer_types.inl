@@ -8,6 +8,28 @@
 #pragma once
 
 #include "defines.hpp"
+#include <haku_math.hpp>
+/*
+
+per model  transformations (model space -> model space) -> 
+world transformations (model space -> world space) ->
+projection transformation (camera views) -> 
+view port thing is done by dx12??
+
+*/
+/** global transform to apply to all meshes */
+typedef struct global_transforms
+{
+	/** projection matrix ()*/
+	mat4x4 projection_matix;
+
+	/** world transform of meshes */
+	mat4x4 world_matrix;
+
+	/** padding for 256bytes alignment that can be expanded upon */
+	char reserved_data[128];
+}global_transforms;
+
 
 /** enums that points the backend used */
 typedef enum backends
@@ -54,9 +76,11 @@ typedef struct renderer_backend
 	i8(*resize)(renderer_backend* backend_ptr, u16 height, u16 width);
 }renderer_backend;
 
+
 /** a frame's entire data needed for rendering */
 typedef struct render_packet
 {
+
 	/** timing variable */
 	f64	delta_time;		
 }render_packet;

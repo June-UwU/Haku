@@ -15,7 +15,7 @@
  * 
  * \param module pointer to create pipeline state with the pipeline state
  */
-directx_pipeline* create_pipeline_state(directx_context* context, directx_shader_module* module);
+directx_pipeline* create_pipeline_state(directx_device* device, directx_shader_module* module);
 
 /**
  * destroy pipeline state that was previously created pipeline state.

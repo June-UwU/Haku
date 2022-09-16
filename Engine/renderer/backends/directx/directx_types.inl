@@ -193,23 +193,31 @@ typedef struct directx_swapchain
 	ID3D12DescriptorHeap* dsv_heap;
 }directx_swapchain;
 
+/** structure constructing the directx device  */
+typedef struct directx_device
+{
+	/** factory that creates the sub function */
+	IDXGIFactory6* factory;
+
+	/** logical device does all the gpu functions */
+	ID3D12Device* logical_device;
+
+	/** the current physical device that is in use */
+	IDXGIAdapter1* physical_device;
+
+}directx_device;
+
 /** directx renderer backend has releated information for a context */
 typedef struct directx_context
 {
 	/** direct queue object */
 	directx_queue			queue;
 
-	/** factory that creates the sub function */
-	IDXGIFactory6*			factory;		
-
 	/** directx swapchain instance */
 	directx_swapchain		swapchain;
 
-	/** logical device does all the gpu functions */
-	ID3D12Device* 			logical_device;			
-
-	/** the current physical device that is in use */
-	IDXGIAdapter1* 			physical_device;		
+	/** directx_device instance assioated with the context */
+	directx_device          device;
 
 	/** all directx commandlist types */
 	directx_commandlist     commandlist[HK_COMMAND_MAX];
