@@ -60,6 +60,14 @@ i8 create_slist(slist* list,u64 size);
 i8 push_back(slist* list, void* obj);
 
 /**
+ * routine to push back a list to the back of another list.
+ * 
+ * \param list list that will be pushed on to
+ * \param push_list list that will pushed 
+ */
+i8 push_back(slist* list, slist* push_list);
+
+/**
  * routine to pop from a singly linked list.
  *
  * \param list slist that will represent the list

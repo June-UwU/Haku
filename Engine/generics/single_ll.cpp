@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * \file   single_ll.cpp
+ * \brief  singly linked list 
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #include "single_ll.hpp"
 #include "core/logger.hpp"
 #include "memory/hmemory.hpp"
@@ -26,6 +33,21 @@ i8 push_back(slist* list, void* obj)
 
 	hmemory_copy(list->tail->data, obj, list->data_size);
 	
+	return H_OK;
+}
+
+i8 push_back(slist* list, slist* push_list)
+{
+
+	if (nullptr == list->head && nullptr == list->tail)
+	{
+		list->head = push_list->head;
+		list->tail = push_list->tail;
+	}
+	else
+	{
+		list->tail->next = push_list->head;
+	}
 	return H_OK;
 }
 
