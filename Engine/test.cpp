@@ -8,14 +8,15 @@
 
 #include "test.hpp"
 #include "platform/platform.hpp"
-
+#include "memory/hmemory.hpp"
 
 void prepare_subsystem_for_test(void)
 {
-	platform_memory_initialize();
+	hmemory_initialize();
 }
 
 void shutdown_test_subsystem(void)
 {
-	platform_memory_shutdown();
+	hlog_memory_report();
+	hmemory_shutdown();
 }

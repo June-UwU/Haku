@@ -10,14 +10,36 @@
 #include "defines.hpp"
 #include "generics/single_ll.hpp"
 
+/**
+ * macros to create a hash table using int hash.
+ * 
+ * \param table pointer to hash table
+ * \param obj objects in hash table
+ */
+#define HAKU_CREATE_INT_HASH_TABLE(ptable,obj) create_hast_table(ptable,sizeof(obj), INT_HASH)
+
+ /**
+  * macros to create a hash table using char hash.
+  *
+  * \param table pointer to hash table
+  * \param obj objects in hash table
+  */
+#define HAKU_CREATE_CHAR_HASH_TABLE(ptable,obj)  create_hast_table(ptable,sizeof(obj), CHAR_HASH)
+
+/** constant to signify that the hash is uninitialized */
+constexpr const i64 UNINITIALIZED_HASH_ENTRY = -2;
+
+/** constant to signify that the hash is free */
+constexpr const i64 NO_HASH_ENTRY = -1;
+
 /** hash bin initial size */
-constexpr const u64 init_bin_size = UINT8_MAX;
+constexpr const u64 init_bin_size = 32u;
 
 /** a hash table entry */
 typedef struct hash_table_entry
 {
 	/** key */
-	i8* key;
+	i64 key;
 
 	/** list that is hashed with the key */
 	slist* data;
@@ -29,8 +51,9 @@ typedef enum  key_type
 	/** interger hash */
 	INT_HASH,
 
+// TODO : make a character hash maps
 	/** character hash */
-	CHAR_HASH
+	//CHAR_HASH
 }key_type;
 
 /** hash table structure */
@@ -60,14 +83,14 @@ typedef struct hash_table_t
  * \param type type of key to be hashed (chooses the hash function)
  * \return H_OK on sucess
  */
-i8 create_hast_table(hash_table_t* table,u64 element_size, key_type type);
+HAPI i8 create_hast_table(hash_table_t* table,u64 element_size, key_type type);
 
 /**
  * routine to destroy a hash table properly.
  * 
  * \param  table pointer to hash table
  */
-void destroy_hash_table(hash_table_t* table);
+HAPI void destroy_hash_table(hash_table_t* table);
 
 /**
  * routine to a hash_table_entry with a hashed key.
@@ -76,7 +99,7 @@ void destroy_hash_table(hash_table_t* table);
  * \param key pointer to the key
  * \param pointer to the object
  */
-void push_back(hash_table_t* table , i8* key, void* obj);
+HAPI void push_back(hash_table_t* table , i8* key, void* obj);
 
 /**
  * routine to retreive the hash table entry.
@@ -85,7 +108,7 @@ void push_back(hash_table_t* table , i8* key, void* obj);
  * \param key key to do look up on
  * \return hash_table_entry on sucess or nullptr on failure
  */
-hash_table_entry* find(hash_table_t* table, i8* key);
+HAPI hash_table_entry* find(hash_table_t* table, i8* key);
 
 /**
  * routine to remove an entry from the hash table.
@@ -94,7 +117,7 @@ hash_table_entry* find(hash_table_t* table, i8* key);
  * \param key key to look up and remove element on
  * \return H_OK on sucess
  */
-i8 remove_entry(hash_table_t* table, i8* key);
+HAPI i8 remove_entry(hash_table_t* table, i8* key);
 
 // TODO : make integer hashing not use casts
 /**
@@ -128,3 +151,6 @@ u64 hash_key(hash_table_t* table, char* ptr)
 	}
 	return sum % table->bin_size;
 }
+
+/** routine to test hash table */
+void test_hash_table(void);

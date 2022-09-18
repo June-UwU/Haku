@@ -90,7 +90,7 @@ void hmemory_shutdown();
  * \param tag memory tag
  * \return void pointer to memory
  */
-void* hmemory_alloc(u64 size, memory_tag tag);
+HAPI void* hmemory_alloc(u64 size, memory_tag tag);
 
 /**
  * memory allocation that returns zeroed memory.
@@ -99,7 +99,7 @@ void* hmemory_alloc(u64 size, memory_tag tag);
  * \param tag memory tag
  * \return void pointer to memory
  */
-void* hmemory_alloc_zeroed(u64 size, memory_tag tag);
+HAPI void* hmemory_alloc_zeroed(u64 size, memory_tag tag);
 
 // TODO : make the free independant of the memory tag
 
@@ -109,7 +109,7 @@ void* hmemory_alloc_zeroed(u64 size, memory_tag tag);
  * \param block pointer to the block to free
  * \param tag memory tag
  */
-void hmemory_free(void* block, memory_tag tag);
+HAPI void hmemory_free(void* block, memory_tag tag);
 
 /**
  * memcpy routine.
@@ -118,7 +118,7 @@ void hmemory_free(void* block, memory_tag tag);
  * \param src source to get copy from
  * \param size size of the copy in bytes
  */
-void hmemory_copy(void* dest, void* src, u64 size);
+HAPI void hmemory_copy(void* dest, void* src, u64 size);
 
 /**
  * memset routine.
@@ -127,12 +127,12 @@ void hmemory_copy(void* dest, void* src, u64 size);
  * \param val byte value to be set
  * \param size size of the set in bytes
  */
-void hmemory_set(void* dest, i8 val, u64 size);
+HAPI void hmemory_set(void* dest, i8 val, u64 size);
 
 /**
  * debug routine to log memory report.
  */
-void hlog_memory_report();
+HAPI void hlog_memory_report();
 
 /**
  * memory test routine.

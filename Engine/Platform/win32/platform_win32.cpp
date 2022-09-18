@@ -162,7 +162,8 @@ void platform_memory_shutdown()
 
 void* platform_allocate(u64 size, bool aligned)
 {
-	void* ret_ptr = HeapAlloc(private_heap, heap_flags, size);
+	void* ret_ptr = nullptr;
+	ret_ptr = HeapAlloc(private_heap, heap_flags, size);
 
 	if (nullptr == ret_ptr)
 	{

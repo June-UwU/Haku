@@ -8,9 +8,11 @@
 #include "memory/linear_allocator.hpp"
 #include "renderer/renderer_front_end.hpp"
 
-#define TEST 0
+#define TEST 1
 
 #if TEST
+#include "generics/hash_set.hpp"
+#include "generics/single_ll.hpp"
 #define RUN_TEST() application_run_test()
 #else
 #define RUN_TEST()
@@ -190,8 +192,12 @@ i8 application_suspend(void* sender, i64 context)
 
 void application_run_test(void)
 {
+#if TEST == 1
 	logger_test();
 	hmemory_test();
+	test_slist();
+	test_hash_table();
+#endif 
 }
 
 i8 application_exit(void* sender, i64 context)

@@ -9,6 +9,8 @@
 #include "core/logger.hpp"
 #include "memory/hmemory.hpp"
 
+#include <cstring>
+
 i8 create_slist(slist* list, u64 size)
 {
 	list->data_size = size;
@@ -22,17 +24,19 @@ i8 push_back(slist* list, void* obj)
 {
 	if (nullptr == list->head && nullptr == list->tail)
 	{
-		list->head = (slist_t*)hmemory_alloc(list->data_size, MEM_TAG_SLIST);
+		list->head = (slist_t*)hmemory_alloc(sizeof(slist_t),MEM_TAG_SLIST);
 		list->tail = list->head;
 	}
 	else
 	{
-		list->tail->next = (slist_t*)hmemory_alloc(list->data_size, MEM_TAG_SLIST);
+		list->tail->next = (slist_t*)hmemory_alloc(sizeof(slist_t),MEM_TAG_SLIST);
 		list->tail = list->tail->next;
 	}
-
+	list->tail->data = hmemory_alloc(list->data_size, MEM_TAG_SLIST);
 	hmemory_copy(list->tail->data, obj, list->data_size);
-	
+	list->tail->next = nullptr;
+
+
 	return H_OK;
 }
 
@@ -54,6 +58,11 @@ i8 push_back(slist* list, slist* push_list)
 i8 pop_front(slist* list)
 {
 	slist_t* temp = list->head;
+	if (nullptr == temp)
+	{
+		return H_NOERR;
+	}
+
 	if (list->head == list->tail)
 	{
 		list->head = nullptr;
@@ -61,10 +70,10 @@ i8 pop_front(slist* list)
 	}
 	else
 	{
-		list->head = list->head->next;
+		list->head = temp->next;
 	}
 
-	hmemory_free(temp->data, MEM_TAG_UNKNOWN);
+	hmemory_free(temp->data,MEM_TAG_SLIST);
 	hmemory_free(temp, MEM_TAG_SLIST);
 
 	return H_OK;
@@ -84,8 +93,54 @@ void destroy_slist(slist* list)
 {
 	while (nullptr != list->head)
 	{
-		pop_front(list);
+		slist_t* del_ptr = list->head;
+		list->head = del_ptr->next;
+		hmemory_free(del_ptr->data, MEM_TAG_SLIST);
+		hmemory_free(del_ptr, MEM_TAG_SLIST);
 	}
+	list->head = nullptr;
+	list->tail = nullptr;
 }
 
+void reset(slist* list)
+{
+	slist_t* old_head = list->head;
+	list->head = nullptr;
+	list->tail = nullptr;
+	slist_t* del_ptr = old_head;
+	while (nullptr != old_head->next)
+	{
+		old_head = old_head->next;
+		free(del_ptr);
+		del_ptr = old_head;
+	}
+	free(del_ptr);
+}
 
+void test_slist(void)
+{
+	slist* list = (slist*)malloc(sizeof(slist));
+	HAKU_CREATE_SLIST(list, u64);
+
+	for (u64 i = 0; i < 256; i++)
+	{
+		push_back(list, &i);
+	}
+
+	slist_t* current = list->head;
+	
+
+	u64 i = 0;
+	while( nullptr != current)
+	{
+		u64* data = (u64*)current->data;
+		if (*data != i)
+		{
+			HLEMER("logical error in slist");
+		}
+		i++;
+		current = current->next;
+	}
+	HLINFO("slist test passed..!");
+	destroy_slist(list);
+}
