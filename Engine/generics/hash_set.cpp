@@ -47,6 +47,7 @@ void destroy_hash_table(hash_table_t* table)
         entry = table->bin + i;
         if (nullptr != entry->data)
         {
+            HLINFO("release info \n\t KEY : %d \n\t HASH : %d", i, hash_key(table, i));
             destroy_slist(entry->data);
             hmemory_free(entry->data,MEM_TAG_HASH_TABLE);
         }
@@ -54,7 +55,7 @@ void destroy_hash_table(hash_table_t* table)
     hmemory_free(table->bin,MEM_TAG_HASH_TABLE);
 }
 
-void push_back(hash_table_t* table, i8* key, void* obj)
+void push_back(hash_table_t* table, void* key, void* obj)
 {
     if ((table->bin_size - table->element_count) < 16)
     {
@@ -131,7 +132,7 @@ void push_back(hash_table_t* table, i8* key, void* obj)
     }
 }
 
-hash_table_entry* find(hash_table_t* table, i8* key)
+hash_table_entry* find(hash_table_t* table, void* key)
 {
 
     switch (table->type)
@@ -166,7 +167,7 @@ hash_table_entry* find(hash_table_t* table, i8* key)
     }
 }
 
-i8 remove_entry(hash_table_t* table, i8* key)
+i8 remove_entry(hash_table_t* table, void* key)
 {
     hash_table_entry* ret_entry = find(table, key);
     if (nullptr == ret_entry)
@@ -298,46 +299,46 @@ void test_hash_table(void)
 {
     hash_table_t table;
     HAKU_CREATE_INT_HASH_TABLE(&table, u64);
-    
+    bool passed = true;
+
     u64 test_range = 512;
 
     // no collision test
     for (u64 i = 0; i < test_range; i++)
     {
-        i8* key_ptr = (i8*)&i;
-        push_back(&table, key_ptr, &i);
+        push_back(&table, &i, &i);
     }
 
     for (u64 i = 0; i < test_range; i++)
     {
-        i8* key_ptr = (i8*)(&i);
-        hash_table_entry* ret_entry = find(&table, key_ptr);
+        hash_table_entry* ret_entry = find(&table, &i);
         if (nullptr != ret_entry)
         {
             u64* ret_ptr = (u64*)ret_entry->data->head->data;
             if (*ret_ptr != i)
             {
                 HLEMER("hash corruption");
+                passed = false;
             }
         }
         else
         {
-            HLEMER("entry lost \n \t KEY : %d \n \t HASH : %d", i, hash_key(&table, i));;
+            HLEMER("entry lost \n \t KEY : %d \n \t HASH : %d", i, hash_key(&table, i));
+            passed = false;
         }
     }
 
     //collision test
 
+// FIX ME : these methods leak memoty 
     for (u64 i = 0; i < test_range; i++)
     {
-        i8* key_ptr = (i8*)&i;
-        push_back(&table, key_ptr, &i);
+        push_back(&table, &i, &i);
     }
-
+    
     for (u64 i = 0; i < test_range; i++)
     {
-        i8* key_ptr = (i8*)(&i);
-        hash_table_entry* ret_entry = find(&table, key_ptr);
+        hash_table_entry* ret_entry = find(&table, &i);
         slist_t* list = ret_entry->data->head;
         while (nullptr != list)
         {
@@ -346,6 +347,7 @@ void test_hash_table(void)
             if (*ret_ptr != i)
             {
                 HLEMER("hash corruption for collision");
+                passed = false;
             }
         }
     }
@@ -354,23 +356,31 @@ void test_hash_table(void)
     {
         if (0 == i % 2)
         {
-            remove_entry(&table, (i8*)&i);
+            remove_entry(&table, &i);
         }
     }
-
+    
     for (u64 i = 0; i < test_range; i++)
     {
         if (0 == i % 2)
         {
-            hash_table_entry* ret_entry = find(&table, (i8*)&i);
+            hash_table_entry* ret_entry = find(&table, &i);
             if (ret_entry != nullptr)
             {
                 HLEMER("junk value returned..! \n\t KEY : %d \n\t HASH : %d", i, hash_key(&table, i));
+                passed = false;
             }
         }
     }
 
+    if(true == passed)
+    {
+        HLINFO("Hash table test passed");
+    }
+    else 
+    {
+        HLCRIT("Hash table test failure");
+    }
 
-    HLINFO("Hash test passed");
     destroy_hash_table(&table);
 }

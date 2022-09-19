@@ -105,7 +105,7 @@ HAPI void destroy_hash_table(hash_table_t* table);
  * \param key pointer to the key
  * \param pointer to the object
  */
-HAPI void push_back(hash_table_t* table , i8* key, void* obj);
+HAPI void push_back(hash_table_t* table , void* key, void* obj);
 
 /**
  * routine to retreive the hash table entry.
@@ -114,7 +114,7 @@ HAPI void push_back(hash_table_t* table , i8* key, void* obj);
  * \param key key to do look up on
  * \return hash_table_entry on sucess or nullptr on failure
  */
-HAPI hash_table_entry* find(hash_table_t* table, i8* key);
+HAPI hash_table_entry* find(hash_table_t* table, void* key);
 
 /**
  * routine to remove an entry from the hash table.
@@ -123,7 +123,7 @@ HAPI hash_table_entry* find(hash_table_t* table, i8* key);
  * \param key key to look up and remove element on
  * \return H_OK on sucess
  */
-HAPI i8 remove_entry(hash_table_t* table, i8* key);
+HAPI i8 remove_entry(hash_table_t* table, void* key);
 
 // TODO : make integer hashing not use casts
 /**

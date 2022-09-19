@@ -111,9 +111,11 @@ void reset(slist* list)
 	while (nullptr != old_head->next)
 	{
 		old_head = old_head->next;
+		hmemory_free(del_ptr->data, MEM_TAG_SLIST);
 		hmemory_free(del_ptr,MEM_TAG_SLIST);
 		del_ptr = old_head;
 	}
+	hmemory_free(del_ptr->data, MEM_TAG_SLIST);
 	hmemory_free(del_ptr,MEM_TAG_SLIST);
 }
 
