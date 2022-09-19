@@ -74,6 +74,7 @@ void push_back(hash_table_t* table, i8* key, void* obj)
             if (NO_HASH_ENTRY == entry_ptr->key)
             {
                 push_back(entry_ptr->data, obj);
+                break;
             }
             else if (nullptr == entry_ptr->data)
             {
@@ -93,8 +94,32 @@ void push_back(hash_table_t* table, i8* key, void* obj)
             else
             {
                 //collision with the different key
-                hashed_val = hash_key(table, hashed_val);
-                continue;
+                while (true)
+                {
+                    // no out of range hashes
+                    hashed_val++;
+                    hashed_val = hashed_val % table->bin_size;
+                    hash_table_entry* entry_ptr = (table->bin + hashed_val);
+                    if (NO_HASH_ENTRY == entry_ptr->key)
+                    {
+                        push_back(entry_ptr->data, obj);
+                        break;
+                    }
+                    else if (nullptr == entry_ptr->data)
+                    {
+                        entry_ptr->data = (slist*)hmemory_alloc(sizeof(slist), MEM_TAG_HASH_TABLE);
+                        entry_ptr->key = hash_val;
+                        create_slist(entry_ptr->data, table->element_size);
+                        push_back(entry_ptr->data, obj);
+                        table->element_count++;
+                        break;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                break;
             }
         }
 
@@ -108,11 +133,12 @@ void push_back(hash_table_t* table, i8* key, void* obj)
 
 hash_table_entry* find(hash_table_t* table, i8* key)
 {
+
     switch (table->type)
     {
     case INT_HASH:
     {
-        u64 count = table->element_size;
+        u64 count = table->bin_size;
         u64 hash_val = *(u64*)key;
         u64 hashed_val = hash_key(table, hash_val);
         while (count > 0)
@@ -126,25 +152,13 @@ hash_table_entry* find(hash_table_t* table, i8* key)
             else
             {
                 //collision with the different key
-                hashed_val = hash_key(table, hashed_val);
+                hashed_val++;
+                hashed_val = hashed_val % table->bin_size;
+                count--;
                 continue;
             }
             // linear time has ended
-            count--;
         }
-
-        // TODO : maybe do a linear search?  and get in 2n complexity
-        count = 0;
-        while (count < table->element_size)
-        {
-            hash_table_entry* entry_ptr = (table->bin + count);
-            if (entry_ptr->key == hashed_val)
-            {
-                return entry_ptr;
-            }
-            count++;
-        }
-        HLERRO("hash  table hash pair lost..!!");
         return nullptr;
     }
     default:
@@ -167,6 +181,7 @@ i8 remove_entry(hash_table_t* table, i8* key)
 
 void rehash(hash_table_t* table)
 {
+    HLWARN("Rehashed hash table : %x ", table);
     u64 old_bin_size = table->bin_size;
     hash_table_entry* old_bin = table->bin;
     table->bin_size = 2 * table->bin_size;
@@ -178,17 +193,27 @@ void rehash(hash_table_t* table)
         entry->data = nullptr;
         entry->key = UNINITIALIZED_HASH_ENTRY;
     }
-
+// TODO : make it more nicer..? this is ungy to look at for handling initialized previous entries
     for (u64 i = 0; i < old_bin_size; i++)
     {
         hash_table_entry* pos_entry = (old_bin + i);
         if (NO_HASH_ENTRY == pos_entry->key)
         {
+            continue;
             hmemory_copy((table->bin + i), pos_entry, sizeof(hash_table_entry));
+        }
+    }
+
+    for (u64 i = 0; i < old_bin_size; i++)
+    {
+        hash_table_entry* pos_entry = (old_bin + i);
+
+        if (NO_HASH_ENTRY == pos_entry->key)
+        {
+            continue;
         }
         else if (UNINITIALIZED_HASH_ENTRY == pos_entry->key)
         {
-            table->bin[i].key = UNINITIALIZED_HASH_ENTRY;
             continue;
         }
         else
@@ -200,8 +225,63 @@ void rehash(hash_table_t* table)
             {
                 u64 hash_val = pos_entry->key;
                 u64 hashed_val = hash_key(table, hash_val);
-                table->bin[hashed_val].key = pos_entry->key;
-                table->bin[hashed_val].data = pos_entry->data;
+
+                while (true)
+                {
+                    hash_table_entry* entry_ptr = (table->bin + hashed_val);
+                    if (NO_HASH_ENTRY == entry_ptr->key)
+                    {
+                        entry_ptr->key = pos_entry->key;
+                        push_back(entry_ptr->data, pos_entry->data);
+                        break;
+                    }
+                    else if (nullptr == entry_ptr->data)
+                    {
+                        entry_ptr->key = hash_val;
+                        entry_ptr->data = pos_entry->data;
+                        table->element_count++;
+                        break;
+                    }
+                    else  if (entry_ptr->key == hash_val)
+                    {
+                        // this shouldn't be a case ..? if the hash is proper
+                        //collision with the same key
+                        entry_ptr->key = pos_entry->key;
+                        push_back(entry_ptr->data, pos_entry->data);
+                        hmemory_free(pos_entry->data, MEM_TAG_HASH_TABLE);
+                        break;
+                    }
+                    else
+                    {
+                        //collision with the different key
+                        while (true)
+                        {
+                            // no out of range hashes
+                            hashed_val++;
+                            hashed_val = hashed_val % table->bin_size;
+                            hash_table_entry* entry_ptr = (table->bin + hashed_val);
+                            if (NO_HASH_ENTRY == entry_ptr->key)
+                            {
+                                entry_ptr->key = pos_entry->key;
+                                push_back(entry_ptr->data, pos_entry->data);
+                                hmemory_free(pos_entry->data, MEM_TAG_HASH_TABLE);
+                                break;
+                            }
+                            else if (nullptr == entry_ptr->data)
+                            {
+                                entry_ptr->data = pos_entry->data;
+                                entry_ptr->key = pos_entry->key;
+                                table->element_count++;
+                                break;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+                        break;
+                    }
+                }
                 break;
             }
             default:
@@ -219,18 +299,20 @@ void test_hash_table(void)
     hash_table_t table;
     HAKU_CREATE_INT_HASH_TABLE(&table, u64);
     
+    u64 test_range = 512;
+
     // no collision test
-    for (u64 i = 0; i < 512; i++)
+    for (u64 i = 0; i < test_range; i++)
     {
         i8* key_ptr = (i8*)&i;
         push_back(&table, key_ptr, &i);
     }
 
-    for (u64 i = 0; i < 512; i++)
+    for (u64 i = 0; i < test_range; i++)
     {
         i8* key_ptr = (i8*)(&i);
         hash_table_entry* ret_entry = find(&table, key_ptr);
-        if (nullptr != ret_entry->data)
+        if (nullptr != ret_entry)
         {
             u64* ret_ptr = (u64*)ret_entry->data->head->data;
             if (*ret_ptr != i)
@@ -240,19 +322,19 @@ void test_hash_table(void)
         }
         else
         {
-            HLEMER("hash_entry_data null needs checking");
+            HLEMER("entry lost \n \t KEY : %d \n \t HASH : %d", i, hash_key(&table, i));;
         }
     }
 
     //collision test
 
-    for (u64 i = 0; i < 512; i++)
+    for (u64 i = 0; i < test_range; i++)
     {
         i8* key_ptr = (i8*)&i;
         push_back(&table, key_ptr, &i);
     }
 
-    for (u64 i = 0; i < 512; i++)
+    for (u64 i = 0; i < test_range; i++)
     {
         i8* key_ptr = (i8*)(&i);
         hash_table_entry* ret_entry = find(&table, key_ptr);
@@ -267,6 +349,27 @@ void test_hash_table(void)
             }
         }
     }
+
+    for (u64 i = 0; i < test_range; i++)
+    {
+        if (0 == i % 2)
+        {
+            remove_entry(&table, (i8*)&i);
+        }
+    }
+
+    for (u64 i = 0; i < test_range; i++)
+    {
+        if (0 == i % 2)
+        {
+            hash_table_entry* ret_entry = find(&table, (i8*)&i);
+            if (ret_entry != nullptr)
+            {
+                HLEMER("junk value returned..! \n\t KEY : %d \n\t HASH : %d", i, hash_key(&table, i));
+            }
+        }
+    }
+
 
     HLINFO("Hash test passed");
     destroy_hash_table(&table);

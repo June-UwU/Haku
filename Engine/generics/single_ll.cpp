@@ -111,10 +111,10 @@ void reset(slist* list)
 	while (nullptr != old_head->next)
 	{
 		old_head = old_head->next;
-		free(del_ptr);
+		hmemory_free(del_ptr,MEM_TAG_SLIST);
 		del_ptr = old_head;
 	}
-	free(del_ptr);
+	hmemory_free(del_ptr,MEM_TAG_SLIST);
 }
 
 void test_slist(void)

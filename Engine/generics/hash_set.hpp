@@ -2,6 +2,8 @@
  * \file   hash_set.hpp
  * \brief  haku hash set , internally conflicts are resolved based on key matching and has some template elements 
  * 
+ * \see	   https://www.cs.hmc.edu/~geoff/classes/hmc.cs070.200101/homework10/hashfuncs.html
+ * 
  * \author June
  * \date   September 2022
  *********************************************************************/
@@ -26,6 +28,10 @@
   */
 #define HAKU_CREATE_CHAR_HASH_TABLE(ptable,obj)  create_hast_table(ptable,sizeof(obj), CHAR_HASH)
 
+
+/** constant for Cormen's multiplication hash method */
+constexpr const f32 A = 0.6180339887f; //(A is some random looking real number, the Knuth variable)
+
 /** constant to signify that the hash is uninitialized */
 constexpr const i64 UNINITIALIZED_HASH_ENTRY = -2;
 
@@ -33,7 +39,7 @@ constexpr const i64 UNINITIALIZED_HASH_ENTRY = -2;
 constexpr const i64 NO_HASH_ENTRY = -1;
 
 /** hash bin initial size */
-constexpr const u64 init_bin_size = 32u;
+constexpr const u64 init_bin_size = 32u; //()
 
 /** a hash table entry */
 typedef struct hash_table_entry
@@ -130,7 +136,10 @@ HAPI i8 remove_entry(hash_table_t* table, i8* key);
 template <typename T>
 u64 hash_key(hash_table_t* table,T key)
 {
-	return (u64)key % table->bin_size;
+	f32 S = key * A;
+	i32 num = S;
+	f32 X = S - num;
+	return table->bin_size * X;
 }
 
 /**

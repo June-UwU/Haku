@@ -195,8 +195,17 @@ void application_run_test(void)
 #if TEST == 1
 	logger_test();
 	hmemory_test();
+	HLCRIT("MEMORY LOG OF BEFORE SLIST");
+	hlog_memory_report();
 	test_slist();
+	HLCRIT("MEMORY LOG OF AFTER SLIST");
+	hlog_memory_report();
+
+	HLCRIT("MEMORY LOG OF BEFORE HASH_TABLE");
+	hlog_memory_report();
 	test_hash_table();
+	HLCRIT("MEMORY LOG OF AFTER HASH_TABLE");
+	hlog_memory_report();
 #endif 
 }
 
