@@ -1,10 +1,18 @@
+/*****************************************************************//**
+ * \file   c_queue.cpp
+ * \brief  haku circular queue implementations
+ * 
+ * \see https://www.geeksforgeeks.org/circular-queue-set-1-introduction-array-implementation/
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #include "c_queue.hpp"
 #include "core\logger.hpp"
 #include "memory\hmemory.hpp"
 
 // TODO : test
 
-// THEROY : https://www.geeksforgeeks.org/circular-queue-set-1-introduction-array-implementation/
 // made slight modifications nessary for the purge part
 
 c_queue* create_c_queue(u64 size, u64 element_size, bool purge)

@@ -47,7 +47,6 @@ void destroy_hash_table(hash_table_t* table)
         entry = table->bin + i;
         if (nullptr != entry->data)
         {
-            HLINFO("release info \n\t KEY : %d \n\t HASH : %d", i, hash_key(table, i));
             destroy_slist(entry->data);
             hmemory_free(entry->data,MEM_TAG_HASH_TABLE);
         }
