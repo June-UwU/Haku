@@ -13,12 +13,21 @@
 #include "generics/queue.hpp"
 
 /**
+ * a hash_table specfic loop that is use.
+ * 
+ * \param init_statement initialization 
+ * \param condition condition that is looped over
+ * \param update_statement statement to update the initialization var
+ */
+#define for_hash_set_t(init_statement,condition,update_statement) for(init_statement;condition;update_statement)
+
+/**
  * macros to create a hash table using int hash.
  * 
  * \param table pointer to hash table
  * \param obj objects in hash table
  */
-#define HAKU_CREATE_INT_HASH_TABLE(ptable,obj) create_hast_table(ptable,sizeof(obj), INT_HASH)
+#define HAKU_CREATE_INT_HASH_SET(ptable,obj) create_hast_table(ptable,sizeof(obj), INT_HASH)
 
  /**
   * macros to create a hash table using char hash.
@@ -26,7 +35,7 @@
   * \param table pointer to hash table
   * \param obj objects in hash table
   */
-#define HAKU_CREATE_CHAR_HASH_TABLE(ptable,obj)  create_hast_table(ptable,sizeof(obj), CHAR_HASH)
+#define HAKU_CREATE_CHAR_HASH_SET(ptable,obj)  create_hast_table(ptable,sizeof(obj), CHAR_HASH)
 
 
 /** constant for Cormen's multiplication hash method */
@@ -42,14 +51,14 @@ constexpr const i64 NO_HASH_ENTRY = -1;
 constexpr const u64 init_bin_size = 32u; //()
 
 /** a hash table entry */
-typedef struct hash_table_entry
+typedef struct hash_set_entry_t 
 {
 	/** key */
 	i64 key;
 
 	/** list that is hashed with the key */
 	queue_t* data;
-}hash_table_entry;
+}hash_set_entry_t ;
 
 /** enum to point with hash function to use */
 typedef enum  key_type
@@ -63,7 +72,7 @@ typedef enum  key_type
 }key_type;
 
 /** hash table structure */
-typedef struct hash_table_t
+typedef struct hash_set_t
 {
 	/** element size */
 	u64 element_count;
@@ -78,8 +87,8 @@ typedef struct hash_table_t
 	u64 bin_size;
 
 	/** pointer to the bin */
-	hash_table_entry* bin;
-}hash_table_t;
+	hash_set_entry_t * bin;
+}hash_set_t;
 
 /**
  * routine to create a hash table.
@@ -89,32 +98,32 @@ typedef struct hash_table_t
  * \param type type of key to be hashed (chooses the hash function)
  * \return H_OK on sucess
  */
-HAPI i8 create_hast_table(hash_table_t* table,u64 element_size, key_type type);
+HAPI i8 create_hast_table(hash_set_t* table,u64 element_size, key_type type);
 
 /**
  * routine to destroy a hash table properly.
  * 
  * \param  table pointer to hash table
  */
-HAPI void destroy_hash_table(hash_table_t* table);
+HAPI void destroy_hash_table(hash_set_t* table);
 
 /**
- * routine to a hash_table_entry with a hashed key.
+ * routine to a hash_set_entry_t with a hashed key.
  * 
  * \param table  pointer to hash table
  * \param key pointer to the key
  * \param pointer to the object
  */
-HAPI void push_back(hash_table_t* table , void* key, void* obj);
+HAPI void push_back(hash_set_t* table , void* key, void* obj);
 
 /**
  * routine to retreive the hash table entry.
  * 
  * \param table pointer to the hash table
  * \param key key to do look up on
- * \return hash_table_entry on sucess or nullptr on failure
+ * \return hash_set_entry_t on sucess or nullptr on failure
  */
-HAPI hash_table_entry* find(hash_table_t* table, void* key);
+HAPI hash_set_entry_t * find(hash_set_t* table, void* key);
 
 /**
  * routine to remove an entry from the hash table.
@@ -123,9 +132,17 @@ HAPI hash_table_entry* find(hash_table_t* table, void* key);
  * \param key key to look up and remove element on
  * \return H_OK on sucess
  */
-HAPI i8 remove_entry(hash_table_t* table, void* key);
+HAPI i8 remove_entry(hash_set_t* table, void* key);
 
-// TODO : make integer hashing not use casts
+/**
+ * routine to get the next element in the bin.
+ * 
+ * \param table pointer to the hash_set
+ * \param entry pointer to the entry 
+ * \return nullptr if its the over the bin range or pointer to the value
+ */
+HAPI hash_set_entry_t* next(hash_set_t* table,hash_set_entry_t* entry);
+
 /**
  * hashing functions.
  * 
@@ -134,7 +151,7 @@ HAPI i8 remove_entry(hash_table_t* table, void* key);
  * \return u64 hash of the value under [0,table->bin_size)
  */
 template <typename T>
-u64 hash_key(hash_table_t* table,T key)
+u64 hash_key(hash_set_t* table,T key)
 {
 	f32 S = key * A;
 	i32 num = S;
@@ -150,7 +167,7 @@ u64 hash_key(hash_table_t* table,T key)
  * \return u64 hash of the value under [0,table->bin_size)
  */
 template<char*>
-u64 hash_key(hash_table_t* table, char* ptr)
+u64 hash_key(hash_set_t* table, char* ptr)
 {
 	u64 sum = 0;
 	while (0 != ptr)

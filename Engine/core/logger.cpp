@@ -8,6 +8,7 @@
 
 typedef struct logger_state
 {
+	char* outbuffer;
 	file* logger_file;
 } logger_state;
 
@@ -19,7 +20,7 @@ void logger_file_write(char* message);
 
 void logger_requirement(u64* memory_requirement)
 {
-	*memory_requirement = sizeof(logger_state);
+	*memory_requirement = sizeof(logger_state) + OUT_BUFFER_SIZE;
 }
 
 // initialization and shutdown
@@ -27,11 +28,13 @@ i8 logger_initialize(void* state)
 {
 	if (nullptr == state)
 	{
-		HLEMER("memory allocation failure");
+		//HLEMER("memory allocation failure");
 		return H_FAIL;
 	}
+	char* out_buffer = ((char*)state + sizeof(logger_state));
 	log_state			   = (logger_state*)state;
 	log_state->logger_file = file_open("Haku.log", WRITE);
+	log_state->outbuffer = out_buffer;
 	return H_OK;
 }
 
@@ -45,30 +48,28 @@ void logger_shutdown(void)
 
 void log(log_level level, const char* message, ...)
 {
-	static char outbuffer[OUT_BUFFER_SIZE]; // declared static and cleared every log
-
 	// clear the memory and keep the offset alive
 	u32 offset = 0; // offset to current write
 
-	platform_set_memory(outbuffer, 0, OUT_BUFFER_SIZE);
+	platform_set_memory(log_state->outbuffer, 0, OUT_BUFFER_SIZE);
 
 	i32 indicator_len = strlen(log_level_indicator[level]);
 
-	platform_copy_memory(outbuffer, (void*)log_level_indicator[level], indicator_len);
+	platform_copy_memory(log_state->outbuffer, (void*)log_level_indicator[level], indicator_len);
 
 	offset += indicator_len;
 
 	va_list varadic_list;
 	va_start(varadic_list, message);
 
-	vsnprintf((outbuffer + offset), (OUT_BUFFER_SIZE - offset), message, varadic_list);
+	vsnprintf((log_state->outbuffer + offset), (OUT_BUFFER_SIZE - offset), message, varadic_list);
 
 	va_end(varadic_list);
 
-	platform_console_write(outbuffer, level);
+	platform_console_write(log_state->outbuffer, level);
 	if (nullptr != log_state)
 	{
-		logger_file_write(outbuffer);
+		logger_file_write(log_state->outbuffer);
 	}
 }
 

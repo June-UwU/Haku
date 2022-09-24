@@ -149,7 +149,7 @@ i8 platform_memory_initialize()
 	{
 		DWORD error = GetLastError();
 		win32_get_error_string(error);
-		HLEMER("Windows private heap allocation failed");
+		//HLEMER("Windows private heap allocation failed");
 		return H_FAIL;
 	}
 	return H_OK;
@@ -428,7 +428,7 @@ void* platform_file_open(const char* file_name, const u64 mode)
 		return nullptr;
 	}
 
-	HLINFO("file open : %s \n\tpermission : %s", file_prop.szPathName, file_perm(mode));
+//	HLINFO("file open : %s \n\tpermission : %s", file_prop.szPathName, file_perm(mode));
 
 	return reinterpret_cast<void*>(ret_ptr);
 }

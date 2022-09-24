@@ -18,7 +18,7 @@
 constexpr u32 page_slice = 10;
 
 /** current memory allocation capacity assuming the worst as x86 systems */
-constexpr u32 single_alloc_cap = 512;
+constexpr u32 single_alloc_cap = BYTESINKiB(512);
 
 /** memory tag to let the memory subsystem keep track on who made the allocations */
 typedef enum memory_tag

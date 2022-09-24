@@ -8,7 +8,7 @@
 #include "memory/linear_allocator.hpp"
 #include "renderer/renderer_front_end.hpp"
 
-#define TEST 1
+#define TEST 0
 
 #if TEST
 #include "generics/queue.hpp"
@@ -54,13 +54,12 @@ i8	 application_suspend(void* sender, i64 context);
 
 i8 application_initialize(application_state* app_state)
 {
-	HLINFO("Hellow >w<");
 
 	i32 haku_ret_code = hmemory_initialize(); // memory initialize
 
 	if (H_OK != haku_ret_code)
 	{
-		HLEMER("hmemory subsystem : H_FAIL");
+		//HLEMER("hmemory subsystem : H_FAIL");
 		return H_FAIL;
 	}
 
@@ -68,7 +67,7 @@ i8 application_initialize(application_state* app_state)
 
 	if (nullptr == allocator)
 	{
-		HLEMER("linear allocator : H_FAIL");
+		//HLEMER("linear allocator : H_FAIL");
 		return H_FAIL;
 	}
 
@@ -78,6 +77,7 @@ i8 application_initialize(application_state* app_state)
 
 	e_state->logger_state = linear_allocate(allocator, e_state->logger_mem_require);
 	haku_ret_code		  = logger_initialize(e_state->logger_state);
+	HLINFO("Hellow >w<");
 
 	if (H_OK != haku_ret_code)
 	{

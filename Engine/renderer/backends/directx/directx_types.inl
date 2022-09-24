@@ -10,7 +10,7 @@
 // TODO : remove the string lib 
 #include <cwchar>
 
-#include <types.hpp>
+#include <hmath_types.hpp>
 #include "defines.hpp"
 #include <D3d12.h>
 #include <dxgi1_6.h>
@@ -24,6 +24,59 @@
 constexpr u64 frame_count = 3u;
 /** command allcator size for the command allocator pool */
 constexpr u64 command_allocator_size = 4u;
+
+// TODO : HAVE CPU ACCESSIBLE MODIFYING RESOURCES
+/** resource type enumerations (THIS WILL PROLLY HAVE MODIFIABLE AND NON MODIFIABLE RESOURCES BASED ON THE TYPE USED) */
+typedef enum resource_type
+{
+	/** defines a vertex resource */
+	VERTEX_RESOURCE,
+
+	/** defines a index resource */
+	INDEX_RESOURCE,
+
+	/** shader resource */
+	SHADER_RESOURCE,
+
+	/** constant resource */
+	CONST_RESOURCE,
+
+	/** unordered resource */
+	UNORDERED_RESOURCE,
+
+// TODO : CPU ACCESSIBLE RESOURCES GOES HERE
+    /** this macro is used to temperorily make the comparison for CPU ACCESSIBLE RESOURCE  */
+    CPU_ACCESS_STUB,
+
+	/** flag to indicate that the resource is not yet ready for draw */
+	RESOURCE_STALE_STUB,
+    /** macro to make sure the max resource is taken into account */
+	RESOURCE_TYPE_MAX
+}resource_type;
+
+/** a resource type to string array */
+constexpr const char* RESOURCE_TYPE_STRING[RESOURCE_TYPE_MAX]
+{
+	"vertex resource",
+	"index resource",
+	"shader resource",
+	"constant resource",
+	"unordered resource"
+};
+
+/** struct to handle directx resources and their usage */
+typedef struct directx_buffer
+{
+	/** resource_type enum */
+	resource_type type;
+
+	/** currently not used at the moment */
+	D3D12_RESOURCE_STATES state;
+
+	/** underlying resource */
+	ID3D12Resource* resource;
+}directx_buffer;
+
 
 /** enumeration to signify the different programmable shader stage */
 typedef enum shader_stages
@@ -210,6 +263,9 @@ typedef struct directx_device
 /** directx renderer backend has releated information for a context */
 typedef struct directx_context
 {
+	/** indicates whether the commandlist is ready for recording */
+	bool is_ready[HK_COMMAND_MAX];
+
 	/** direct queue object */
 	directx_queue			queue;
 

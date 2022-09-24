@@ -1,3 +1,4 @@
+#include "buffer.hpp"
 #include "core/logger.hpp"
 #include "command_context.hpp"
 #include "command_buffer_pool.hpp"
@@ -145,6 +146,7 @@ void execute_command(directx_context* context, directx_commandlist* commandlist)
 	ID3D12CommandList* list[] = { commandlist->commandlist };
 	context->queue.directx_queue[commandlist->type]->ExecuteCommandLists(1, list);
 	commandlist->seeded_allocator->state = COMMAND_BUFFER_STATE_SUBMITTED;
+	context->is_ready[commandlist->type] = false;
 }
 
 i8 prepare_commandlist_record(directx_commandlist* commandlist)
@@ -169,6 +171,7 @@ i8 prepare_commandlist_record(directx_commandlist* commandlist)
 		HLEMER("commandlist result returned an error");
 		return H_FAIL;
 	}
+	commandlist->state = COMMANDLIST_RECORDING;
 
 	return H_OK;
 }
@@ -216,8 +219,9 @@ i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* command
 	commandlist->seeded_allocator->fence_val = queue->fence_val;
 
 	u64 completed_val = queue->fence->GetCompletedValue();
-
+// TODO : do this in renderer?
 	reintroduce_allocator(completed_val);
+	remove_stale_upload_buffer(completed_val);
 
 	return ret_code;
 }

@@ -18,12 +18,14 @@
 
 
 #include "directx_types.INL"
+#include "directx_backend.hpp"
 
 #pragma comment(lib, "D3d12.lib")
 #pragma comment(lib, "DXGI.lib")
 
 // TODO : finish the back buffer clearing
 // TEST
+#include "buffer.hpp"
 directx_shader_module* module;
 directx_pipeline* pipeline;
 
@@ -112,6 +114,8 @@ i8 device_fail_handler(context_fails fail_code);
  * \param fail_code failure code for specfic instance for context_fails
  */
 i8 context_fail_handler(directx_context* context, context_fails fail_code); // context fail handler
+
+// LEGACY
 /**
  * commandlist record function, this resets the commandlist with a new allocator and makes a it state to recording.
  * 
@@ -137,6 +141,17 @@ i8 directx_initialize(renderer_backend* backend_ptr)
 	ENABLE_DEBUG_LAYER();
 
 	ret_code = create_context();
+	if (H_FAIL == ret_code)
+	{
+		HLEMER("directx_context creation failure");
+		return ret_code;
+	}
+	ret_code = initiate_upload_structure();
+	if (H_FAIL == ret_code)
+	{
+		HLEMER("upload structure creation failure");
+		return ret_code;
+	}
 
 	return ret_code;
 }
@@ -153,6 +168,7 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	command_buffer_pool_shutdown();
 	swapchain_shutdown(&context->swapchain);
 	hmemory_free(context, MEM_TAG_RENDERER);
+	shutdown_upload_structure(context->queue.fence_val);
 
 // TEST
 	destroy_pipeline_state(pipeline);
@@ -162,12 +178,15 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 {
 	i8 ret_code = H_OK;
 
-	ret_code = prepare_commandlist_record(&context->commandlist[HK_COMMAND_RENDER]);
+	queue_type type = HK_COMMAND_RENDER;
+	ret_code = prepare_commandlist_record(&context->commandlist[type]);
 	if (H_OK != ret_code)
 	{
-		HLWARN("commandlist preparation failure");
+// TODO :stability work for this recovery
+		HLWARN("commandlist preparation failure, SLEEP CPU WORK HERE");
 		return H_FAIL;
 	}
+	context->is_ready[type] = true;
 
 	ret_code = set_render_target(&context->swapchain, &context->commandlist[HK_COMMAND_RENDER]);
 	if (H_OK != ret_code)
@@ -189,12 +208,26 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 {
 	i8 ret_code = H_OK;
+	queue_type type = HK_COMMAND_RENDER;
 
 	ret_code = set_present_target(&context->swapchain, &context->commandlist[HK_COMMAND_RENDER]);
 
 	ret_code = end_commandlist_record(&context->commandlist[HK_COMMAND_RENDER]);
 
-	execute_command(context, &context->commandlist[HK_COMMAND_RENDER]);
+	if (true == context->is_ready[HK_COMMAND_COPY])
+	{
+		execute_command(context, &context->commandlist[type]);
+		next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_RENDER]);
+	}
+
+	if (true == context->is_ready[HK_COMMAND_COMPUTE])
+	{
+		execute_command(context, &context->commandlist[type]);
+		next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_RENDER]);
+	}
+
+	execute_command(context, &context->commandlist[type]);
+	context->is_ready[type] = false;
 
 	next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_RENDER]);
 
@@ -241,6 +274,10 @@ i8 create_context(void)
 	HRESULT api_ret_code = S_OK;
 
 	context = (directx_context*)hmemory_alloc(sizeof(directx_context), MEM_TAG_RENDERER);
+	for (u64 i = 0; i < HK_COMMAND_MAX; i++)
+	{
+		context->is_ready[i] = false;
+	}
 
 	ret_code = create_device();
 	if (H_FAIL == ret_code)
@@ -277,7 +314,7 @@ i8 create_context(void)
 		ret_code = context_fail_handler(context, command_allocator_fail);
 		return ret_code;
 	}
-	HLEMER("haku command buffer pool created");
+	HLINFO("haku command buffer pool created");
 
 	ret_code = create_commandlist(&context->device);
 	if (H_FAIL == ret_code)
@@ -286,7 +323,7 @@ i8 create_context(void)
 		ret_code = context_fail_handler(context, commandlist_fail);
 		return ret_code;
 	}
-	HLEMER("commandlist created");
+	HLINFO("commandlist created");
 
 // TEST
 	create_shader_module(&module);
@@ -488,7 +525,28 @@ i8 create_device(void)
 	FRIENDLY_NAME(device->logical_device, L"DirectX device");
 
 	factory_1->Release();
+	return ret_code;
+}
 
+i8 request_commandlist(directx_commandlist* list, queue_type type)
+{
+	list = nullptr;
+
+	if (false == context->is_ready[type])
+	{
+		i8 ret_code = prepare_commandlist_record(&context->commandlist[type]);
+		if (H_OK != ret_code)
+		{
+			// TODO :stability work for this recovery
+			HLWARN("commandlist preparation failure, SLEEP CPU WORK HERE");
+			return H_FAIL;
+		}
+		context->is_ready[type] = true;
+	}
+
+	list = &context->commandlist[type];
+
+	return H_OK;
 }
 
 // FAIL HANDLERS

@@ -17,17 +17,17 @@
  * 
  * \param table pointer to table
  */
-void rehash(hash_table_t* table);
+void rehash(hash_set_t * table);
 
-i8 create_hast_table(hash_table_t* table, u64 element_size, key_type type)
+i8 create_hast_table(hash_set_t * table, u64 element_size, key_type type)
 {
     table->element_count = 0;
     table->bin_size = init_bin_size;
     table->element_size = element_size;
     table->type = type;
-    table->bin = (hash_table_entry*)hmemory_alloc_zeroed(table->bin_size * sizeof(hash_table_entry), MEM_TAG_HASH_TABLE);
+    table->bin = (hash_set_entry_t *)hmemory_alloc_zeroed(table->bin_size * sizeof(hash_set_entry_t ), MEM_TAG_HASH_TABLE);
 
-    hash_table_entry* entry = table->bin;
+    hash_set_entry_t * entry = table->bin;
 
     for (u64 i = 0; i < table->bin_size; i++)
     {
@@ -39,9 +39,9 @@ i8 create_hast_table(hash_table_t* table, u64 element_size, key_type type)
     return H_OK;
 }
 
-void destroy_hash_table(hash_table_t* table)
+void destroy_hash_table(hash_set_t * table)
 {
-    hash_table_entry* entry = table->bin;
+    hash_set_entry_t * entry = table->bin;
     for (u64 i = 0; i < table->bin_size; i++)
     {
         entry = table->bin + i;
@@ -54,7 +54,7 @@ void destroy_hash_table(hash_table_t* table)
     hmemory_free(table->bin,MEM_TAG_HASH_TABLE);
 }
 
-void push_back(hash_table_t* table, void* key, void* obj)
+void push_back(hash_set_t * table, void* key, void* obj)
 {
     if ((table->bin_size - table->element_count) < 16u)
     {
@@ -69,7 +69,7 @@ void push_back(hash_table_t* table, void* key, void* obj)
         u64 hashed_val = hash_key(table, hash_val);
         
 
-        hash_table_entry* entry_ptr = (table->bin + hashed_val);
+        hash_set_entry_t * entry_ptr = (table->bin + hashed_val);
         if (NO_HASH_ENTRY == entry_ptr->key)
         {
             enqueue(entry_ptr->data, obj);
@@ -95,7 +95,7 @@ void push_back(hash_table_t* table, void* key, void* obj)
                 // no out of range hashes
                 hashed_val++;
                 hashed_val = hashed_val % table->bin_size;
-                hash_table_entry* entry_ptr = (table->bin + hashed_val);
+                hash_set_entry_t * entry_ptr = (table->bin + hashed_val);
                 if (entry_ptr->key == hash_val)
                 {
                     entry_ptr->key = hash_val;
@@ -130,7 +130,7 @@ void push_back(hash_table_t* table, void* key, void* obj)
     }
 }
 
-hash_table_entry* find(hash_table_t* table, void* key)
+hash_set_entry_t * find(hash_set_t * table, void* key)
 {
 
     switch (table->type)
@@ -142,7 +142,7 @@ hash_table_entry* find(hash_table_t* table, void* key)
         u64 hashed_val = hash_key(table, hash_val);
         while (count > 0)
         {
-            hash_table_entry* entry_ptr = (table->bin + hashed_val);
+            hash_set_entry_t * entry_ptr = (table->bin + hashed_val);
             if (entry_ptr->key == hash_val)
             {
                 //collision with the same key
@@ -165,9 +165,9 @@ hash_table_entry* find(hash_table_t* table, void* key)
     }
 }
 
-i8 remove_entry(hash_table_t* table, void* key)
+i8 remove_entry(hash_set_t * table, void* key)
 {
-    hash_table_entry* ret_entry = find(table, key);
+    hash_set_entry_t * ret_entry = find(table, key);
     if (nullptr == ret_entry)
     {
         HLERRO("the find returned a lost hash");
@@ -178,24 +178,36 @@ i8 remove_entry(hash_table_t* table, void* key)
     return  H_OK;
 }
 
-void rehash(hash_table_t* table)
+hash_set_entry_t* next(hash_set_t* table, hash_set_entry_t* entry)
+{
+    u64 offset = table->bin - entry;
+    offset = offset / table->element_size;
+    offset = offset + 1;
+    if (offset >= table->bin_size)
+    {
+        return nullptr;
+    }
+    return table->bin + offset;
+}
+
+void rehash(hash_set_t * table)
 {
     HLWARN("Rehashed hash table : %x ", table);
     u64 old_bin_size = table->bin_size;
-    hash_table_entry* old_bin = table->bin;
+    hash_set_entry_t * old_bin = table->bin;
     table->bin_size = 2 * table->bin_size;
 
-    table->bin = (hash_table_entry*)hmemory_alloc_zeroed(table->bin_size * sizeof(hash_table_entry), MEM_TAG_HASH_TABLE);
+    table->bin = (hash_set_entry_t *)hmemory_alloc_zeroed(table->bin_size * sizeof(hash_set_entry_t ), MEM_TAG_HASH_TABLE);
     for (u64 i = 0; i < table->bin_size; i++)
     {
-        hash_table_entry* entry = table->bin + i;
+        hash_set_entry_t * entry = table->bin + i;
         entry->data = nullptr;
         entry->key = UNINITIALIZED_HASH_ENTRY;
     }
 // TODO : make it more nicer..? this is ungy to look at for handling initialized previous entries
     for (u64 i = 0; i < old_bin_size; i++)
     {
-        hash_table_entry* pos_entry = (old_bin + i);
+        hash_set_entry_t * pos_entry = (old_bin + i);
         if (NO_HASH_ENTRY == pos_entry->key)
         {
             auto table_entry = table->bin + i;
@@ -206,7 +218,7 @@ void rehash(hash_table_t* table)
 
     for (u64 i = 0; i < old_bin_size; i++)
     {
-        hash_table_entry* pos_entry = (old_bin + i);
+        hash_set_entry_t * pos_entry = (old_bin + i);
 
 
         if (NO_HASH_ENTRY == pos_entry->key)
@@ -229,7 +241,7 @@ void rehash(hash_table_t* table)
 
                 while (true)
                 {
-                    hash_table_entry* entry_ptr = (table->bin + hashed_val);
+                    hash_set_entry_t * entry_ptr = (table->bin + hashed_val);
                     if (NO_HASH_ENTRY == entry_ptr->key)
                     {
                         entry_ptr->key = pos_entry->key;
@@ -260,7 +272,7 @@ void rehash(hash_table_t* table)
                             // no out of range hashes
                             hashed_val++;
                             hashed_val = hashed_val % table->bin_size;
-                            hash_table_entry* entry_ptr = (table->bin + hashed_val);
+                            hash_set_entry_t * entry_ptr = (table->bin + hashed_val);
                             if (NO_HASH_ENTRY == entry_ptr->key)
                             {
                                 entry_ptr->key = pos_entry->key;
@@ -297,8 +309,8 @@ void rehash(hash_table_t* table)
 
 void test_hash_table(void)
 {
-    hash_table_t table;
-    HAKU_CREATE_INT_HASH_TABLE(&table, u64);
+    hash_set_t  table;
+    HAKU_CREATE_INT_HASH_SET(&table, u64);
     bool passed = true;
 
     u64 test_range = 512;
@@ -311,7 +323,7 @@ void test_hash_table(void)
 
     for (u64 i = 0; i < test_range; i++)
     {
-        hash_table_entry* ret_entry = find(&table, &i);
+        hash_set_entry_t * ret_entry = find(&table, &i);
         if (nullptr != ret_entry)
         {
             u64* ret_ptr = (u64*)front(ret_entry->data)->data;
@@ -337,7 +349,7 @@ void test_hash_table(void)
     
     for (u64 i = 0; i < test_range; i++)
     {
-        hash_table_entry* ret_entry = find(&table, &i);
+        hash_set_entry_t * ret_entry = find(&table, &i);
         queue_t* list = ret_entry->data;
         for_queue_t(list,entry->next != NULL_PTR)
         {
@@ -363,7 +375,7 @@ void test_hash_table(void)
     {
         if (0 == i % 2)
         {
-            hash_table_entry* ret_entry = find(&table, &i);
+            hash_set_entry_t * ret_entry = find(&table, &i);
             if (ret_entry != nullptr)
             {
                 HLEMER("junk value returned..! \n\t KEY : %d \n\t HASH : %d", i, hash_key(&table, i));
