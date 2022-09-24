@@ -75,6 +75,15 @@ void enqueue(queue_t* queue, void* obj)
 	queue->current_entry_count++;
 }
 
+void enqueue(queue_t* dest_queue, queue_t* src_queue)
+{
+	HLCRIT("queue on queue push ");
+	for_queue_t(src_queue, entry->next != NULL_PTR)
+	{
+		enqueue(dest_queue, entry->data);
+	}
+}
+
 void* dequeue(queue_t* queue)
 {
 	i64 stale_front = queue->front;

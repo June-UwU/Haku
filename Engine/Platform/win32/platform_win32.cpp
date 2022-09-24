@@ -72,15 +72,15 @@ i8 platform_initialize(void* state, const char* name, u32 x, u32 y, u32 height, 
 	state_ptr = (platform_state*)state;
 
 	state_ptr->p_height = height;
-	state_ptr->p_width	= width;
+	state_ptr->p_width = width;
 
 	state_ptr->hinstance = GetModuleHandle(nullptr);
 
 	WNDCLASSA wndcls{};
-	wndcls.lpfnWndProc	 = win32_msg_proc;
-	wndcls.hInstance	 = state_ptr->hinstance;
-	wndcls.hIcon		 = nullptr; // TODO : do our own icon
-	wndcls.hCursor		 = nullptr; // handles cursor
+	wndcls.lpfnWndProc = win32_msg_proc;
+	wndcls.hInstance = state_ptr->hinstance;
+	wndcls.hIcon = nullptr; // TODO : do our own icon
+	wndcls.hCursor = nullptr; // handles cursor
 	wndcls.lpszClassName = name;
 
 	if (!RegisterClassA(&wndcls))
@@ -300,9 +300,9 @@ static LRESULT win32_msg_proc(HWND handle, UINT msg, WPARAM wparam, LPARAM lpara
 	}
 	case WM_SIZE:
 	{
-		u16 p_width	 = LOWORD(lparam);
+		u16 p_width = LOWORD(lparam);
 		u16 p_height = HIWORD(lparam);
-		i64 context	 = PACK_64BIT_VALS(0, 0, p_height, p_width);
+		i64 context = PACK_64BIT_VALS(0, 0, p_height, p_width);
 		switch (wparam)
 		{
 		case SIZE_MINIMIZED:
@@ -335,7 +335,7 @@ void platform_data_for_render_api(void** ptr)
 void get_platform_properties(p_prop* ptr)
 {
 	ptr->height = state_ptr->p_height;
-	ptr->width	= state_ptr->p_width;
+	ptr->width = state_ptr->p_width;
 }
 
 void platform_abort(void)
@@ -446,7 +446,7 @@ void platform_file_close(void* file_ptr)
 
 u64 platform_file_read(void* buffer, u64 size, const void* file_ptr)
 {
-	DWORD ret_val	  = 0;
+	DWORD ret_val = 0;
 	bool  api_ret_val = ReadFile((HANDLE)file_ptr, buffer, size, &ret_val, nullptr);
 
 	if (false == api_ret_val)
@@ -461,7 +461,7 @@ u64 platform_file_read(void* buffer, u64 size, const void* file_ptr)
 
 u64 platform_file_write(void* file_ptr, u64 size, const void* buffer)
 {
-	DWORD ret_val	  = 0;
+	DWORD ret_val = 0;
 	bool  api_ret_val = WriteFile((HANDLE)file_ptr, buffer, size, &ret_val, nullptr);
 
 	if (false == api_ret_val)

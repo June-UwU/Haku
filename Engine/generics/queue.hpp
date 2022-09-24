@@ -100,6 +100,13 @@ void destroy_queue(queue_t* queue);
 HAPI void enqueue(queue_t* queue, void* obj);
 
 /**
+ * routine to push the src_queue elements to the dest_queue.
+ * 
+ * \param dest_queue pointer to the destination queue
+ * \param src_queue pointer to the destination queue
+ */
+HAPI void enqueue(queue_t* dest_queue, queue_t* src_queue);
+/**
  * routine to dequeue the first element in queue.
  * 
  * \param queue pointer to queue to dequeue from

@@ -10,7 +10,7 @@
 #pragma once
 
 #include "defines.hpp"
-#include "generics/single_ll.hpp"
+#include "generics/queue.hpp"
 
 /**
  * macros to create a hash table using int hash.
@@ -48,7 +48,7 @@ typedef struct hash_table_entry
 	i64 key;
 
 	/** list that is hashed with the key */
-	slist* data;
+	queue_t* data;
 }hash_table_entry;
 
 /** enum to point with hash function to use */

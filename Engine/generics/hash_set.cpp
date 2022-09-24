@@ -31,9 +31,9 @@ i8 create_hast_table(hash_table_t* table, u64 element_size, key_type type)
 
     for (u64 i = 0; i < table->bin_size; i++)
     {
-        entry = entry + 1;
         entry->data = nullptr;
         entry->key = UNINITIALIZED_HASH_ENTRY;
+        entry = entry + 1;
     }
 
     return H_OK;
@@ -47,7 +47,7 @@ void destroy_hash_table(hash_table_t* table)
         entry = table->bin + i;
         if (nullptr != entry->data)
         {
-            destroy_slist(entry->data);
+            destroy_queue(entry->data);
             hmemory_free(entry->data,MEM_TAG_HASH_TABLE);
         }
     }
@@ -56,9 +56,8 @@ void destroy_hash_table(hash_table_t* table)
 
 void push_back(hash_table_t* table, void* key, void* obj)
 {
-    if ((table->bin_size - table->element_count) < 16)
+    if ((table->bin_size - table->element_count) < 16u)
     {
-// TODO :make rehash functions
         rehash(table);
     }
 
@@ -68,58 +67,58 @@ void push_back(hash_table_t* table, void* key, void* obj)
     {
         u64 hash_val = *(u64*)key;
         u64 hashed_val = hash_key(table, hash_val);
-        while (true)
+        
+
+        hash_table_entry* entry_ptr = (table->bin + hashed_val);
+        if (NO_HASH_ENTRY == entry_ptr->key)
         {
-            hash_table_entry* entry_ptr = (table->bin + hashed_val);
-            if (NO_HASH_ENTRY == entry_ptr->key)
+            enqueue(entry_ptr->data, obj);
+        }
+        else if (nullptr == entry_ptr->data)
+        {
+            entry_ptr->data = (queue_t*)hmemory_alloc(sizeof(queue_t), MEM_TAG_HASH_TABLE);
+            entry_ptr->key = hash_val;
+            create_queue(entry_ptr->data, table->element_size);
+            enqueue(entry_ptr->data, obj);
+            table->element_count++;
+        }
+        else  if (entry_ptr->key == hash_val)
+        {
+            //collision with the same key
+            enqueue(entry_ptr->data, obj);
+        }
+        else
+        {
+            //collision with the different key
+            while (true)
             {
-                push_back(entry_ptr->data, obj);
-                break;
-            }
-            else if (nullptr == entry_ptr->data)
-            {
-                entry_ptr->data = (slist*)hmemory_alloc(sizeof(slist), MEM_TAG_HASH_TABLE);
-                entry_ptr->key = hash_val;
-                create_slist(entry_ptr->data, table->element_size);
-                push_back(entry_ptr->data, obj);
-                table->element_count++;
-                break;
-            }
-            else  if (entry_ptr->key == hash_val)
-            {
-                //collision with the same key
-                push_back(entry_ptr->data, obj);
-                break;
-            }
-            else
-            {
-                //collision with the different key
-                while (true)
+                // no out of range hashes
+                hashed_val++;
+                hashed_val = hashed_val % table->bin_size;
+                hash_table_entry* entry_ptr = (table->bin + hashed_val);
+                if (entry_ptr->key == hash_val)
                 {
-                    // no out of range hashes
-                    hashed_val++;
-                    hashed_val = hashed_val % table->bin_size;
-                    hash_table_entry* entry_ptr = (table->bin + hashed_val);
-                    if (NO_HASH_ENTRY == entry_ptr->key)
-                    {
-                        push_back(entry_ptr->data, obj);
-                        break;
-                    }
-                    else if (nullptr == entry_ptr->data)
-                    {
-                        entry_ptr->data = (slist*)hmemory_alloc(sizeof(slist), MEM_TAG_HASH_TABLE);
-                        entry_ptr->key = hash_val;
-                        create_slist(entry_ptr->data, table->element_size);
-                        push_back(entry_ptr->data, obj);
-                        table->element_count++;
-                        break;
-                    }
-                    else
-                    {
-                        continue;
-                    }
+                    entry_ptr->key = hash_val;
+                    enqueue(entry_ptr->data, obj);
                 }
-                break;
+                else if (NO_HASH_ENTRY == entry_ptr->key)
+                {
+                    enqueue(entry_ptr->data, obj);
+                    break;
+                }
+                else if (nullptr == entry_ptr->data)
+                {
+                    entry_ptr->data = (queue_t*)hmemory_alloc(sizeof(queue_t), MEM_TAG_HASH_TABLE);
+                    entry_ptr->key = hash_val;
+                    create_queue(entry_ptr->data, table->element_size);
+                    enqueue(entry_ptr->data, obj);
+                    table->element_count++;
+                    break;
+                }
+                else
+                {
+                    continue;
+                }
             }
         }
 
@@ -186,7 +185,7 @@ void rehash(hash_table_t* table)
     hash_table_entry* old_bin = table->bin;
     table->bin_size = 2 * table->bin_size;
 
-    table->bin = (hash_table_entry*)hmemory_alloc(table->bin_size * sizeof(hash_table_entry), MEM_TAG_HASH_TABLE);
+    table->bin = (hash_table_entry*)hmemory_alloc_zeroed(table->bin_size * sizeof(hash_table_entry), MEM_TAG_HASH_TABLE);
     for (u64 i = 0; i < table->bin_size; i++)
     {
         hash_table_entry* entry = table->bin + i;
@@ -199,14 +198,16 @@ void rehash(hash_table_t* table)
         hash_table_entry* pos_entry = (old_bin + i);
         if (NO_HASH_ENTRY == pos_entry->key)
         {
-            continue;
-            hmemory_copy((table->bin + i), pos_entry, sizeof(hash_table_entry));
+            auto table_entry = table->bin + i;
+            table_entry->key = NO_HASH_ENTRY;
+            table_entry->data = pos_entry->data;
         }
     }
 
     for (u64 i = 0; i < old_bin_size; i++)
     {
         hash_table_entry* pos_entry = (old_bin + i);
+
 
         if (NO_HASH_ENTRY == pos_entry->key)
         {
@@ -232,7 +233,7 @@ void rehash(hash_table_t* table)
                     if (NO_HASH_ENTRY == entry_ptr->key)
                     {
                         entry_ptr->key = pos_entry->key;
-                        push_back(entry_ptr->data, pos_entry->data);
+                        enqueue(entry_ptr->data, pos_entry->data);
                         break;
                     }
                     else if (nullptr == entry_ptr->data)
@@ -247,7 +248,7 @@ void rehash(hash_table_t* table)
                         // this shouldn't be a case ..? if the hash is proper
                         //collision with the same key
                         entry_ptr->key = pos_entry->key;
-                        push_back(entry_ptr->data, pos_entry->data);
+                        enqueue(entry_ptr->data, pos_entry->data);
                         hmemory_free(pos_entry->data, MEM_TAG_HASH_TABLE);
                         break;
                     }
@@ -263,7 +264,7 @@ void rehash(hash_table_t* table)
                             if (NO_HASH_ENTRY == entry_ptr->key)
                             {
                                 entry_ptr->key = pos_entry->key;
-                                push_back(entry_ptr->data, pos_entry->data);
+                                enqueue(entry_ptr->data, pos_entry->data);
                                 hmemory_free(pos_entry->data, MEM_TAG_HASH_TABLE);
                                 break;
                             }
@@ -313,7 +314,7 @@ void test_hash_table(void)
         hash_table_entry* ret_entry = find(&table, &i);
         if (nullptr != ret_entry)
         {
-            u64* ret_ptr = (u64*)ret_entry->data->head->data;
+            u64* ret_ptr = (u64*)front(ret_entry->data)->data;
             if (*ret_ptr != i)
             {
                 HLEMER("hash corruption");
@@ -329,7 +330,6 @@ void test_hash_table(void)
 
     //collision test
 
-// FIX ME : these methods leak memoty 
     for (u64 i = 0; i < test_range; i++)
     {
         push_back(&table, &i, &i);
@@ -338,11 +338,10 @@ void test_hash_table(void)
     for (u64 i = 0; i < test_range; i++)
     {
         hash_table_entry* ret_entry = find(&table, &i);
-        slist_t* list = ret_entry->data->head;
-        while (nullptr != list)
+        queue_t* list = ret_entry->data;
+        for_queue_t(list,entry->next != NULL_PTR)
         {
-            u64* ret_ptr = (u64*)list->data;
-            list = list->next;
+            u64* ret_ptr = (u64*)entry->data;
             if (*ret_ptr != i)
             {
                 HLEMER("hash corruption for collision");
@@ -350,6 +349,7 @@ void test_hash_table(void)
             }
         }
     }
+
 
     for (u64 i = 0; i < test_range; i++)
     {
