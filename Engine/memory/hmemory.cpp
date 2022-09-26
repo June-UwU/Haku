@@ -10,6 +10,7 @@ static u64 memory_tracker_array[MEMORY_TAG_COUNT]{};
 i8 hmemory_initialize()
 {
 	i8 ret = platform_memory_initialize();
+	HLINFO("Haku memory subsystem initialized");
 	return ret;
 }
 

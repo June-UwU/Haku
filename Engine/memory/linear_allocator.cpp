@@ -1,5 +1,13 @@
-#include "hmemory.hpp"	//Î
+/*****************************************************************//**
+ * \file   linear_allocator.cpp
+ * \brief  haku linear allocator implementations
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
+#include "hmemory.hpp"	
 #include "linear_allocator.hpp"
+#include "core/logger.hpp"
 
 linear_allocator* create_linear_allocator(u64 size)
 {
@@ -23,6 +31,8 @@ void* linear_allocate(linear_allocator* allocator, u64 size)
 	// don't try to cheese the system >w<
 	if (0 == size)
 	{
+		HLCRIT("memory allocation failure \n \t request size : %d bytes \n \t total size : %d bytes\n \t free size : %d ", size,
+			allocator->size_in_bytes, allocator->size_in_bytes - allocator->offset);
 		return ret_ptr;
 	}
 

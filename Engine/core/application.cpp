@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * \file   application.cpp
+ * \brief  application implementations
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #include "event.hpp"
 #include "input.hpp"
 #include "timer.hpp"
@@ -19,65 +26,126 @@
 #define RUN_TEST()
 #endif
 
-// internal engine representation
-typedef struct engine_state
+/** internal representation for engine state */
+typedef enum engine_state
 {
-	i32			x; // appication window corrds
-	i32			y;
-	u32			height;	   // window height
-	u32			width;	   // window width
-	const char* name;	   // engine name
-	bool		running;   // true if state is running
-	bool		suspended; // true is suspended
+	/** engine running */
+	RUNNING,
 
-	// Subsytems meta data
+	/** engine suspended */
+	SUSPENDED,
+
+	/** applications waiting for shutdown */
+	SHUTDOWN
+}engine_state;
+
+/** internal engine representation */
+typedef struct engine
+{
+	/** appication window x corrds */
+	i32			x; 
+
+	/** appication window y corrds */
+	i32			y;
+
+	/** window height */
+	u32			height;
+
+	/** window width */
+	u32			width;
+
+	/** engine name */
+	const char* name;
+
+	/** current engine state */
+	engine_state state;
+
+// Subsytems meta data
+
+	/** logger subsystem memory requirement in bytes */
 	u64	  logger_mem_require;
+	
+	/** pointer to the memory for logger in the memory */
 	void* logger_state;
 
+	/** platform subsystem memory requirement in bytes */
 	u64	  platform_mem_require;
+
+	/** pointer to the memory for platform in the memory */
 	void* platform_state;
 
+	/** renderer subsystem memory requirement */
 	u64	  renderer_mem_require;
+
+	/** pointer to the memory for renderer in the memory */
 	void* renderer_state;
-} engine_state;
+} engine;
 
-linear_allocator* allocator; // allocator for subsystem memory
+/** allocator for subsystem memory */
+linear_allocator* allocator; 
 
-static timer		 clock; // internal timer
-static engine_state* e_state;
+/** internal timer */
+static timer		 clock; 
 
-// private events
+/** internal engine state */
+static engine* e_state;
+
+/**
+ * applications to do a test run.
+ */
 void application_run_test(void);
+
+/**
+ * routine to cleanly exit an applications.
+ * 
+ * \param sender pointer to the sender of the message
+ * \param context return code
+ * \return H_OK on sucess and H_FAIL on failure
+ */
 i8	 application_exit(void* sender, i64 context);
+
+/**
+ * routine to resize an applications.
+ * 
+ * \param sender pointer to the sender
+ * \paran context the height and width
+ * \return H_OK on sucess and H_FAIL on failure
+ */
 i8	 application_resize(void* sender, i64 context);
+
+/**
+ * routine to suspend the application.
+ * 
+ * \param sender pointer to the sender
+ * \param context UNUSED
+ * \return H_OK on sucess and H_FAIL on failure
+ */
 i8	 application_suspend(void* sender, i64 context);
 
 i8 application_initialize(application_state* app_state)
 {
 
-	i32 haku_ret_code = hmemory_initialize(); // memory initialize
-
+	HLINFO("Hellow >w<");
+	i32 haku_ret_code = hmemory_initialize(); 
 	if (H_OK != haku_ret_code)
 	{
-		//HLEMER("hmemory subsystem : H_FAIL");
+		HLEMER("hmemory subsystem : H_FAIL");
 		return H_FAIL;
 	}
-
 	allocator = create_linear_allocator(single_alloc_cap);
-
+	HLINFO("Initializing subsystem linear allocator\n \t capacity : %d bytes", allocator->size_in_bytes);
 	if (nullptr == allocator)
 	{
-		//HLEMER("linear allocator : H_FAIL");
+		HLEMER("linear allocator : H_FAIL");
 		return H_FAIL;
 	}
 
-	e_state = (engine_state*)linear_allocate(allocator, sizeof(engine_state));
+	e_state = (engine*)linear_allocate(allocator, sizeof(engine));
 
 	logger_requirement(&e_state->logger_mem_require);
 
 	e_state->logger_state = linear_allocate(allocator, e_state->logger_mem_require);
 	haku_ret_code		  = logger_initialize(e_state->logger_state);
-	HLINFO("Hellow >w<");
 
 	if (H_OK != haku_ret_code)
 	{
@@ -130,14 +198,12 @@ i8 application_initialize(application_state* app_state)
 
 	clock_start(clock);
 
-	e_state->suspended = false;
 	e_state->y		   = app_state->y;
 	e_state->x		   = app_state->x;
 	e_state->width	   = app_state->width;
 	e_state->height	   = app_state->height;
 	e_state->name	   = app_state->name;
-	e_state->running   = true;
-
+	e_state->state     = RUNNING;
 	return haku_ret_code;
 }
 
@@ -165,14 +231,14 @@ void application_run(void)
 	RUN_TEST();
 	HLINFO("Initialization report ");
 	hlog_memory_report();
-	while (true == e_state->running)
+	while (SHUTDOWN != e_state->state)
 	{
 		clock_update(clock);
 		platform_pump_messages();
 		service_event();
 		input_update(clock.elapsed);
 
-		if (false == e_state->suspended)
+		if (SUSPENDED != e_state->state)
 		{
 			// TODO : push render_packet outta here
 			render_packet packet{};
@@ -187,7 +253,7 @@ void application_run(void)
 i8 application_suspend(void* sender, i64 context)
 {
 	HLINFO("resize event");
-	e_state->suspended = true;
+	e_state->state = SUSPENDED;
 	return H_OK;
 }
 
@@ -218,7 +284,7 @@ void application_run_test(void)
 
 i8 application_exit(void* sender, i64 context)
 {
-	e_state->running = false;
+	e_state->state = SHUTDOWN;
 	return H_OK;
 }
 
@@ -227,7 +293,7 @@ i8 application_resize(void* sender, i64 context)
 	i32 packed_dimensions = LO_DWORD(context);
 	e_state->width		  = LO_WORD(packed_dimensions);
 	e_state->height		  = HI_WORD(packed_dimensions);
-
+	e_state->state        = RUNNING;
 	bool	   is_last = false;
 	event_code code	   = event_peek();
 	if (HK_SIZE != code)

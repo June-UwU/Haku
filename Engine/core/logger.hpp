@@ -1,86 +1,153 @@
+/*****************************************************************//**
+ * \file   logger.hpp
+ * \brief  haku logger functions
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #pragma once
 
 #include "defines.hpp"
 
-// Haku logger subsystem,
-//
 // Usage : ideally called by macros that may translate to the generic log function for the purpose needed , log function
 // is not intended to be directly called
 
+/**
+ * logger level for logs and color coded for severity.
+ */
 typedef enum log_level
 {
-	H_EMER, // Application unusable
-	H_CRIT, // Critical condition action needs to be made
-	H_ERRO, // no critical error condition
-	H_WARN, // warning conditions that should taken care of
-	H_INFO, // general information messages
+	/** Application unusable */
+	H_EMER,
 
-	LOG_LVL_COUNT // a enum for log level count
+	/** Critical condition action needs to be made */
+	H_CRIT, 
+
+	/** no critical error condition */
+	H_ERRO, 
+
+	/** warning conditions that should taken care of */
+	H_WARN, 
+
+	/** general information messages */
+	H_INFO, 
+
+	/** a enum for log level count */
+	LOG_LVL_COUNT 
 } log_level;
 
-constexpr u32 OUT_BUFFER_SIZE = 32000u; // internal constexpr that manages the maximum length of log buffer
+/** internal constexpr that manages the maximum length of log buffer */
+constexpr u32 LOGGER_BUFFER_SIZE = BYTESINKiB(64); // 
 
-constexpr const char* log_level_indicator[LOG_LVL_COUNT] //  string map for log level
+/** string map for log level */
+constexpr const char* log_level_indicator[LOG_LVL_COUNT] 
 	{ "[EMERGENCY]", "[CRITICAL]", "[ERROR]", "[WARN]", "[INFO]" };
 
+/**
+ * routine to get the memory requirement.
+ * 
+ * \param memory_requirement memory in bytes needed
+ */
 void logger_requirement(u64* memory_requirement);
 
-// initialization and shutdown
+/**
+ * initialization routine.
+ * 
+ * \param state memory allocated for the subsystem for functions
+ * \return H_OK on sucess and H_FAIL on failure
+ */
 i8	 logger_initialize(void* state);
+
+/**
+ * routine to properly shutdown.
+ */
 void logger_shutdown(void);
 
 // logging function : DONOT CALL THIS DIRECTLY IN ANY PART
 
-// @breif	 routine to log messages to console and file
-// @param	 : log level
-// @param	 : format message with varadic args
+/**
+* routine to log messages to console and file.
+* 
+* \param	  level level of severity of message
+* \param	  message format message with varadic args
+*/
 HAPI void log(log_level level, const char* message, ...);
 
-// @breif	logger subsystem test routine
+/**  logger subsystem test routine */
 void logger_test(void);
 
 #ifdef _DEBUG
 
-// Application unusable state log error
-
+/**
+ * Application unusable state log error.
+ * 
+ * \param message format message for the logger and varaidic args
+ */
 #define HLEMER(message, ...) log(H_EMER, message, ##__VA_ARGS__)
 
-// Application in critical condition, must take action
-
+/**
+ * Application in critical condition, must take action.
+ *
+ * \param message format message for the logger and varaidic args
+ */
 #define HLCRIT(message, ...) log(H_CRIT, message, ##__VA_ARGS__)
 
-// Application has a non critical error
-
+/**
+ * Application has a non critical error.
+ *
+ * \param message format message for the logger and varaidic args
+ */
 #define HLERRO(message, ...) log(H_ERRO, message, ##__VA_ARGS__)
 
-// Application has a non emergency condition that must be addressed
-
+/**
+ * Application has a non emergency condition that must be addressed.
+ *
+ * \param message format message for the logger and varaidic args
+ */
 #define HLWARN(message, ...) log(H_WARN, message, ##__VA_ARGS__)
 
-// General information out
-
+/**
+ * General information out.
+ *
+ * \param message format message for the logger and varaidic args
+ */
 #define HLINFO(message, ...) log(H_INFO, message, ##__VA_ARGS__)
 
 #else
 
-// Application unusable state log error
+/**
+ * Application unusable state log error.
+ *
+ * \param message format message for the logger and varaidic args
+ */
+#define HLEMER(message, ...) 
 
-#define HLEMER(message, ...)
+ /**
+  * Application in critical condition, must take action.
+  *
+  * \param message format message for the logger and varaidic args
+  */
+#define HLCRIT(message, ...) 
 
-// Application in critical condition, must take action
+  /**
+   * Application has a non critical error.
+   *
+   * \param message format message for the logger and varaidic args
+   */
+#define HLERRO(message, ...) 
 
-#define HLCRIT(message, ...)
+   /**
+	* Application has a non emergency condition that must be addressed.
+	*
+	* \param message format message for the logger and varaidic args
+	*/
+#define HLWARN(message, ...) 
 
-// Application has a non critical error
-
-#define HLERRO(message, ...)
-
-// Application has a non emergency condition that must be addressed
-
-#define HLWARN(message, ...)
-
-// General information out
-
+	/**
+	 * General information out.
+	 *
+	 * \param message format message for the logger and varaidic args
+	 */
 #define HLINFO(message, ...)
 
 #endif
