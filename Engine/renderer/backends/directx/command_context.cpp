@@ -210,7 +210,7 @@ i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* command
 
 	queue->fence_val++;
 	api_ret_code = queue->directx_queue[commandlist->type]->Signal(queue->fence, queue->fence_val);
-	if (H_OK != api_ret_code)
+	if (S_OK != api_ret_code)
 	{
 		HLCRIT("signal failed");
 		ret_code = H_FAIL;

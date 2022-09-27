@@ -13,11 +13,10 @@
 /**
  * routine to request direct commandlist to put work into it, this .
  * 
- * \param list pointer to commandlist that will be seeded and placed as required
  * \param type type of list to request
- * \return H_OK on sucess
+ * \return pointer to directx_list or nullptr
  */
-i8 request_commandlist(directx_commandlist* list,queue_type type);
+directx_commandlist* request_commandlist(queue_type type);
 
 
 

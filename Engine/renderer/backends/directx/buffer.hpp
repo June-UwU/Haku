@@ -37,7 +37,7 @@ void shutdown_upload_structure(u64 fence_val);
  * \param type resource type
  * \return H_OK on sucess and H_FAIL on failure
  */
-i8 create_buffer(const directx_context* context,directx_buffer* buffer, i8* data, u64 size,resource_type type);
+i8 create_buffer(const directx_context* context,directx_buffer* buffer, void* data, u64 size,resource_type type);
 
 void release_buffer(directx_buffer* buffer);
 

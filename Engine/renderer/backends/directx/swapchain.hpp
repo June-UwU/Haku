@@ -114,3 +114,16 @@ void set_view_port(directx_swapchain* swapchain, f32 width, f32 height, f32 topX
 * \param stencil[in] stencil value
 */
 void set_depth_stencil(directx_swapchain* swapchain, f32 depth, u8 stencil);
+
+/**
+ * routine to set the bind the render target and depth stencil to the pipeline.
+ * 
+ * \param list directx_commandlist to bind command to
+ * \param swapchain pointer to the swapchain
+ * \return H_OK on sucess and H_FAIL on failure
+ */
+i8 bind_rendertarget_and_depth_stencil(directx_commandlist* list, directx_swapchain* swapchain);
+
+
+
+

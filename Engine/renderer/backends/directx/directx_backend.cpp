@@ -1,10 +1,10 @@
-/*****************************************************************//**
- * \file   directx_backend.cpp
- * \brief  directx 12 backend for directx
- * 
- * \author June
- * \date   September 2022
- *********************************************************************/
+/*****************************************************************/ /**
+* \file   directx_backend.cpp
+* \brief  directx 12 backend for directx
+*
+* \author June
+* \date   September 2022
+*********************************************************************/
 #include "directx.hpp"
 #include "swapchain.hpp"
 #include "debuglayer.hpp"
@@ -16,7 +16,6 @@
 #include "pipeline_state.hpp"
 #include "shader.hpp"
 
-
 #include "directx_types.INL"
 #include "directx_backend.hpp"
 
@@ -26,9 +25,14 @@
 // TODO : finish the back buffer clearing
 // TEST
 #include "buffer.hpp"
-directx_shader_module* module;
-directx_pipeline* pipeline;
-
+static directx_shader_module* module;
+static directx_pipeline*	  pipeline;
+static directx_buffer		  buffer;
+static u64					  buffersize;
+static hk_vertex			  triangleVertices[] = { { { 0.0f, 0.25f, 0.5f }, { 0.2f, 0.0f, 0.0f, 0.4f } },
+													 { { 0.25f, -0.25f, 0.5f }, { 0.0f, 0.3f, 0.0f, 0.4f } },
+													 { { -0.25f, -0.25f, 0.5f }, { 0.0f, 0.0f, 0.1f, 0.4f } } };
+D3D12_VERTEX_BUFFER_VIEW	  vertex_view;
 
 /** directx context creation failure codes */
 typedef enum context_fails
@@ -54,17 +58,21 @@ typedef enum commandlist_fails
 {
 	/** directx_commandlist HK_RENDER commandlist failure */
 	render_commandlist_fail,
+
 	/** copy commandlist HK_COPY commandlist failure */
 	copy_commandlist_fail,
+
 	/** compute commandlist HK_COMPUTE commandlist failure */
 	compute_commandlist_fail,
+
 	/** code to clean all commandlist on failure */
 	clean_commandlist_fail
 } commandlist_fails;
 
-
 /**
  * helper function to create a directx_device for internal purpose.
+ *
+ * \return H_OK on sucess and H_FAIL on failure
  */
 i8 create_device(void);
 
@@ -72,19 +80,23 @@ i8 create_device(void);
 /**
  * the initial routine part of the initialization code that is resposible for directx_context creation.
  */
-i8	 create_context(void);						 // context creator
+i8 create_context(void);
 /**
- * create all 3 type of directx_commandlist for further processing \see queue_type.
+ * create all 3 type of directx_commandlist for further processing
+ * \see queue_type.
+ *
+ * \param device directx_device to use for creation
+ * \return H_OK on sucess and H_FAIL on failure
  */
-i8	 create_commandlist(directx_device* device);					 // command list creator routine
+i8 create_commandlist(directx_device* device);
 /**
  * context destroy routine that is part of the shutdown routine.
  */
-void context_destroy(void);						 // context destroy routine
+void context_destroy(void);
 /**
  * command list destroy routine that is part of the backend shutdown.
  */
-void commandlist_destroy(void);					 // command list destroy routine
+void commandlist_destroy(void);
 /**
  * helper function to print the gpu specs to the console .
  *
@@ -93,16 +105,16 @@ void commandlist_destroy(void);					 // command list destroy routine
 void print_adapter_spec(IDXGIAdapter1* adapter); // print gpu specs
 /**
  * directx_commandlist failure handle routine.
- * 
+ *
  * \param fail_code corresponding commandlist_fails enum
  */
-i8	 commandlist_fail_handler(
-	  commandlist_fails fail_code); // command list fail handler since labels and gotos push me to c99 and I don't wike it
+i8 commandlist_fail_handler(
+	commandlist_fails fail_code); // command list fail handler since labels and gotos push me to c99 and I don't wike it
 
 /**
  * routine to clean up and handle potential directx_device failures.
- * 
- * \param fail_code failure code for direct_device 
+ *
+ * \param fail_code failure code for direct_device
  * \return haku return code
  */
 i8 device_fail_handler(context_fails fail_code);
@@ -110,7 +122,7 @@ i8 device_fail_handler(context_fails fail_code);
 /**
  * directx_context creation failure handle routine.
  *
- * \param context pointer to the corresponding directx_context 
+ * \param context pointer to the corresponding directx_context
  * \param fail_code failure code for specfic instance for context_fails
  */
 i8 context_fail_handler(directx_context* context, context_fails fail_code); // context fail handler
@@ -118,14 +130,14 @@ i8 context_fail_handler(directx_context* context, context_fails fail_code); // c
 // LEGACY
 /**
  * commandlist record function, this resets the commandlist with a new allocator and makes a it state to recording.
- * 
+ *
  * \param commandlist* corresponding direct_commandlist pointer
  * \param type	type of queue used , used to get the approiate allocators
  */
 i8 commandlist_record(directx_commandlist* commandlist, queue_type type);
 /**
  * commandlist routine to end command allocation and close it for execution.
- * 
+ *
  * \param	commandlist pointer to the concerned directx_commandlist
  * \param	type commandlist type concerned
  */
@@ -153,6 +165,14 @@ i8 directx_initialize(renderer_backend* backend_ptr)
 		return ret_code;
 	}
 
+	// TEST : buffer test
+	buffersize = sizeof(triangleVertices);
+	create_buffer(context, &buffer, triangleVertices, buffersize, VERTEX_RESOURCE);
+
+	vertex_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
+	vertex_view.SizeInBytes	   = buffersize;
+	vertex_view.StrideInBytes  = sizeof(hk_vertex);
+
 	return ret_code;
 }
 
@@ -170,8 +190,9 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	hmemory_free(context, MEM_TAG_RENDERER);
 	shutdown_upload_structure(context->queue.fence_val);
 
-// TEST
+	// TEST
 	destroy_pipeline_state(pipeline);
+	release_buffer(&buffer);
 }
 
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
@@ -179,10 +200,10 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 	i8 ret_code = H_OK;
 
 	queue_type type = HK_COMMAND_RENDER;
-	ret_code = prepare_commandlist_record(&context->commandlist[type]);
+	ret_code		= prepare_commandlist_record(&context->commandlist[type]);
 	if (H_OK != ret_code)
 	{
-// TODO :stability work for this recovery
+		// TODO :stability work for this recovery
 		HLWARN("commandlist preparation failure, SLEEP CPU WORK HERE");
 		return H_FAIL;
 	}
@@ -194,13 +215,16 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 		HLWARN("swapchain preparation failure");
 		return H_FAIL;
 	}
-// TEST
-	bind_pipeline_state(&context->commandlist[HK_COMMAND_RENDER],pipeline);
-	
+	// TEST
+	bind_pipeline_state(&context->commandlist[HK_COMMAND_RENDER], pipeline);
+	bind_rendertarget_and_depth_stencil(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
+
 	clear_back_buffer(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain, 0.1f, 0.1f, 0.1f, 1.0f);
 	clear_depth_stencil(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
 	bind_scissor_rect(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
 	bind_view_port(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
+
+	context->commandlist[HK_COMMAND_RENDER].commandlist->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	return ret_code;
 }
@@ -208,26 +232,30 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 {
 	i8 ret_code = H_OK;
-	queue_type type = HK_COMMAND_RENDER;
 
-	ret_code = set_present_target(&context->swapchain, &context->commandlist[HK_COMMAND_RENDER]);
-
-	ret_code = end_commandlist_record(&context->commandlist[HK_COMMAND_RENDER]);
+	context->commandlist[HK_COMMAND_RENDER].commandlist->IASetVertexBuffers(0, 1, &vertex_view);
+	context->commandlist[HK_COMMAND_RENDER].commandlist->DrawInstanced(3, 1, 0, 0);
 
 	if (true == context->is_ready[HK_COMMAND_COPY])
 	{
-		execute_command(context, &context->commandlist[type]);
-		next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_RENDER]);
+		ret_code = end_commandlist_record(&context->commandlist[HK_COMMAND_COPY]);
+		execute_command(context, &context->commandlist[HK_COMMAND_COPY]);
+		next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_COPY]);
+		context->is_ready[HK_COMMAND_COPY] = false;
 	}
 
 	if (true == context->is_ready[HK_COMMAND_COMPUTE])
 	{
-		execute_command(context, &context->commandlist[type]);
-		next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_RENDER]);
+		ret_code = end_commandlist_record(&context->commandlist[HK_COMMAND_COMPUTE]);
+		execute_command(context, &context->commandlist[HK_COMMAND_COPY]);
+		next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_COMPUTE]);
+		context->is_ready[HK_COMMAND_COMPUTE] = false;
 	}
+	set_present_target(&context->swapchain, &context->commandlist[HK_COMMAND_RENDER]);
 
-	execute_command(context, &context->commandlist[type]);
-	context->is_ready[type] = false;
+	end_commandlist_record(&context->commandlist[HK_COMMAND_RENDER]);
+	execute_command(context, &context->commandlist[HK_COMMAND_RENDER]);
+	context->is_ready[HK_COMMAND_RENDER] = false;
 
 	next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_RENDER]);
 
@@ -306,7 +334,6 @@ i8 create_context(void)
 	}
 	HLINFO("directx command context created");
 
-
 	ret_code = command_buffer_pool(&context->device, 2 * command_allocator_size);
 	if (H_FAIL == ret_code)
 	{
@@ -325,7 +352,7 @@ i8 create_context(void)
 	}
 	HLINFO("commandlist created");
 
-// TEST
+	// TEST
 	create_shader_module(&module);
 	create_shader_byte_code(context, L"D:\\Haku\\bin\\BuiltIn_Vertex.cso", HK_VERTEX_SHADER, module);
 	create_shader_byte_code(context, L"D:\\Haku\\bin\\BuiltIn_Pixel.cso", HK_PIXEL_SHADER, module);
@@ -496,7 +523,7 @@ i8 create_device(void)
 	{
 		HLEMER("dxgi factory 6 is not supported");
 		factory_1->Release();
-		ret_code  = device_fail_handler(fail_factory_6);
+		ret_code = device_fail_handler(fail_factory_6);
 		return ret_code;
 	}
 
@@ -528,9 +555,9 @@ i8 create_device(void)
 	return ret_code;
 }
 
-i8 request_commandlist(directx_commandlist* list, queue_type type)
+directx_commandlist* request_commandlist(queue_type type)
 {
-	list = nullptr;
+	directx_commandlist* list = nullptr;
 
 	if (false == context->is_ready[type])
 	{
@@ -539,14 +566,14 @@ i8 request_commandlist(directx_commandlist* list, queue_type type)
 		{
 			// TODO :stability work for this recovery
 			HLWARN("commandlist preparation failure, SLEEP CPU WORK HERE");
-			return H_FAIL;
+			return list;
 		}
 		context->is_ready[type] = true;
 	}
 
 	list = &context->commandlist[type];
 
-	return H_OK;
+	return list;
 }
 
 // FAIL HANDLERS

@@ -1,10 +1,11 @@
-/*****************************************************************//**
- * \file   swapchain.cpp
- * \brief  directx swapchain and support system implementations
- * 
- * \author June
- * \date   September 2022
- *********************************************************************/
+/*****************************************************************/ /**
+																	 * \file   swapchain.cpp
+																	 * \brief  directx swapchain and support system
+																	 *implementations
+																	 *
+																	 * \author June
+																	 * \date   September 2022
+																	 *********************************************************************/
 #include "misc.hpp"
 #include "swapchain.hpp"
 #include "core\logger.hpp"
@@ -31,9 +32,9 @@ typedef enum swapchain_fails
 
 /**
  * swapchain creation failure handling routine.
- * 
+ *
  * \param swapchain[in] pointer to directx_swapchain
- * \param fail_code[in] failure code	
+ * \param fail_code[in] failure code
  * \param context arbitary code that is give to routine this will be used based on the fail_code
  * \return H_FAIL
  */
@@ -51,7 +52,7 @@ i8 swapchain_initialize(directx_context* context)
 	p_prop plat_prop;
 	get_platform_properties(&plat_prop);
 
-	directx_device* device = &context->device;
+	directx_device*	   device			 = &context->device;
 	directx_queue*	   queue			 = &context->queue;
 	directx_swapchain* swapchain		 = &context->swapchain;
 	swapchain->current_back_buffer_index = 0;
@@ -218,7 +219,8 @@ i8 swapchain_initialize(directx_context* context)
 		return ret_code;
 	}
 
-	swapchain->viewport		= { 0.0f, 0.0f, static_cast<f32>(plat_prop.width), static_cast<f32>(plat_prop.height) };
+	swapchain->viewport		= { 0.0f, 0.0f, static_cast<f32>(plat_prop.width), static_cast<f32>(plat_prop.height),
+								0.0f, 1.0f };
 	swapchain->scissor_rect = { 0, 0, (i32)plat_prop.width, (i32)plat_prop.height };
 
 	return ret_code;
@@ -382,6 +384,9 @@ i8 swapchain_resize(directx_context* context, directx_swapchain* swapchain, u16 
 	dsv_heap_prop.CreationNodeMask	   = 0;
 	dsv_heap_prop.VisibleNodeMask	   = 0;
 
+	swapchain->depth_stencil_clear_value.DepthStencil.Depth	  = 1.0f;
+	swapchain->depth_stencil_clear_value.DepthStencil.Stencil = 1.0f;
+
 	api_ret_code = device->logical_device->CreateCommittedResource(
 		&dsv_heap_prop,
 		D3D12_HEAP_FLAG_NONE,
@@ -400,7 +405,7 @@ i8 swapchain_resize(directx_context* context, directx_swapchain* swapchain, u16 
 		&depth_stencil_view_desc,
 		swapchain->dsv_heap->GetCPUDescriptorHandleForHeapStart());
 
-	swapchain->viewport		= { 0.0f, 0.0f, static_cast<f32>(width), static_cast<f32>(height) };
+	swapchain->viewport		= { 0.0f, 0.0f, static_cast<f32>(width), static_cast<f32>(height), 0.0f, 1.0f };
 	swapchain->scissor_rect = { 0, 0, width, height };
 
 	return H_OK;
@@ -410,9 +415,9 @@ void clear_depth_stencil(directx_commandlist* commandlist, directx_swapchain* sw
 {
 	commandlist->commandlist->ClearDepthStencilView(
 		swapchain->dsv_heap->GetCPUDescriptorHandleForHeapStart(),
-		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL,
+		D3D12_CLEAR_FLAG_DEPTH,
 		swapchain->depth_stencil_clear_value.DepthStencil.Depth,
-		swapchain->depth_stencil_clear_value.DepthStencil.Stencil,
+		0,
 		0,
 		nullptr);
 }
@@ -438,12 +443,26 @@ void set_view_port(directx_swapchain* swapchain, f32 width, f32 height, f32 topX
 	swapchain->viewport.Width	 = width;
 	swapchain->viewport.TopLeftX = topX;
 	swapchain->viewport.TopLeftY = topY;
+	swapchain->viewport.MinDepth = 0.0f;
+	swapchain->viewport.MaxDepth = 1.0f;
 }
 
 void set_depth_stencil(directx_swapchain* swapchain, f32 depth, u8 stencil)
 {
 	swapchain->depth_stencil_clear_value.DepthStencil.Depth	  = depth;
 	swapchain->depth_stencil_clear_value.DepthStencil.Stencil = stencil;
+}
+
+i8 bind_rendertarget_and_depth_stencil(directx_commandlist* list, directx_swapchain* swapchain)
+{
+	D3D12_CPU_DESCRIPTOR_HANDLE dsv_handle = swapchain->dsv_heap->GetCPUDescriptorHandleForHeapStart();
+	D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = swapchain->rtv_heap->GetCPUDescriptorHandleForHeapStart();
+
+	rtv_handle.ptr += (swapchain->current_back_buffer_index * swapchain->rtv_heap_increment);
+
+	list->commandlist->OMSetRenderTargets(1, &rtv_handle, true, &dsv_handle);
+
+	return H_OK;
 }
 
 i8 swapchain_fail_handler(directx_swapchain* swapchain, swapchain_fails fail_code, u64 context)
@@ -460,7 +479,7 @@ i8 swapchain_fail_handler(directx_swapchain* swapchain, swapchain_fails fail_cod
 			swapchain->frame_resources[i]->Release();
 		}
 	case association_fail:
-			swapchain->swapchain->Release();
+		swapchain->swapchain->Release();
 	case swapchain_query_fail:
 	case swapchain_fail:
 		break;

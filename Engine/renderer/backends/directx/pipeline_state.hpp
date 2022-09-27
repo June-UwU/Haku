@@ -1,19 +1,21 @@
-/*****************************************************************//**
- * \file   pipeline_state.hpp
- * \brief  pipeline configuration handling pipeline state
- * 
- * \author June
- * \date   September 2022
- *********************************************************************/
-
+/*****************************************************************/ /**
+																	 * \file   pipeline_state.hpp
+																	 * \brief  pipeline configuration handling pipeline
+																	 *state
+																	 *
+																	 * \author June
+																	 * \date   September 2022
+																	 *********************************************************************/
 
 #include "defines.hpp"
 #include "directx_types.INL"
 
 /**
  * directx pipeline state creation routine.
- * 
- * \param module pointer to create pipeline state with the pipeline state
+ *
+ * \param device pointer to the device
+ * \param module pointer to the shader module
+ * \return module pointer to create pipeline state with the pipeline state
  */
 directx_pipeline* create_pipeline_state(directx_device* device, directx_shader_module* module);
 
@@ -26,12 +28,8 @@ void destroy_pipeline_state(directx_pipeline* pipeline);
 
 /**
  * routine to bind the current pipeline state to the frame.
- * 
+ *
  * \param commandlist pointer to the recording commandlist
  * \param pipeline pointer to the pipeline to bind
  */
 void bind_pipeline_state(directx_commandlist* commandlist, directx_pipeline* pipeline);
-
-
-
-
