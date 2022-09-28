@@ -289,8 +289,7 @@ i64 remove_stale_upload_buffer(u64 fence_val)
 		{
 			continue;
 		}
-		// TODO : make this more neat (haku queue work needed)
-		
+// FIX ME : there is a random crash here that should be investigated
 		for_each_queue_t(ret_entry->data)
 		{
 			ID3D12Resource** ret_ptr = (ID3D12Resource**)entry->data;

@@ -95,7 +95,7 @@ HAPI i8 create_queue(queue_t* queue, u64 element_size);
  * 
  * \param queue pointer to the queue
  */
-void destroy_queue(queue_t* queue);
+HAPI void destroy_queue(queue_t* queue);
 
 /**
  * routine to enqueue obj to the queue.
