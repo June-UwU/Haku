@@ -1,11 +1,11 @@
 /*****************************************************************/ /**
-																	 * \file   pipeline_state.hpp
-																	 * \brief  pipeline configuration handling pipeline
-																	 *state
-																	 *
-																	 * \author June
-																	 * \date   September 2022
-																	 *********************************************************************/
+ * \file   pipeline_state.hpp
+ * \brief  pipeline configuration handling pipeline
+ *state
+ *
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 
 #include "defines.hpp"
 #include "directx_types.INL"

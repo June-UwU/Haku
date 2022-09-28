@@ -29,6 +29,13 @@
   */
 #define for_queue_t(queue,condition) for(queue_entry_t* entry = front(queue);condition;entry = next(queue,entry))
 
+/**
+ * macro for doing a for each loop in queue.
+ * 
+ * \param queue pointer to a queue_t 
+ */
+#define for_each_queue_t(queue) for(queue_entry_t* entry = front(queue); entry != nullptr; entry = next(queue,entry))
+
 /** symbol to signify that the entry pointer is not existent */
 constexpr const i64 NULL_PTR = -1;
 

@@ -112,8 +112,8 @@ i8 create_buffer(const directx_context* context, directx_buffer* buffer, void* d
 		resource_desc.DepthOrArraySize	 = 1;
 		resource_desc.MipLevels			 = 1;
 		resource_desc.Format			 = DXGI_FORMAT_UNKNOWN;
-		resource_desc.SampleDesc.Count	 = 0;
-		resource_desc.SampleDesc.Quality = 1;
+		resource_desc.SampleDesc.Count	 = 1;
+		resource_desc.SampleDesc.Quality = 0;
 		resource_desc.Layout			 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		resource_desc.Flags				 = D3D12_RESOURCE_FLAG_NONE;
 
@@ -124,8 +124,8 @@ i8 create_buffer(const directx_context* context, directx_buffer* buffer, void* d
 		buff_resource_desc.DepthOrArraySize	  = 1;
 		buff_resource_desc.MipLevels		  = 1;
 		buff_resource_desc.Format			  = DXGI_FORMAT_UNKNOWN;
-		buff_resource_desc.SampleDesc.Count	  = 0;
-		buff_resource_desc.SampleDesc.Quality = 1;
+		buff_resource_desc.SampleDesc.Count	  = 1;
+		buff_resource_desc.SampleDesc.Quality = 0;
 		buff_resource_desc.Layout			  = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		buff_resource_desc.Flags			  = D3D12_RESOURCE_FLAG_NONE;
 		break;
@@ -290,17 +290,14 @@ i64 remove_stale_upload_buffer(u64 fence_val)
 			continue;
 		}
 		// TODO : make this more neat (haku queue work needed)
-		ID3D12Resource* res_ptr = nullptr;
-		for_queue_t(ret_entry->data, entry->next != NULL_PTR)
+		
+		for_each_queue_t(ret_entry->data)
 		{
-			res_ptr = (ID3D12Resource*)entry->data;
+			ID3D12Resource** ret_ptr = (ID3D12Resource**)entry->data;
+			ID3D12Resource*  res_ptr = *ret_ptr;
 			res_ptr->Release();
 			freed_resource_count++;
 		}
-		ID3D12Resource** last_entry = (ID3D12Resource**)back(ret_entry->data)->data;
-		res_ptr						= last_entry[0];
-		res_ptr->Release();
-		freed_resource_count++;
 
 		HLINFO(
 			"Released Per Frame Upload buffers\n \t frame sync value  : %d\n \t resource count : %d",

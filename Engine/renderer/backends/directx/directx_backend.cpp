@@ -28,11 +28,15 @@
 static directx_shader_module* module;
 static directx_pipeline*	  pipeline;
 static directx_buffer		  buffer;
+static directx_buffer         index;
 static u64					  buffersize;
 static hk_vertex			  triangleVertices[] = { { { 0.0f, 0.25f, 0.5f }, { 0.2f, 0.0f, 0.0f, 0.4f } },
 													 { { 0.25f, -0.25f, 0.5f }, { 0.0f, 0.3f, 0.0f, 0.4f } },
 													 { { -0.25f, -0.25f, 0.5f }, { 0.0f, 0.0f, 0.1f, 0.4f } } };
+static u32 index_buffer[] = { 0, 1, 2 };
+D3D12_INDEX_BUFFER_VIEW       index_view;
 D3D12_VERTEX_BUFFER_VIEW	  vertex_view;
+
 
 /** directx context creation failure codes */
 typedef enum context_fails
@@ -165,13 +169,18 @@ i8 directx_initialize(renderer_backend* backend_ptr)
 		return ret_code;
 	}
 
-	// TEST : buffer test
+// TEST : buffer test
 	buffersize = sizeof(triangleVertices);
 	create_buffer(context, &buffer, triangleVertices, buffersize, VERTEX_RESOURCE);
+	create_buffer(context, &index, index_buffer, 3 * sizeof(u32), INDEX_RESOURCE);
 
 	vertex_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
 	vertex_view.SizeInBytes	   = buffersize;
 	vertex_view.StrideInBytes  = sizeof(hk_vertex);
+
+	index_view.BufferLocation = index.resource->GetGPUVirtualAddress();
+	index_view.SizeInBytes = 3;
+	index_view.Format = DXGI_FORMAT_R32_UINT;
 
 	return ret_code;
 }
@@ -193,6 +202,7 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	// TEST
 	destroy_pipeline_state(pipeline);
 	release_buffer(&buffer);
+	release_buffer(&index);
 }
 
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
@@ -233,8 +243,10 @@ i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 {
 	i8 ret_code = H_OK;
 
+	context->commandlist[HK_COMMAND_RENDER].commandlist->IASetIndexBuffer(&index_view);
 	context->commandlist[HK_COMMAND_RENDER].commandlist->IASetVertexBuffers(0, 1, &vertex_view);
 	context->commandlist[HK_COMMAND_RENDER].commandlist->DrawInstanced(3, 1, 0, 0);
+	
 
 	if (true == context->is_ready[HK_COMMAND_COPY])
 	{
@@ -256,8 +268,8 @@ i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 	end_commandlist_record(&context->commandlist[HK_COMMAND_RENDER]);
 	execute_command(context, &context->commandlist[HK_COMMAND_RENDER]);
 	context->is_ready[HK_COMMAND_RENDER] = false;
-
 	next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_RENDER]);
+
 
 	ret_code = present_frame(&context->swapchain);
 
