@@ -183,11 +183,18 @@ constexpr u64 BYTESTOGiB(u64 bytes)
 }
 // HAKU API EXPORT MACROS
 
+/** Haku macro for marking a function to be depreciated */
+#define HLEGACY __declspec(deprecated)
+
 /**
  * Haku macro for exporting.
  */
 #ifdef HAKU_API_BUILD
+
 #define HAPI __declspec(dllexport)
+
 #else
+
 #define HAPI __declspec(dllimport)
+
 #endif

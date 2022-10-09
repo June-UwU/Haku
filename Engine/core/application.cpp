@@ -18,7 +18,6 @@
 #define TEST 0
 
 #if TEST
-#include "generics/queue.hpp"
 #include "generics/hash_set.hpp"
 #include "generics/single_ll.hpp"
 #define RUN_TEST() application_run_test()
@@ -274,9 +273,6 @@ void application_run_test(void)
 	HLWARN("MEMORY LOG OF AFTER HASH_TABLE");
 	hlog_memory_report();
 
-	HLWARN("MEMORY LOG OF BEFORE QUEUE");
-	hlog_memory_report();
-	test_queue();
 	HLWARN("MEMORY LOG OF AFTER QUEUE");
 	hlog_memory_report();
 #endif 

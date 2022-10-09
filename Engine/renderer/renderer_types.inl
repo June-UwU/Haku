@@ -8,6 +8,7 @@
 #pragma once
 
 #include "defines.hpp"
+#include <hmath_defines.hpp>
 #include <haku_math.hpp>
 /*
 
@@ -24,7 +25,7 @@ typedef struct global_transforms
 	mat4x4 projection_matix;
 
 	/** world transform of meshes */
-	mat4x4 world_matrix;
+	mat4x4 view_matrix;
 
 	/** padding for 256bytes alignment that can be expanded upon */
 	char reserved_data[128];

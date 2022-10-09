@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * \file   main.cpp
+ * \brief  haku unit tests
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #include "test.hpp"
 #include <gtest/gtest.h>
 #include "platform/platform.hpp"

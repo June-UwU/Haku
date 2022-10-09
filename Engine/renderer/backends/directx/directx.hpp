@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * \file   directx.hpp
+ * \brief  directx backend implementations header
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #pragma once
 
 // NOTE : most subsystems have what is defined as fail handlers and fail code , these are used for potential fail
@@ -7,30 +14,49 @@
 
 #include "renderer/renderer_back_end.hpp"
 
-// @breif	directx initialization
-// @param	: pointer to backend struct
-// @return 	: H_OK on sucess
+/**
+ * routine for directx initialization.
+ * 
+ * \param backend_ptr pointer to backend struct
+ * \return H_OK on sucess
+ */
 i8 directx_initialize(renderer_backend* backend_ptr);
 
-// @breif	directx shutdown
-// @param	: pointer to backend struct
+/**
+ * routine for directx shutdown.
+ * 
+ * \param backend_ptr pointer to backend struct
+ */
 void directx_shutdown(renderer_backend* backend_ptr);
 
-// @breif 	routine to begin frame
-// @param	: backend pointer
-// @param	: delta time
-// @return 	: H_OK on sucess
+/**
+ * routine to begin frame.
+ * 
+ * \param backend_ptr pointer to backend 
+ * \param delta_time delta time for the last call
+ * \return H_OK on sucess else H_FAIL
+ */
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time);
 
-// @breif 	routine to end frame
-// @param	: backend pointer
-// @param	: delta time
-// @return 	: H_OK on sucess, H_FAIL is  critical condition
+/**
+ * routine to end frame.
+ * 
+ * \param backend_ptr pointer to the backend 
+ * \param delta_time delta time from the last call
+ * \return H_OK on sucess, else H_FAIL is critical condition
+ */
 i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time);
 
-// @breif	function to resize the directx backend
-// @param	: pointer to the backend
-// @param	: height to resize to
-// @param	: width to resize to
-// @return	: H_OK on sucess
+/**
+ * function to resize the directx backend.
+ *
+ * \param backend_ptr pointer to the backend
+ * \param height height to resize to
+ * \param width width to resize to
+ * \return H_OK on sucess 
+ */
 i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width);
+
+
+
+

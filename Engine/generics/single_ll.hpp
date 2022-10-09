@@ -105,6 +105,4 @@ HAPI void destroy_slist(slist* list);
  */
 HAPI void reset(slist* list);
 
-/** singly linked list test routine */
-void test_slist(void);
 

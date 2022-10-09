@@ -12,15 +12,18 @@
 #include "command_context.hpp"
 #include "memory/hmemory.hpp"
 #include "command_buffer_pool.hpp"
-
-#include "pipeline_state.hpp"
-#include "shader.hpp"
-
 #include "directx_types.INL"
 #include "directx_backend.hpp"
+#include "renderer/renderer_types.inl"
+
+#include "shader.hpp"
+#include "pipeline_state.hpp"
+
+
 
 #pragma comment(lib, "D3d12.lib")
 #pragma comment(lib, "DXGI.lib")
+
 
 // TODO : finish the back buffer clearing
 // TEST
@@ -148,6 +151,8 @@ i8 commandlist_record(directx_commandlist* commandlist, queue_type type);
 i8 commandlist_end_recording(directx_commandlist* commandlist, queue_type type);
 /** singleton instance of directx context */
 static directx_context* context;
+static global_transforms transforms;
+
 
 i8 directx_initialize(renderer_backend* backend_ptr)
 {

@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.20)
 message("${API}")
 message("Building Haku Shared Library")
 
-
-
 set(PROJECT_NAME "Haku_Engine")
 
 file(GLOB_RECURSE global_inc ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
@@ -71,6 +69,7 @@ add_library(${PROJECT_NAME}
 	)
 
 
+target_compile_options(${PROJECT_NAME} PUBLIC /arch:SSE2)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE ${DEPEND_DIR}/Haku_math/include)
 add_dependencies(${PROJECT_NAME} shaders)

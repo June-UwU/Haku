@@ -118,31 +118,3 @@ void reset(slist* list)
 	hmemory_free(del_ptr->data, MEM_TAG_SLIST);
 	hmemory_free(del_ptr,MEM_TAG_SLIST);
 }
-
-void test_slist(void)
-{
-	slist* list = (slist*)malloc(sizeof(slist));
-	HAKU_CREATE_SLIST(list, u64);
-
-	for (u64 i = 0; i < 256; i++)
-	{
-		push_back(list, &i);
-	}
-
-	slist_t* current = list->head;
-	
-
-	u64 i = 0;
-	while( nullptr != current)
-	{
-		u64* data = (u64*)current->data;
-		if (*data != i)
-		{
-			HLEMER("logical error in slist");
-		}
-		i++;
-		current = current->next;
-	}
-	HLINFO("slist test passed..!");
-	destroy_slist(list);
-}

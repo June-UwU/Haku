@@ -154,10 +154,6 @@ HAPI queue_entry_t* front(queue_t* queue);
 HAPI queue_entry_t* back(queue_t* queue);
 
 
-/**
- * routine to test the queue.
- */
-void test_queue(void);
 
 
 

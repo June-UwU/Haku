@@ -1,61 +1,101 @@
+/*****************************************************************//**
+ * \file   file_system.hpp
+ * \brief  haku file operations header file
+ * 
+ * \author June
+ * \date   September 2022
+ *********************************************************************/
 #pragma once
 
 #include "defines.hpp"
 
-typedef enum
+// TODO :  this documentation needs to be fact checked
+/** bit feild to pass for the file permission */
+typedef enum file_mode
 {
+	/** read permission */
 	READ			= BIT(0),
+
+	/** write permission */
 	WRITE			= BIT(1),
+
+	/** append permission */
 	APPEND			= BIT(2),
+
+	/** read and append */
 	READ_EXTENDED	= BIT(3),
+
+	/** write and append */
 	WRITE_EXTENDED	= BIT(4),
+
+	/** write and append */
 	APPEND_EXTENDED = BIT(5),
 } file_mode;
 
+/** struct that represent a opened file */
 typedef struct file
 {
-	// file mode that it is opened with
+	/**  file mode that it is opened with */
 	file_mode mode;
 
-	// pointer to the opened file
+	/** pointer to the opened file */
 	void* file_ptr;
 } file;
 
-// @breif 	routine to open a file
-// @param	: file name to open or create
-// @param 	: file mode to use open
-// @return 	: file pointer
+/**
+ * routine to open a file.
+ * 
+ * \param filename file name to open or create
+ * \param mode file mode to use open
+ * \return file pointer
+ */
 HAPI file* file_open(const char* filename, const file_mode mode);
 
-// @breif 	routine to close an open file
-// @param	: pointer to file that was opened
-// @return	: haku return code , H_OK
+/**
+ * routine to close an open file.
+ * 
+ * \param file_ptr pointer to file that was opened
+ * \return H_OK on sucess and H_FAIL on fail
+ */
 HAPI i8 file_close(file* file_ptr);
 
-// @breif	routine to read from a file(THIS ROUTINE ALLOCATES MEMORY)
-// @param 	: destination buffer
-// @param 	: size of the objects to read
-// @param	: count of the objects to read
-// @return 	: number of bytes read
+/**
+ * routine to read from a file(THIS ROUTINE ALLOCATES MEMORY).
+ * 
+ * \param buffer destination buffer
+ * \param size size of the objects to read
+ * \param count count of the objects to read
+ * \param file_ptr file pointer that 
+ * \return number of bytes read
+ */
 HAPI u64 file_read(void* buffer, u64 size, u64 count, const file* file_ptr);
 
-// @breif 	routine to write to a file
-// @param	: destination file ptr
-// @param	: size of the objects to write
-// @param	: count of the objects to read
-// @param	: pointer to the data that needs to written
-// @return 	: number of bytes written
+/**
+ * routine to write to a file.
+ * 
+ * \param file_ptr destination file ptr
+ * \param size size of the objects to write
+ * \param count count of the objects to read
+ * \param buffer pointer to the data that needs to written
+ * \return number of bytes written
+ */
 HAPI u64 file_write(file* file_ptr, u64 size, u64 count, const void* buffer);
 
-// @breif	routine to read an entire file
-// @param	: destinaton pointer
-// @param	: pointer to the file
-// @return	: number of bytes read
+/**
+ * routine to read an entire file.
+ * 
+ * \param buffer destinaton pointer
+ * \param file_ptr pointer to the file
+ * \return number of bytes read
+ */
 HAPI u64 file_read_entire(void* buffer, file* file_ptr);
 
-// @breif	routine to get the file permisson character string
-// @param	: file mode
-// @return	: character string
+/**
+ * routine to get the file permisson character string.
+ * 
+ * \param mode file mode
+ * \return character string
+ */
 constexpr const char* file_perm(const u64 mode)
 {
 	switch (mode)
