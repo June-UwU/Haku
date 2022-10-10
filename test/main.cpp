@@ -13,8 +13,9 @@
 #include "generics/hash_set.hpp"
 #include "memory/hmemory.hpp"
 #include "generics/queue.hpp"
+#include "generics/hash_map.hpp"
 
-TEST(hash_set, hash_set_functionailty_tests)
+TEST(generics_tests, hash_set_functionailty_tests)
 {
     hash_set_t  table;
     HAKU_CREATE_INT_HASH_SET(&table, u64);
@@ -78,7 +79,7 @@ TEST(hash_set, hash_set_functionailty_tests)
     destroy_hash_table(&table);
 }
 
-TEST(single_ll, linked_list_test)
+TEST(generics_tests, linked_list_test)
 {
 	slist* list = (slist*)malloc(sizeof(slist));
 	HAKU_CREATE_SLIST(list, u64);
@@ -102,7 +103,7 @@ TEST(single_ll, linked_list_test)
 	destroy_slist(list);
 }
 
-TEST(linear_allocator_test, linear_allocator_test)
+TEST(memory_tests, linear_allocator_test)
 {
 	linear_allocator* allocator = create_linear_allocator(512);
 
@@ -122,7 +123,7 @@ TEST(linear_allocator_test, linear_allocator_test)
 
 }
 
-TEST(queue_t_test, haku_queue_test)
+TEST(generics_tests, haku_queue_test)
 {
 	queue_t queue;
 	u64 test_range = 512;
@@ -158,6 +159,58 @@ TEST(queue_t_test, haku_queue_test)
 	EXPECT_EQ(NULL_PTR, queue.rear);
 
 	destroy_queue(&queue);
+}
+
+TEST(generics_tests, hash_map_test)
+{
+	hash_map_t map;
+	u32 test_range = 20;
+
+	create_hash_map(&map, sizeof(u64), HASH_MAP_INT_HASH);
+
+	hash_map_entry_t* ret_entry = find(&map, 69);
+	EXPECT_EQ(nullptr,ret_entry);
+
+	for (u64 i = 0; i < test_range; i++)
+	{
+		push_back(&map, i, &i);
+	}
+	
+	for (u64 i = 0; i < test_range; i++)
+	{
+		hash_map_entry_t* ret_entry = find(&map, i);
+		if (ret_entry)
+		{
+			u64* ret_val = (u64*)ret_entry->data;
+			EXPECT_EQ(i, *ret_val);
+		}
+		EXPECT_TRUE(nullptr != ret_entry);
+
+	}
+
+	for (u64 i = 0; i < test_range; i++)
+	{
+		if (0 == (i % 2))
+		{
+			remove_entry(&map, i);
+		}
+	}
+
+	for (u64 i = 0; i < test_range; i++)
+	{
+		hash_map_entry_t* ret_entry = find(&map, i);
+		if (0 == (i % 2))
+		{
+			EXPECT_EQ(nullptr, ret_entry);
+		}
+		else
+		{
+			u64* ret_val = (u64*)ret_entry->data;
+			EXPECT_EQ(i, *ret_val);
+		}
+	}
+
+	destroy_hash_map(&map);
 }
 
 int main(int argc, char** argv) 

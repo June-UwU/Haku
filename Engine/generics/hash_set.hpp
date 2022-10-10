@@ -41,6 +41,9 @@
 /** constant for Cormen's multiplication hash method */
 constexpr const f32 A = 0.6180339887f; //(A is some random looking real number, the Knuth variable)
 
+/** constant that triggers a rehash when the leftover size is below this */
+constexpr const u32 REHASH_SIZE = 16u;
+
 /** constant to signify that the hash is uninitialized */
 constexpr const i64 UNINITIALIZED_HASH_ENTRY = -2;
 
@@ -74,7 +77,7 @@ typedef enum  key_type
 /** hash table structure */
 typedef struct hash_set_t
 {
-	/** element size */
+	/** element count*/
 	u64 element_count;
 
 	/** key type used */

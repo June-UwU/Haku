@@ -56,7 +56,7 @@ void destroy_hash_table(hash_set_t * table)
 
 void push_back(hash_set_t * table, void* key, void* obj)
 {
-    if ((table->bin_size - table->element_count) < 16u)
+    if ((table->bin_size - table->element_count) < REHASH_SIZE)
     {
         rehash(table);
     }

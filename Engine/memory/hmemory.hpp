@@ -62,6 +62,9 @@ typedef enum memory_tag
 	/** memory allocations made for queue */
 	MEM_TAG_QUEUE,
 
+	/** memory allocations made by the hash map */
+	MEM_TAG_HASH_MAP,
+
 	/** last enum for size purposes */
 	MEMORY_TAG_COUNT
 } memory_tag;
@@ -72,7 +75,7 @@ constexpr const char* memory_tag_lookup[MEMORY_TAG_COUNT]{
 	"\t Unknown 		: %d %s", "\t Logger 		: %d %s", "\t Memory 		: %d %s", "\t Platform	: %d %s",
 	"\t Renderer	: %d %s",		  "\t Game		: %d %s",	   "\t Darray		: %d %s", "\t CQueue		: %d %s",
 	"\t Allocators  : %d %s",	  "\t Core        : %d %s",	   "\t Slist		: %d %s",   "\t Hash Table		: %d %s",
-	"\t Queue  : %d %s"
+	"\t Queue  : %d %s" ,"Hash map  : %d %s"
 };
 
 /**
