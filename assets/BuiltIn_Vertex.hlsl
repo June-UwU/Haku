@@ -6,7 +6,7 @@ struct PixelData
 
 struct VextexData
 {
-	float3 pos : POSITION; 
+	float4 pos : POSITION; 
 	float4 col : COLOR;
 };
 
@@ -14,7 +14,7 @@ struct VextexData
 PixelData main(VextexData data)
 {
     PixelData ret;
-    ret.p_pos = float4(data.pos,1.0f);
+    ret.p_pos = data.pos;
     ret.p_col = data.col;
     return ret;
 }

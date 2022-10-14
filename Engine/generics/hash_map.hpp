@@ -99,6 +99,24 @@ HAPI hash_map_entry_t* find(hash_map_t* map,i64 key);
 HAPI i8 remove_entry(hash_map_t* map,i64 key);
 
 /**
+ * routine to get the key with the lower bound.
+ * 
+ * \param  map pointer to the hash map to be structure
+ * \param bound the lower bound
+ * \return pointer to the hash_map_entry complying to [lower_bound , infinite)
+ */
+HAPI hash_map_entry_t* lower_bound(hash_map_t* map, i64 bound);
+
+/**
+ * routine to get the key with the upper bound.
+ *
+ * \param  map pointer to the hash map to be structure
+ * \param bound the upper bound
+ * \return pointer to the hash_map_entry complying to [ infinite, upper)
+ */
+HAPI hash_map_entry_t* upper_bound(hash_map_t* map, i64 bound);
+
+/**
  * routine to destroy a hash map properly.
  * 
  * \param  map pointer to the map to destroy

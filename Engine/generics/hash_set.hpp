@@ -147,6 +147,24 @@ HAPI i8 remove_entry(hash_set_t* table, void* key);
 HAPI hash_set_entry_t* next(hash_set_t* table,hash_set_entry_t* entry);
 
 /**
+ * routine to find the lower bound key in the hash set key, returns [lower_bound, infinity).
+ * 
+ * \param set pointer to the hash_set_t to find the lower bound
+ * \param bound to compare the bound with
+ * \return pointer to the entry that is with the bound
+ */
+HAPI hash_set_entry_t* lower_bound(hash_set_t* set, i64 bound);
+
+/**
+ * routine to find the upper bound key in the hash set key, returns [upper_bound, infinity).
+ *
+ * \param set pointer to the hash_set_t to find the lower bound
+ * \param bound to compare the bound with
+ * \return pointer to the entry that is with the bound
+ */
+HAPI hash_set_entry_t* upper_bound(hash_set_t* set, i64 bound);
+
+/**
  * hashing functions.
  * 
  * \param table pointer to table

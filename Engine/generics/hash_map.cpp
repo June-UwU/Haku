@@ -205,6 +205,72 @@ i8 remove_entry(hash_map_t* map, i64 key)
 	return H_FAIL;
 }
 
+hash_map_entry_t* lower_bound(hash_map_t* map, i64 bound)
+{
+	u64 i = 0u;
+	hash_map_entry_t* ret_ptr = nullptr;
+	hash_map_entry_t* comp = map->bin;
+	while (true)
+	{
+		if (i >= map->bin_size)
+		{
+			return nullptr;
+		}
+
+		if (comp->key >= bound && FREE_ENTRY != comp->key)
+		{
+			ret_ptr = (map->bin + i);
+			break;
+		}
+		i++;
+		comp = (map->bin + i);
+	}
+
+	for (; i < map->bin_size; i++)
+	{
+		comp = (map->bin + i);
+		if (comp->key >= bound && comp->key < ret_ptr->key && FREE_ENTRY!= comp->key)
+		{
+			ret_ptr = comp;
+		}
+	}
+
+	return ret_ptr;
+}
+
+hash_map_entry_t* upper_bound(hash_map_t* map, i64 bound)
+{
+	u64 i = 0u;
+	hash_map_entry_t* ret_ptr = nullptr;
+	hash_map_entry_t* comp = map->bin;
+	while (true)
+	{
+		if (i >= map->bin_size)
+		{
+			return nullptr;
+		}
+
+		if (comp->key < bound && FREE_ENTRY != comp->key)
+		{
+			ret_ptr = (map->bin + i);
+			break;
+		}
+		i++;
+		comp = (map->bin + i);
+	}
+
+	for (; i < map->bin_size; i++)
+	{
+		comp = (map->bin + i);
+		if (comp->key < bound && comp->key > ret_ptr->key && FREE_ENTRY != comp->key)
+		{
+			ret_ptr = comp;
+		}
+	}
+
+	return ret_ptr;
+}
+
 void destroy_hash_map(hash_map_t* map)
 {
 	hmemory_free(map->bin, MEM_TAG_HASH_MAP);

@@ -213,6 +213,41 @@ TEST(generics_tests, hash_map_test)
 	destroy_hash_map(&map);
 }
 
+
+TEST(generic_test, bound_test)
+{
+	hash_map_t hash_map;
+	hash_set_t hash_set;
+
+	create_hast_table(&hash_set, sizeof(u64), INT_HASH);
+	create_hash_map(&hash_map, sizeof(u64), HASH_MAP_INT_HASH);
+
+	for (u64 i = 10; i < 64; i++)
+	{
+		push_back(&hash_map, i, &i);
+		push_back(&hash_set, &i, &i);
+	}
+
+	for (u64 i = 11; i < 64; i++)
+	{
+		hash_set_entry_t* ret_set_l = lower_bound(&hash_set, i);
+		EXPECT_EQ(ret_set_l->key, i);
+
+		hash_map_entry_t* ret_map_l = lower_bound(&hash_map, i);
+		EXPECT_EQ(ret_map_l->key, i);
+
+		hash_set_entry_t* ret_set_u = upper_bound(&hash_set, i);
+		EXPECT_LT(ret_set_u->key, i);
+		EXPECT_EQ(ret_set_u->key, i - 1);
+
+		hash_map_entry_t* ret_map_u = upper_bound(&hash_map, i);
+		EXPECT_LT(ret_map_u->key, i);
+		EXPECT_EQ(ret_map_u->key, i - 1);
+	}
+	destroy_hash_map(&hash_map);
+	destroy_hash_table(&hash_set);
+}
+
 int main(int argc, char** argv) 
 {
 	prepare_subsystem_for_test();

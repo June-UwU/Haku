@@ -190,6 +190,72 @@ hash_set_entry_t* next(hash_set_t* table, hash_set_entry_t* entry)
     return table->bin + offset;
 }
 
+hash_set_entry_t* lower_bound(hash_set_t* set, i64 bound)
+{
+    u64 i = 0u;
+    hash_set_entry_t* ret_ptr = nullptr;
+    hash_set_entry_t* comp = set->bin;
+    while (true)
+    {
+        if (i >= set->bin_size)
+        {
+            return nullptr;
+        }
+
+        if (comp->key >= bound && UNINITIALIZED_HASH_ENTRY != comp->key && NO_HASH_ENTRY != comp->key)
+        {
+            ret_ptr = (set->bin + i);
+            break;
+        }
+        i++;
+        comp = (set->bin + i);
+    }
+
+    for (; i < set->bin_size; i++)
+    {
+        comp = (set->bin + i);
+        if (comp->key >= bound && comp->key < ret_ptr->key && UNINITIALIZED_HASH_ENTRY != comp->key && NO_HASH_ENTRY != comp->key)
+        {
+            ret_ptr = comp;
+        }
+    }
+
+    return ret_ptr;
+}
+
+HAPI hash_set_entry_t* upper_bound(hash_set_t* set, i64 bound)
+{
+    u64 i = 0u;
+    hash_set_entry_t* ret_ptr = nullptr;
+    hash_set_entry_t* comp = set->bin;
+    while (true)
+    {
+        if (i >= set->bin_size)
+        {
+            return nullptr;
+        }
+
+        if (comp->key < bound && UNINITIALIZED_HASH_ENTRY != comp->key && NO_HASH_ENTRY != comp->key)
+        {
+            ret_ptr = (set->bin + i);
+            break;
+        }
+        i++;
+        comp = (set->bin + i);
+    }
+
+    for (; i < set->bin_size; i++)
+    {
+        comp = (set->bin + i);
+        if (comp->key < bound && comp->key > ret_ptr->key && UNINITIALIZED_HASH_ENTRY != comp->key && NO_HASH_ENTRY != comp->key)
+        {
+            ret_ptr = comp;
+        }
+    }
+
+    return ret_ptr;
+}
+
 void rehash(hash_set_t * table)
 {
     HLWARN("Rehashed hash table : %x ", table);
