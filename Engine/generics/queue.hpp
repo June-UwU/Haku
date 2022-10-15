@@ -122,6 +122,14 @@ HAPI void enqueue(queue_t* dest_queue, queue_t* src_queue);
 HAPI void* dequeue(queue_t* queue);
 
 /**
+ * routine to remove the specfic entry of a  queue_t.
+ * 
+ * \param queue pointer to the queue to remove from
+ * \param entry entry to remove
+ */
+HAPI void remove_at(queue_t* queue, queue_entry_t* entry);
+
+/**
  * routine to get the next queue_entry.
  * 
  * \param queue pointer to the queue

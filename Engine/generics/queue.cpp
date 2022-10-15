@@ -109,6 +109,10 @@ void* dequeue(queue_t* queue)
 
 queue_entry_t* next(queue_t* queue, queue_entry_t* entry)
 {
+	if (nullptr == entry)
+	{
+		return nullptr;
+	}
 	u64 next = entry->next;
 
 	if (NULL_PTR == next)
@@ -149,6 +153,36 @@ queue_entry_t* back(queue_t* queue)
 	return &queue->entry_array[back];
 }
 
+void remove_at(queue_t* queue, queue_entry_t* entry)
+{
+	if (entry == front(queue))
+	{
+		queue->front = entry->next;
+		return;
+	}
+
+	queue_entry_t* prv = front(queue);
+	queue_entry_t* nxt = next(queue, prv);
+	for (queue_entry_t* iter = prv; iter != nullptr; iter = next(queue, prv))
+	{
+		//nxt != entry
+		if (entry == iter)
+		{
+			nxt = iter;
+			break;
+		}
+		prv = nxt;
+		nxt = next(queue, nxt);
+	}
+	if (nxt == entry &&  nullptr != nxt && nullptr != prv)
+	{
+		prv->next = nxt->next;
+	}
+	else
+	{
+		HLWARN("failed to find the entry, this may be a invalid queue entry");
+	}
+}
 
 void expand_queue(queue_t* queue)
 {
