@@ -18,6 +18,6 @@
  */
 directx_commandlist* request_commandlist(queue_type type);
 
-
+directx_device* get_device();
 
 

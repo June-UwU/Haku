@@ -15,10 +15,11 @@
 #include "directx_types.INL"
 #include "directx_backend.hpp"
 #include "renderer/renderer_types.inl"
+#include "gpu_descriptors.hpp"
+#include "cpu_descriptors.hpp"
 
 #include "shader.hpp"
 #include "pipeline_state.hpp"
-
 
 
 #pragma comment(lib, "D3d12.lib")
@@ -33,9 +34,9 @@ static directx_pipeline*	  pipeline;
 static directx_buffer		  buffer;
 static directx_buffer         index;
 static u64					  buffersize;
-static hk_vertex			  triangleVertices[] = { { { 0.0f, 0.25f, 0.5f }, { 0.2f, 0.0f, 0.0f, 0.4f } },
-													 { { 0.25f, -0.25f, 0.5f }, { 0.0f, 0.3f, 0.0f, 0.4f } },
-													 { { -0.25f, -0.25f, 0.5f }, { 0.0f, 0.0f, 0.1f, 0.4f } } };
+static hk_vertex			  triangleVertices[] = { { { 0.0f, 0.25f, 0.5f,1.0f }, { 1.0f, 0.0f, 0.0f, 0.4f } },
+													 { { 0.25f, -0.25f, 0.5f,1.0f }, { 0.0f, 1.0f, 0.0f, 0.4f } },
+													 { { -0.25f, -0.25f, 0.5f ,1.0f}, { 0.0f, 0.0f, 1.0f, 0.4f } } };
 static u32 index_buffer[] = { 0, 1, 2 };
 D3D12_INDEX_BUFFER_VIEW       index_view;
 D3D12_VERTEX_BUFFER_VIEW	  vertex_view;
@@ -171,10 +172,20 @@ i8 directx_initialize(renderer_backend* backend_ptr)
 	if (H_FAIL == ret_code)
 	{
 		HLEMER("upload structure creation failure");
+		context_destroy();
 		return ret_code;
+	}
+	ret_code = initialize_gpu_descritor_heap(&context->device);
+	if (H_FAIL == ret_code)
+	{
+		HLEMER("gpu visible heap creation failure");
+		context_destroy();
+		shutdown_upload_structure(context->queue.fence_val);
+		return H_FAIL;
 	}
 
 // TEST : buffer test
+	test_descriptor();
 	buffersize = sizeof(triangleVertices);
 	create_buffer(context, &buffer, triangleVertices, buffersize, VERTEX_RESOURCE);
 	create_buffer(context, &index, index_buffer, 3 * sizeof(u32), INDEX_RESOURCE);
@@ -203,6 +214,7 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	swapchain_shutdown(&context->swapchain);
 	hmemory_free(context, MEM_TAG_RENDERER);
 	shutdown_upload_structure(context->queue.fence_val);
+	shutdown_gpu_heap();
 
 	// TEST
 	destroy_pipeline_state(pipeline);
@@ -233,6 +245,7 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 	// TEST
 	bind_pipeline_state(&context->commandlist[HK_COMMAND_RENDER], pipeline);
 	bind_rendertarget_and_depth_stencil(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
+	set_gpu_descriptor_heaps(&context->commandlist[HK_COMMAND_RENDER]);
 
 	clear_back_buffer(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain, 0.1f, 0.1f, 0.1f, 1.0f);
 	clear_depth_stencil(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
@@ -591,6 +604,11 @@ directx_commandlist* request_commandlist(queue_type type)
 	list = &context->commandlist[type];
 
 	return list;
+}
+
+directx_device* get_device()
+{
+	return &context->device;
 }
 
 // FAIL HANDLERS

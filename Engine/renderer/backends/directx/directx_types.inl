@@ -7,11 +7,10 @@
  *********************************************************************/
 #pragma once
 
-// TODO : remove the string lib 
-#include <cwchar>
-
-#include <hmath_types.hpp>
+// TODO :ve the string lib 
 #include "defines.hpp"
+#include <haku_math.h>
+#include <cwchar>
 #include <D3d12.h>
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
@@ -362,8 +361,8 @@ typedef struct directx_pipeline
 typedef struct hk_vertex
 {
 	/** variable that holds the point coordinates */
-	vector3d point;
+	vector4 point;
 
 	/** variable that hold the color data */
-	vector4d color;
+	vector4 color;
 }hk_vertex;
