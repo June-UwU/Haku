@@ -38,7 +38,7 @@ i8 queue_flush(directx_queue* queue, queue_type type);
  * \param commandlist that is used to determine the type
  * \return H_OK on sucess
  */
-i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* commandlist);
+i8 next_frame_synchronization(directx_queue* queue, directx_cc* commandlist);
 
 /**
  * command context failhandler.
@@ -141,42 +141,15 @@ void command_context_shutdown(directx_queue* queue)
 	CloseHandle(queue->event);
 }
 
-void execute_command(directx_context* context, directx_commandlist* commandlist)
+void execute_command(directx_context* context, directx_cc* commandlist)
 {
 	ID3D12CommandList* list[] = { commandlist->commandlist };
 	context->queue.directx_queue[commandlist->type]->ExecuteCommandLists(1, list);
-	commandlist->seeded_allocator->state = COMMAND_BUFFER_STATE_SUBMITTED;
-	context->is_ready[commandlist->type] = false;
+	commandlist->state = COMMAND_BUFFER_STATE_SUBMITTED;
 }
 
-i8 prepare_commandlist_record(directx_commandlist* commandlist)
-{
-	HRESULT api_ret_code = S_OK;
 
-	directx_allocator* alloc_ptr = request_command_buffer(commandlist->type);
-
-	if (nullptr == alloc_ptr)
-	{
-		HLCRIT("command buffer pool returned nullptr for reset");
-		return H_FAIL;
-	}
-	alloc_ptr->state = COMMAND_BUFFER_STATE_RECORDING;
-
-	commandlist->seeded_allocator = alloc_ptr;
-
-	api_ret_code = commandlist->commandlist->Reset(alloc_ptr->allocator, nullptr);
-
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("commandlist result returned an error");
-		return H_FAIL;
-	}
-	commandlist->state = COMMANDLIST_RECORDING;
-
-	return H_OK;
-}
-
-i8 end_commandlist_record(directx_commandlist* commandlist)
+i8 end_commandlist_record(directx_cc* commandlist)
 {
 	HRESULT api_ret_code = commandlist->commandlist->Close();
 	if (S_OK != api_ret_code)
@@ -184,7 +157,7 @@ i8 end_commandlist_record(directx_commandlist* commandlist)
 		HLCRIT("command list failed to close");
 		return H_FAIL;
 	}
-	commandlist->seeded_allocator->state = COMMAND_BUFFER_STATE_RECORDING_ENDED;
+	commandlist->state = COMMAND_BUFFER_STATE_RECORDING_ENDED;
 	return H_OK;
 }
 
@@ -202,7 +175,7 @@ i8 full_gpu_flush(directx_queue* queue, queue_type type)
 	return ret_code;
 }
 
-i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* commandlist)
+i8 next_frame_synchronization(directx_queue* queue, directx_cc* commandlist)
 {
 	i8 ret_code = H_OK;
 
@@ -216,12 +189,16 @@ i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* command
 		ret_code = H_FAIL;
 		return ret_code;
 	}
-	commandlist->seeded_allocator->fence_val = queue->fence_val;
+	commandlist->fence_val = queue->fence_val;
 
 	u64 completed_val = queue->fence->GetCompletedValue();
-// TODO : do this in renderer?
-	reintroduce_allocator(completed_val);
-	remove_stale_upload_buffer(completed_val);
+	if (completed_val > 0)
+	{
+		completed_val--;
+	}
+	reintroduce_dxcc(completed_val);
+	reclaim_buffer(completed_val);
+
 
 	return ret_code;
 }

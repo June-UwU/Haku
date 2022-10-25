@@ -69,7 +69,7 @@ add_library(${PROJECT_NAME}
 	)
 
 
-target_compile_options(${PROJECT_NAME} PUBLIC /arch:SSE2)
+target_compile_options(${PROJECT_NAME} PUBLIC /arch:SSE)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(${PROJECT_NAME} PRIVATE ${DEPEND_DIR}/Haku_math/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${DEPEND_DIR}/DirectXMath/Inc)
 add_dependencies(${PROJECT_NAME} shaders)

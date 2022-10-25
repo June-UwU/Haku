@@ -9,7 +9,8 @@
 #include <cstdlib>
 #include <cstdint>
 
-/**
+
+ /**
  * bit shift macro shifts by x places to the left.
  */
 #define BIT(x) 0x1 << x
@@ -21,7 +22,7 @@
  * Haku runtime assertion macro.
  */
 #define HASSERT(condition)                                                                                             \
-	if (!condition)                                                                                                    \
+	if (!(condition))                                                                                                    \
 	{                                                                                                                  \
 		HLEMER("Assertion Failure..!\n File : %s \n Line : %d", __FILE__, __LINE__);                                   \
 		abort();                                                                                                       \
@@ -181,6 +182,22 @@ constexpr u64 BYTESTOGiB(u64 bytes)
 {
 	return BYTESTOMiB(bytes) / 1024u;
 }
+
+/**
+ * default feild of view angle for the render.
+ */
+constexpr const f32 DEF_FOV = 90.0f;
+
+/**
+ * default height.
+ */
+constexpr const i32 DEF_HEIGHT = 720;
+
+/**
+ * default width.
+ */
+constexpr const i32 DEF_WIDTH = 1080;
+
 // HAKU API EXPORT MACROS
 
 /** Haku macro for marking a function to be depreciated */

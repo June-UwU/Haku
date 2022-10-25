@@ -32,4 +32,4 @@ void destroy_pipeline_state(directx_pipeline* pipeline);
  * \param commandlist pointer to the recording commandlist
  * \param pipeline pointer to the pipeline to bind
  */
-void bind_pipeline_state(directx_commandlist* commandlist, directx_pipeline* pipeline);
+void bind_pipeline_state(directx_cc* commandlist, directx_pipeline* pipeline);

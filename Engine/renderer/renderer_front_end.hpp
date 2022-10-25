@@ -23,7 +23,7 @@ void renderer_requirement(u64* memory_requirement);
  * \param api_type[in] backend type 
  * \return	 H_OK on success
  */
-i8 renderer_initialize(void* state, backends api_type);
+i8 renderer_initialize(void* state, i32 width,i32 height, f32 fov,backends api_type);
 
 /**
  * routine to shutdown the render-frontend.

@@ -151,7 +151,7 @@ void destroy_pipeline_state(directx_pipeline* pipeline)
 	hmemory_free(pipeline, MEM_TAG_RENDERER);
 }
 
-void bind_pipeline_state(directx_commandlist* commandlist, directx_pipeline* pipeline)
+void bind_pipeline_state(directx_cc* commandlist, directx_pipeline* pipeline)
 {
 	bind_root_signature(commandlist, pipeline->signature);
 	commandlist->commandlist->SetPipelineState(pipeline->state);

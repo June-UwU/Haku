@@ -20,7 +20,7 @@
  * \param backend_ptr pointer to backend struct
  * \return H_OK on sucess
  */
-i8 directx_initialize(renderer_backend* backend_ptr);
+i8 directx_initialize(renderer_backend* backend_ptr,void* data);
 
 /**
  * routine for directx shutdown.

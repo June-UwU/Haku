@@ -28,7 +28,7 @@ void swapchain_shutdown(directx_swapchain* swapchain);
 * \param commandlist[in] pointer to commandlist
 * \return H_OK on sucess
 */
-i8 set_render_target(directx_swapchain* swapchain, directx_commandlist* commandlist);
+i8 set_render_target(directx_swapchain* swapchain, directx_cc* commandlist);
 
 /** 
 *  routine to set the present target up
@@ -36,7 +36,7 @@ i8 set_render_target(directx_swapchain* swapchain, directx_commandlist* commandl
 * \param commandlist[in] pointer to commandlist
 * \return H_OK on sucess
 */
-i8 set_present_target(directx_swapchain* swapchain, directx_commandlist* commandlist);
+i8 set_present_target(directx_swapchain* swapchain, directx_cc* commandlist);
 
 /** 
 *  routine to set the render target up
@@ -47,7 +47,7 @@ i8 set_present_target(directx_swapchain* swapchain, directx_commandlist* command
 * \param b[in] blue value
 * \param a[in] alpha value
 */
-void clear_back_buffer(directx_commandlist* commandlist, directx_swapchain* swapchain, f32 r, f32 g, f32 b, f32 a);
+void clear_back_buffer(directx_cc* commandlist, directx_swapchain* swapchain, f32 r, f32 g, f32 b, f32 a);
 
 /** 
 * routine to present the frame.
@@ -69,23 +69,23 @@ i8 swapchain_resize(directx_context* context, directx_swapchain* swapchain, u16 
 /** 
 * routine to clear depth stencil up
 * 
-* \param commandlist[in] pointer to directx_commandlist  that is recording
+* \param commandlist[in] pointer to directx_cc  that is recording
 * \param swapchain[in] pointer to swapchain
 */
-void clear_depth_stencil(directx_commandlist* commandlist, directx_swapchain* swapchain);
+void clear_depth_stencil(directx_cc* commandlist, directx_swapchain* swapchain);
 /** 
 * routine to bind view port to the pipeline
 * \param commandlist[in] pointer to swapchain
 * \param swapchain[in] pointer to commandlist
 */
-void bind_view_port(directx_commandlist* commandlist, directx_swapchain* swapchain);
+void bind_view_port(directx_cc* commandlist, directx_swapchain* swapchain);
 
 /** 
 * 	routine to bind view port to the pipeline
 * \param commandlist[in] pointer to commandlist
 * \param swapchain[in] pointer to swapchain
 */
-void bind_scissor_rect(directx_commandlist* commandlist, directx_swapchain* swapchain);
+void bind_scissor_rect(directx_cc* commandlist, directx_swapchain* swapchain);
 
 /** 
 *  routine to set the depth stencil up
@@ -118,11 +118,11 @@ void set_depth_stencil(directx_swapchain* swapchain, f32 depth, u8 stencil);
 /**
  * routine to set the bind the render target and depth stencil to the pipeline.
  * 
- * \param list directx_commandlist to bind command to
+ * \param list directx_cc to bind command to
  * \param swapchain pointer to the swapchain
  * \return H_OK on sucess and H_FAIL on failure
  */
-i8 bind_rendertarget_and_depth_stencil(directx_commandlist* list, directx_swapchain* swapchain);
+i8 bind_rendertarget_and_depth_stencil(directx_cc* list, directx_swapchain* swapchain);
 
 
 

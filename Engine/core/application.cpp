@@ -187,7 +187,7 @@ i8 application_initialize(application_state* app_state)
 	renderer_requirement(&e_state->renderer_mem_require);
 	e_state->renderer_state = linear_allocate(allocator, e_state->renderer_mem_require);
 
-	haku_ret_code = renderer_initialize(e_state->renderer_state, HK_DIRECTX_12);
+	haku_ret_code = renderer_initialize(e_state->renderer_state, app_state->width,app_state->height,DEF_FOV,HK_DIRECTX_12);
 
 	if (H_OK != haku_ret_code)
 	{
@@ -240,8 +240,11 @@ void application_run(void)
 		if (SUSPENDED != e_state->state)
 		{
 			// TODO : push render_packet outta here
-			render_packet packet{};
-			renderer_draw_frame(&packet);
+			render_packet pkt{};
+			pkt.fov = DEF_FOV;
+			pkt.height = e_state->height;
+			pkt.width = e_state->width;
+			renderer_draw_frame(&pkt);
 		}
 	}
 	clock_stop(clock);

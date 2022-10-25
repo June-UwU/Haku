@@ -239,7 +239,7 @@ void swapchain_shutdown(directx_swapchain* swapchain)
 	swapchain->depth_stencil_resource->Release();
 }
 
-i8 set_render_target(directx_swapchain* swapchain, directx_commandlist* commandlist)
+i8 set_render_target(directx_swapchain* swapchain, directx_cc* commandlist)
 {
 	i8 ret_code = H_OK;
 
@@ -264,7 +264,7 @@ i8 set_render_target(directx_swapchain* swapchain, directx_commandlist* commandl
 	return ret_code;
 }
 
-i8 set_present_target(directx_swapchain* swapchain, directx_commandlist* commandlist)
+i8 set_present_target(directx_swapchain* swapchain, directx_cc* commandlist)
 {
 	i8 ret_code = H_OK;
 
@@ -283,7 +283,7 @@ i8 set_present_target(directx_swapchain* swapchain, directx_commandlist* command
 	return ret_code;
 }
 
-void clear_back_buffer(directx_commandlist* commandlist, directx_swapchain* swapchain, f32 r, f32 g, f32 b, f32 a)
+void clear_back_buffer(directx_cc* commandlist, directx_swapchain* swapchain, f32 r, f32 g, f32 b, f32 a)
 {
 	D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = swapchain->rtv_heap->GetCPUDescriptorHandleForHeapStart();
 
@@ -411,7 +411,7 @@ i8 swapchain_resize(directx_context* context, directx_swapchain* swapchain, u16 
 	return H_OK;
 }
 
-void clear_depth_stencil(directx_commandlist* commandlist, directx_swapchain* swapchain)
+void clear_depth_stencil(directx_cc* commandlist, directx_swapchain* swapchain)
 {
 	commandlist->commandlist->ClearDepthStencilView(
 		swapchain->dsv_heap->GetCPUDescriptorHandleForHeapStart(),
@@ -422,12 +422,12 @@ void clear_depth_stencil(directx_commandlist* commandlist, directx_swapchain* sw
 		nullptr);
 }
 
-void bind_view_port(directx_commandlist* commandlist, directx_swapchain* swapchain)
+void bind_view_port(directx_cc* commandlist, directx_swapchain* swapchain)
 {
 	commandlist->commandlist->RSSetViewports(1, &swapchain->viewport);
 }
 
-void bind_scissor_rect(directx_commandlist* commandlist, directx_swapchain* swapchain)
+void bind_scissor_rect(directx_cc* commandlist, directx_swapchain* swapchain)
 {
 	commandlist->commandlist->RSSetScissorRects(1, &swapchain->scissor_rect);
 }
@@ -453,7 +453,7 @@ void set_depth_stencil(directx_swapchain* swapchain, f32 depth, u8 stencil)
 	swapchain->depth_stencil_clear_value.DepthStencil.Stencil = stencil;
 }
 
-i8 bind_rendertarget_and_depth_stencil(directx_commandlist* list, directx_swapchain* swapchain)
+i8 bind_rendertarget_and_depth_stencil(directx_cc* list, directx_swapchain* swapchain)
 {
 	D3D12_CPU_DESCRIPTOR_HANDLE dsv_handle = swapchain->dsv_heap->GetCPUDescriptorHandleForHeapStart();
 	D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = swapchain->rtv_heap->GetCPUDescriptorHandleForHeapStart();

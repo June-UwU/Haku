@@ -109,4 +109,4 @@ i8 add_table_parameter(
 	const u64					 register_space = 0,
 	D3D12_DESCRIPTOR_RANGE_FLAGS flags			= D3D12_DESCRIPTOR_RANGE_FLAG_NONE);
 
-i8 bind_root_signature(directx_commandlist* commandlist,directx_root_signature* signature);
+i8 bind_root_signature(directx_cc* commandlist,directx_root_signature* signature);

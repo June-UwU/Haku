@@ -215,7 +215,7 @@ i8 add_table_parameter(directx_root_signature* signature, darray* table,
     return H_OK;
 }
 
-i8 bind_root_signature(directx_commandlist* commandlist,directx_root_signature* signature)
+i8 bind_root_signature(directx_cc* commandlist,directx_root_signature* signature)
 {
     commandlist->commandlist->SetGraphicsRootSignature(signature->root_signature);
     return H_OK;

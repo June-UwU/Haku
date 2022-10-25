@@ -8,9 +8,8 @@
 #pragma once
 
 #include "defines.hpp"
-#include <hmath_defines.hpp>
-#include <haku_math.hpp>
-/*
+#include <DirectXMath.h>
+ /*
 
 per model  transformations (model space -> model space) -> 
 world transformations (model space -> world space) ->
@@ -18,17 +17,21 @@ projection transformation (camera views) ->
 view port thing is done by dx12??
 
 */
+
+/** this is a unique 64 bit value kept in track by the renderer backend and is used by the frontend */
+typedef u64 resource_uid;
+
 /** global transform to apply to all meshes */
 typedef struct global_transforms
 {
 	/** projection matrix ()*/
-	mat4x4 projection_matix;
+	DirectX::XMMATRIX projection_matix;
 
 	/** world transform of meshes */
-	mat4x4 view_matrix;
+	DirectX::XMMATRIX view_matrix;
 
 	/** padding for 256bytes alignment that can be expanded upon */
-	char reserved_data[128];
+	i8 reserved_data[128];
 }global_transforms;
 
 
@@ -62,7 +65,7 @@ typedef struct renderer_backend
 	backends 	api_type;
 
 	/** function pointer to be implemented for each backend type for initializations */
-	i8 (*initialize)(renderer_backend* backend_ptr);
+	i8 (*initialize)(renderer_backend* backend_ptr,void* data);
 
 	/** function pointer to be implemented for each backend type for shutdown */
 	void (*shutdown)(renderer_backend* backend_ptr);
@@ -75,12 +78,35 @@ typedef struct renderer_backend
 
 	/** function to handle resize events in the renderer_backend  */
 	i8(*resize)(renderer_backend* backend_ptr, u16 height, u16 width);
+
+	/** function to update global transform */
+	i8(*update_global_transforms)(renderer_backend* backend_ptr,void* transform);
+
+	/** current fov */
+	f32 fov;
+
+	/** current height */
+	i32 height;
+
+	/** current width */
+	i32 width;
+
+	/** a global transform that is applied to every model */
+	global_transforms transforms;
 }renderer_backend;
 
 
 /** a frame's entire data needed for rendering */
 typedef struct render_packet
 {
+	/** current feild of view */
+	f32 fov;
+
+	/** current width */
+	i32 width;
+
+	/** current height */
+	i32 height;
 
 	/** timing variable */
 	f64	delta_time;		

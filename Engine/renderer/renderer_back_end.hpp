@@ -17,7 +17,7 @@
 * \param api_type[in] api type
 * \return H_OK on sucess
 */
-i8 backend_initialize(renderer_backend* backend_ptr, backends api_type);
+i8 backend_initialize(renderer_backend* backend_ptr, i32 width, i32 height, f32 fov, backends api_type);
 /** 
 * routine to shutdown renderer backend.
 * \param backend_ptr[in] pointer to backend struct

@@ -13,23 +13,18 @@ void command_context_shutdown(directx_queue* context);
 // @breif 		excute any command
 // @param		: directx queue struct pointer
 // @param		: commandlist struct pointer
-void execute_command(directx_context* context, directx_commandlist* commandlist);
-
-// @breif		prepare a commandlist for recording
-// @param		: command list to be prepared
-// @return 		: H_OK on sucess
-i8 prepare_commandlist_record(directx_commandlist* commandlist);
+void execute_command(directx_context* context, directx_cc* commandlist);
 
 // @breif		close and make nessary preparation for ending recording in a commandlist
 // @param		: pointer to the current commandlist to end recording on
 // @return		: H_OK on sucess
-i8 end_commandlist_record(directx_commandlist* commanlist);
+i8 end_commandlist_record(directx_cc* commanlist);
 
 // @breif 		synchronize the command list and prepare for next frame
 // @param		: queue pointer
 // @param 		: commandlist to execute
 // @return 		: H_OK on sucess
-i8 next_frame_synchronization(directx_queue* queue, directx_commandlist* commandlist);
+i8 next_frame_synchronization(directx_queue* queue, directx_cc* commandlist);
 
 // @breif 		do a full gpu flush for clearing
 // @param		: a queue to do the full gpu flush on

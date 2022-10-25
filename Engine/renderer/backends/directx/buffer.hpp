@@ -1,59 +1,32 @@
 /*****************************************************************//**
  * \file   buffer.hpp
- * \brief   directx_buffer that is used
+ * \brief  directx buffer impl
  * 
  * \author June
- * \date   September 2022
+ * \date   October 2022
  *********************************************************************/
+#pragma once
 
-/* FIX ME : implement a good garabage collector for the upload heap and live buffer https://stackoverflow.com/questions/6866531/how-to-implement-a-garbage-collector*/
-
+#include "defines.hpp"
 #include "directx_types.INL"
 
-/**
- * for proper uploads the intermediate buffer needs to be gpu resident till the copy is over,this routine initiates the nessary
- * data structures for that.
- * 
- * \return H_OK on sucess
- */
-i8 initiate_upload_structure(void);
+// TODO : init, shutdown , create , copy , resize, and load_data
 
-/**
- * for proper uploads the intermediate buffer needs to be gpu resident till the copy is over,this routine cleans up the nessary
- * data structures for that.
- * 
- * \param fence_val shutdown fence value
- */
-void shutdown_upload_structure(u64 fence_val);
+i8 initialize_buffer_structures(void);
 
-// TODO : make possible transitions for the buffer and set the states
-/**
- * routine to create directx 12 resources that are bound to the pipeline for different purposes.
- * 
- * \param context pointer to the directx renderer context
- * \param buffer pointer to the buffer to fill out
- * \param data pointer to the data to be filled in the buffer
- * \param size size of the buffer in bytes in the data
- * \param type resource type
- * \return H_OK on sucess and H_FAIL on failure
- */
-i8 create_buffer(const directx_context* context,directx_buffer* buffer, void* data, u64 size,resource_type type);
+void shutdown_buffer_structure();
+
+
+i8 create_buffer(directx_device* device, directx_buffer* out_buffer, u64 width, u64 height, u64 depth, D3D12_RESOURCE_DIMENSION dimension);
 
 void release_buffer(directx_buffer* buffer);
 
-i8 resize_buffer();
+void transition_buffer(directx_buffer* buffer, u64 sub_resource, D3D12_RESOURCE_STATES after_state);
 
-i8 copy_buffer();
+void copy_buffer(directx_buffer* dest, directx_buffer* src);
 
-// TODO : does state assioate with the buffer and do we need a transition function for it ? resource creation need to be checked
-/**
- * routine to remove stale upload buffer synchronized to the gpu.
- * 
- * \param fence_val completed fence val
- * \return number of resources freed
- */
-i64 remove_stale_upload_buffer(u64 fence_val);
+void resize_buffer(directx_buffer* buffer);
 
+void load_buffer(directx_buffer* buffer, void* data, u64 size, u64 sub_resource);
 
-
-
+void reclaim_buffer(u64 fence_val);

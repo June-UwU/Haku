@@ -10,35 +10,72 @@
 #include "directx_backend.hpp"
 #include "core/logger.hpp"
 
+/**
+ * descriptor block that keeps track of free block.
+ */
 typedef struct db
 {
+	/** size of the block */
 	u64 size;
 
+	/** base handle to the block */
 	D3D12_CPU_DESCRIPTOR_HANDLE base;
 }db;
 
-
+/** descriptor page */
 typedef struct dpg
 {
+	/** page id */
 	SIZE_T id;
 	
+	/** heap increment size */
 	u64 increment_size;
 	
+	/** largest block size */
 	u64 lb_size;
 
+	/** list of free block in the page */
 	queue_t free_list;
 
+	/** allocated page heap */
 	ID3D12DescriptorHeap* heap;
 }dpg;
 
+/** internal page list */
 static queue_t page_list;
 
+/**
+ * routine to create a new page.
+ * 
+ * \param page pointer to a page that is initialized
+ * \param type type of the heap
+ * \return H_OK if sucess
+ */
 i8 create_page(dpg* page, D3D12_DESCRIPTOR_HEAP_TYPE type);
 
+/**
+ * routine to destroy a page.
+ * 
+ * \param page pointer to a page to destroy
+ */
 void destroy_page(dpg* page);
 
+/**
+ * routine to allocate a cdesc from a page.
+ * 
+ * \param page page to allocate form
+ * \param ptr cdes  to allocate to 
+ * \param size size of the allocation
+ * \return H_OK on sucess
+ */
 i8 page_allocate(dpg* page,cdes* ptr, u64 size);
 
+/**
+ * routine to free a block back to the page.
+ * 
+ * \param page page to return to 
+ * \param ptr cdes to fee
+ */
 void page_free(dpg* page,cdes* ptr);
 
 
@@ -128,13 +165,13 @@ void test_descriptor(void)
 	const u64 TEST_RANGE = 4u;
 
 // TODO : validate the proper merging of blocks
-	cdesc desc[TEST_RANGE];
+	cdes desc[TEST_RANGE];
 	for (u64 i = 0; i < TEST_RANGE; i++)
 	{
 		desc[i] = cpu_desc_allocate(512u);
 	}
 	
-	for (u64 i = 0; i < TEST_RANGE; i++)
+	for (u64 i = 0; i < TEST_RANGE; i--)
 	{
 		cpu_desc_free(&desc[i]);
 	}
@@ -168,6 +205,10 @@ i8 create_page(dpg* page, D3D12_DESCRIPTOR_HEAP_TYPE type)
 	page->increment_size = dev->logical_device->GetDescriptorHandleIncrementSize(type);
 	page->lb_size = INITIAL_DESCRIPTOR_PAGE_SIZE;
 	page->id = page->heap->GetCPUDescriptorHandleForHeapStart().ptr;
+	db blk;
+	blk.size = INITIAL_DESCRIPTOR_PAGE_SIZE;
+	blk.base = page->heap->GetCPUDescriptorHandleForHeapStart();
+	enqueue(&page->free_list, &blk);
 	HLINFO("Page created \n \t heap : %p", page->heap);
 	return H_OK;
 }

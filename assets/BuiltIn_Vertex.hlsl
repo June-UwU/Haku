@@ -1,3 +1,4 @@
+
 struct PixelData
 {
 	float4 p_pos : SV_POSITION;

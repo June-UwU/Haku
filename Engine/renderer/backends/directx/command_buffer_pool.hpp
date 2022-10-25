@@ -26,20 +26,20 @@ void command_buffer_pool_shutdown(void);
  * \param type command pool type that points the type 
  * \return directx command allocator
  */
-directx_allocator* request_command_buffer(queue_type type);
+directx_cc* request_dxcc(queue_type type);
 
 /**
  * routine to make the command allocator object back for request.
  * 
  * \param obj command allocator object to be reintroduced to the open pool
  */
-void return_directx_allocator(directx_allocator* obj);
+void return_directx_cc(directx_cc* obj);
 
 /**
  * routine that reintroduce the allocators thar are done executing in the command queue.
  * 
  * \param fence_value completed fence value
  */
-void reintroduce_allocator(u64 fence_value);
+void reintroduce_dxcc(u64 fence_value);
 
 

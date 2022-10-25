@@ -9,12 +9,13 @@
 
 // TODO :ve the string lib 
 #include "defines.hpp"
-#include <haku_math.h>
+#include <DirectXMath.h>
 #include <cwchar>
 #include <D3d12.h>
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
 #include "generics/darray.hpp"
+#include "cpu_descriptors.hpp"
 
 /** macro to set friendly names to directx 12 objects */
 #define FRIENDLY_NAME(ID3D12Obj,name) ID3D12Obj->SetName(name)
@@ -66,11 +67,11 @@ constexpr const char* RESOURCE_TYPE_STRING[RESOURCE_TYPE_MAX]
 /** struct to handle directx resources and their usage */
 typedef struct directx_buffer
 {
-	/** resource_type enum */
-	resource_type type;
-
 	/** currently not used at the moment */
 	D3D12_RESOURCE_STATES state;
+
+	/** buffer descriptions */
+	D3D12_RESOURCE_DESC desc;
 
 	/** underlying resource */
 	ID3D12Resource* resource;
@@ -158,7 +159,7 @@ typedef enum commandlist_state
 }commandlist_state;
 
 /** directx command allocators */
-typedef struct directx_allocator
+typedef struct directx_cc
 {
 	/** allocator type */
 	queue_type type;
@@ -171,23 +172,10 @@ typedef struct directx_allocator
 
 	/** directx  12 specfic command allocator object */
 	ID3D12CommandAllocator* allocator;
-}directx_allocator;
 
-/** directx commandlist , uses command allocators to record command list */
-typedef struct directx_commandlist
-{
-	/** commandlist type */
-	queue_type type;
-
-	/**  command list current state */
-	commandlist_state state;
-
-	/** directx 12 command list object */
 	ID3D12GraphicsCommandList* commandlist;
+}directx_cc;
 
-	/**  internal current allocator */
-	directx_allocator* seeded_allocator;
-}directx_command_list;
 
 /** directx command queue used to execute command lists that are closed after recording */
 typedef struct directx_queue
@@ -262,9 +250,6 @@ typedef struct directx_device
 /** directx renderer backend has releated information for a context */
 typedef struct directx_context
 {
-	/** indicates whether the commandlist is ready for recording */
-	bool is_ready[HK_COMMAND_MAX];
-
 	/** direct queue object */
 	directx_queue			queue;
 
@@ -274,8 +259,8 @@ typedef struct directx_context
 	/** directx_device instance assioated with the context */
 	directx_device          device;
 
-	/** all directx commandlist types */
-	directx_commandlist     commandlist[HK_COMMAND_MAX];
+	/** pointer that hold the current list working with*/
+	directx_cc* curr_cc[HK_COMMAND_MAX];
 }directx_context;
 
 
@@ -361,8 +346,8 @@ typedef struct directx_pipeline
 typedef struct hk_vertex
 {
 	/** variable that holds the point coordinates */
-	vector4 point;
+	DirectX::XMVECTOR point;
 
 	/** variable that hold the color data */
-	vector4 color;
+	DirectX::XMVECTOR color;
 }hk_vertex;

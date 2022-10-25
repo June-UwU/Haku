@@ -68,7 +68,7 @@ i8 initialize_gpu_descritor_heap(directx_device* device)
 	return H_OK;
 }
 
-i8 set_gpu_descriptor_heaps(directx_commandlist* commandlist)
+i8 set_gpu_descriptor_heaps(directx_cc* commandlist)
 {
 	ID3D12DescriptorHeap* descriptors[2u]{ intern_heaps.resource_heap,intern_heaps.sampler_heap };
 	commandlist->commandlist->SetDescriptorHeaps(2u, descriptors);

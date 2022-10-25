@@ -16,8 +16,8 @@
  * \param type type of list to request
  * \return pointer to directx_list or nullptr
  */
-directx_commandlist* request_commandlist(queue_type type);
+directx_cc* request_commandlist(queue_type type);
 
 directx_device* get_device();
 
-
+u64 get_current_fence_val(void);

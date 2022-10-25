@@ -1,310 +1,179 @@
-/*****************************************************************/ /**
-																	 * \file   buffer.cpp
-																	 * \brief  buffer inplementations
-																	 *
-																	 * \author June
-																	 * \date   September 2022
-																	 *********************************************************************/
+/*****************************************************************//**
+ * \file   buffer.cpp
+ * \brief  
+ * 
+ * \author June
+ * \date   October 2022
+ *********************************************************************/
 #include "buffer.hpp"
-#include "core\logger.hpp"
+#include "generics/queue.hpp"
+#include "core/logger.hpp"
 #include "directx_backend.hpp"
-#include "generics/hash_set.hpp"
 #include "memory/hmemory.hpp"
 
-/** internal structure to safely deallocate the upload resource */
-typedef struct upload_tracker
+typedef struct up_res
 {
-	/** fence value till the resource was released, this will be used for proper release */
-	u64 last_fence_val;
+    u64 fence_val;
 
-	/** table that hold the resource to keep it alive */
-	hash_set_t* resource_table;
-} upload_tracker;
+    ID3D12Resource* resource;
+}up_res;
 
-static upload_tracker* tracker;
 
-i8 initiate_upload_structure(void)
+static queue_t upres_queue;
+
+i8 initialize_buffer_structures(void)
 {
-	tracker					= (upload_tracker*)hmemory_alloc(sizeof(upload_tracker), MEM_TAG_RENDERER);
-	tracker->resource_table = (hash_set_t*)hmemory_alloc(sizeof(upload_tracker), MEM_TAG_RENDERER);
-	tracker->last_fence_val = 0;
+    i8 ret_val = create_queue(&upres_queue, sizeof(up_res));
+    
+    if (H_OK != ret_val)
+    {
+        HLEMER("upload resource queue creation queue failure");
+        return H_FAIL;
+    }
 
-	HAKU_CREATE_INT_HASH_SET(tracker->resource_table, ID3D12Resource*);
-
-	return H_OK;
+    return H_OK;
 }
 
-void shutdown_upload_structure(u64 fence_val)
+void shutdown_buffer_structure()
 {
-	destroy_hash_table(tracker->resource_table);
-	hmemory_free(tracker, MEM_TAG_RENDERER);
+    destroy_queue(&upres_queue);
 }
 
-// TODO make the buffer elements usable
-i8 create_buffer(const directx_context* context, directx_buffer* buffer, void* data, u64 size, resource_type type)
+i8 create_buffer(directx_device* device, directx_buffer* out_buffer, u64 width, u64 height, u64 depth, D3D12_RESOURCE_DIMENSION dimension)
 {
-	i8					  ret_val	  = H_OK;
-	HRESULT				  api_ret_val = S_OK;
-	const directx_device* device	  = &context->device;
+    D3D12_HEAP_PROPERTIES heap_prop{};
+    heap_prop.Type = D3D12_HEAP_TYPE_DEFAULT;
+    heap_prop.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heap_prop.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heap_prop.CreationNodeMask = 0;
+    heap_prop.VisibleNodeMask = 0;
+    
 
-	ID3D12Resource* upload_resource = nullptr;
+    out_buffer->desc.Dimension = dimension;
+    out_buffer->desc.Format = DXGI_FORMAT_UNKNOWN;
+    out_buffer->desc.Alignment = 0;
+    out_buffer->desc.Width = width;
+    out_buffer->desc.Height = height;
+    out_buffer->desc.DepthOrArraySize = depth;
+    out_buffer->desc.Format = DXGI_FORMAT_UNKNOWN;
+    out_buffer->desc.SampleDesc.Count = 1;
+    out_buffer->desc.SampleDesc.Quality = 0u;
+    out_buffer->desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+    out_buffer->desc.MipLevels = 1;
+    out_buffer->desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-	D3D12_HEAP_PROPERTIES up_heap_prop;
-	D3D12_HEAP_FLAGS	  up_heap_flag = D3D12_HEAP_FLAG_NONE;
-	D3D12_RESOURCE_DESC	  resource_desc{};
-	D3D12_RESOURCE_STATES init_state = D3D12_RESOURCE_STATE_GENERIC_READ;
 
-	D3D12_HEAP_PROPERTIES buff_heap_prop;
-	D3D12_HEAP_FLAGS	  buff_heap_flag = D3D12_HEAP_FLAG_NONE;
-	D3D12_RESOURCE_DESC	  buff_resource_desc{};
-	D3D12_RESOURCE_STATES buff_init_state = D3D12_RESOURCE_STATE_COPY_DEST;
-
-	up_heap_prop.Type				  = D3D12_HEAP_TYPE_UPLOAD;
-	up_heap_prop.CPUPageProperty	  = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	up_heap_prop.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	up_heap_prop.CreationNodeMask	  = 0;
-	up_heap_prop.VisibleNodeMask	  = 0;
-
-	buff_heap_prop.Type					= D3D12_HEAP_TYPE_DEFAULT;
-	buff_heap_prop.CPUPageProperty		= D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	buff_heap_prop.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	buff_heap_prop.CreationNodeMask		= 0;
-	buff_heap_prop.VisibleNodeMask		= 0;
-
-	switch (type)
-	{
-	/** defines a vertex resource */
-	case VERTEX_RESOURCE:
-	{
-		resource_desc.Dimension			 = D3D12_RESOURCE_DIMENSION_BUFFER;
-		resource_desc.Alignment			 = 0;
-		resource_desc.Width				 = size;
-		resource_desc.Height			 = 1;
-		resource_desc.DepthOrArraySize	 = 1;
-		resource_desc.MipLevels			 = 1;
-		resource_desc.Format			 = DXGI_FORMAT_UNKNOWN;
-		resource_desc.SampleDesc.Count	 = 1;
-		resource_desc.SampleDesc.Quality = 0;
-		resource_desc.Layout			 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		resource_desc.Flags				 = D3D12_RESOURCE_FLAG_NONE;
-
-		buff_resource_desc.Dimension		  = D3D12_RESOURCE_DIMENSION_BUFFER;
-		buff_resource_desc.Alignment		  = 0;
-		buff_resource_desc.Width			  = size;
-		buff_resource_desc.Height			  = 1;
-		buff_resource_desc.DepthOrArraySize	  = 1;
-		buff_resource_desc.MipLevels		  = 1;
-		buff_resource_desc.Format			  = DXGI_FORMAT_UNKNOWN;
-		buff_resource_desc.SampleDesc.Count	  = 1;
-		buff_resource_desc.SampleDesc.Quality = 0;
-		buff_resource_desc.Layout			  = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		buff_resource_desc.Flags			  = D3D12_RESOURCE_FLAG_NONE;
-		break;
-	}
-	/** defines a index resource */
-	case INDEX_RESOURCE:
-	{
-		HLWARN("%s descriptions is not set up", RESOURCE_TYPE_STRING[type]);
-		resource_desc.Dimension			 = D3D12_RESOURCE_DIMENSION_BUFFER;
-		resource_desc.Alignment			 = 0;
-		resource_desc.Width				 = size;
-		resource_desc.Height			 = 1;
-		resource_desc.DepthOrArraySize	 = 1;
-		resource_desc.MipLevels			 = 1;
-		resource_desc.Format			 = DXGI_FORMAT_UNKNOWN;
-		resource_desc.SampleDesc.Count	 = 1;
-		resource_desc.SampleDesc.Quality = 0;
-		resource_desc.Layout			 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		resource_desc.Flags				 = D3D12_RESOURCE_FLAG_NONE;
-
-		buff_resource_desc.Dimension		  = D3D12_RESOURCE_DIMENSION_BUFFER;
-		buff_resource_desc.Alignment		  = 0;
-		buff_resource_desc.Width			  = size;
-		buff_resource_desc.Height			  = 1;
-		buff_resource_desc.DepthOrArraySize	  = 1;
-		buff_resource_desc.MipLevels		  = 1;
-		buff_resource_desc.Format			  = DXGI_FORMAT_UNKNOWN;
-		buff_resource_desc.SampleDesc.Count	  = 1;
-		buff_resource_desc.SampleDesc.Quality = 0;
-		buff_resource_desc.Layout			  = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		buff_resource_desc.Flags			  = D3D12_RESOURCE_FLAG_NONE;
-		break;
-	}
-	/** shader resource */
-	case SHADER_RESOURCE:
-	{
-		HLWARN("%s descriptions is not set up", RESOURCE_TYPE_STRING[type]);
-		resource_desc.Dimension			 = D3D12_RESOURCE_DIMENSION_BUFFER;
-		resource_desc.Alignment			 = 0;
-		resource_desc.Width				 = size;
-		resource_desc.Height			 = 1;
-		resource_desc.DepthOrArraySize	 = 1;
-		resource_desc.MipLevels			 = 1;
-		resource_desc.Format			 = DXGI_FORMAT_UNKNOWN;
-		resource_desc.SampleDesc.Count	 = 0;
-		resource_desc.SampleDesc.Quality = 1;
-		resource_desc.Layout			 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		resource_desc.Flags				 = D3D12_RESOURCE_FLAG_NONE;
-
-		buff_resource_desc.Dimension		  = D3D12_RESOURCE_DIMENSION_BUFFER;
-		buff_resource_desc.Alignment		  = 0;
-		buff_resource_desc.Width			  = size;
-		buff_resource_desc.Height			  = 1;
-		buff_resource_desc.DepthOrArraySize	  = 1;
-		buff_resource_desc.MipLevels		  = 1;
-		buff_resource_desc.Format			  = DXGI_FORMAT_UNKNOWN;
-		buff_resource_desc.SampleDesc.Count	  = 0;
-		buff_resource_desc.SampleDesc.Quality = 1;
-		buff_resource_desc.Layout			  = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		buff_resource_desc.Flags			  = D3D12_RESOURCE_FLAG_NONE;
-		break;
-	}
-	/** constant resource */
-	case CONST_RESOURCE:
-	{
-		HLWARN("%s descriptions is not set up", RESOURCE_TYPE_STRING[type]);
-		resource_desc.Dimension			 = D3D12_RESOURCE_DIMENSION_BUFFER;
-		resource_desc.Alignment			 = 0;
-		resource_desc.Width				 = size;
-		resource_desc.Height			 = 1;
-		resource_desc.DepthOrArraySize	 = 1;
-		resource_desc.MipLevels			 = 1;
-		resource_desc.Format			 = DXGI_FORMAT_UNKNOWN;
-		resource_desc.SampleDesc.Count	 = 0;
-		resource_desc.SampleDesc.Quality = 1;
-		resource_desc.Layout			 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		resource_desc.Flags				 = D3D12_RESOURCE_FLAG_NONE;
-
-		buff_resource_desc.Dimension		  = D3D12_RESOURCE_DIMENSION_BUFFER;
-		buff_resource_desc.Alignment		  = 0;
-		buff_resource_desc.Width			  = size;
-		buff_resource_desc.Height			  = 1;
-		buff_resource_desc.DepthOrArraySize	  = 1;
-		buff_resource_desc.MipLevels		  = 1;
-		buff_resource_desc.Format			  = DXGI_FORMAT_UNKNOWN;
-		buff_resource_desc.SampleDesc.Count	  = 0;
-		buff_resource_desc.SampleDesc.Quality = 1;
-		buff_resource_desc.Layout			  = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		buff_resource_desc.Flags			  = D3D12_RESOURCE_FLAG_NONE;
-		break;
-	}
-	/** unordered resource */
-	case UNORDERED_RESOURCE:
-	{
-		HLWARN("%s descriptions is not set up", RESOURCE_TYPE_STRING[type]);
-		resource_desc.Dimension			 = D3D12_RESOURCE_DIMENSION_BUFFER;
-		resource_desc.Alignment			 = 0;
-		resource_desc.Width				 = size;
-		resource_desc.Height			 = 1;
-		resource_desc.DepthOrArraySize	 = 1;
-		resource_desc.MipLevels			 = 1;
-		resource_desc.Format			 = DXGI_FORMAT_UNKNOWN;
-		resource_desc.SampleDesc.Count	 = 0;
-		resource_desc.SampleDesc.Quality = 1;
-		resource_desc.Layout			 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		resource_desc.Flags				 = D3D12_RESOURCE_FLAG_NONE;
-
-		buff_resource_desc.Dimension		  = D3D12_RESOURCE_DIMENSION_BUFFER;
-		buff_resource_desc.Alignment		  = 0;
-		buff_resource_desc.Width			  = size;
-		buff_resource_desc.Height			  = 1;
-		buff_resource_desc.DepthOrArraySize	  = 1;
-		buff_resource_desc.MipLevels		  = 1;
-		buff_resource_desc.Format			  = DXGI_FORMAT_UNKNOWN;
-		buff_resource_desc.SampleDesc.Count	  = 0;
-		buff_resource_desc.SampleDesc.Quality = 1;
-		buff_resource_desc.Layout			  = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		buff_resource_desc.Flags			  = D3D12_RESOURCE_FLAG_NONE;
-		break;
-	}
-	default:
-	{
-		HLCRIT("Unknown type %s", RESOURCE_TYPE_STRING[type]);
-		return H_FAIL;
-	}
-	}
-
-	api_ret_val = device->logical_device->CreateCommittedResource(
-		&up_heap_prop, up_heap_flag, &resource_desc, init_state, nullptr, IID_PPV_ARGS(&upload_resource));
-	if (S_OK != api_ret_val)
-	{
-		HLCRIT("failure in creating upload heap for committed resource %s", RESOURCE_TYPE_STRING[type]);
-		return H_FAIL;
-	}
-
-	api_ret_val = device->logical_device->CreateCommittedResource(
-		&buff_heap_prop,
-		buff_heap_flag,
-		&buff_resource_desc,
-		buff_init_state,
-		nullptr,
-		IID_PPV_ARGS(&buffer->resource));
-	if (S_OK != api_ret_val)
-	{
-		HLCRIT("failed to create the resource %s", RESOURCE_TYPE_STRING[type]);
-		upload_resource->Release();
-		return H_FAIL;
-	}
-	// TODO : this needs to be cleaned up
-	u8*			pVertexDataBegin;
-	D3D12_RANGE readRange(0, 0);
-	upload_resource->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
-	memcpy(pVertexDataBegin, data, size);
-	upload_resource->Unmap(0, nullptr);
-
-	// TODO COPY and make the resource release safely
-	directx_commandlist* list = request_commandlist(HK_COMMAND_COPY);
-	if (nullptr != list)
-	{
-		list->commandlist->CopyResource(buffer->resource, upload_resource);
-	}
-	else
-	{
-		HLEMER("request commandlist failed");
-		return H_FAIL;
-	}
-	HLINFO(
-		"buffer upload \n \t fence value : %d \n \t upload resource pointer : %p \n \t buffer pointer : %p",
-		context->queue.fence_val,
-		upload_resource,
-		buffer->resource);
-	push_back(tracker->resource_table, (void*)&context->queue.fence_val, &upload_resource);
-
-	return ret_val;
+    HRESULT win32_rv = device->logical_device->CreateCommittedResource(&heap_prop, D3D12_HEAP_FLAG_NONE, &out_buffer->desc, 
+        D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&out_buffer->resource));
+    if (S_OK != win32_rv)
+    {
+        HLCRIT("failed to create resource");
+        return H_FAIL;
+    }
+    out_buffer->state = D3D12_RESOURCE_STATE_COMMON;
+    return H_OK;
 }
 
 void release_buffer(directx_buffer* buffer)
 {
-	buffer->resource->Release();
+    buffer->resource->Release();
 }
 
-i64 remove_stale_upload_buffer(u64 fence_val)
+void transition_buffer(directx_buffer* buffer, u64 sub_resource, D3D12_RESOURCE_STATES after_state)
 {
-	i64 freed_resource_count = 0;
+    directx_cc* cc = request_commandlist(HK_COMMAND_RENDER);
 
-	for (u64 i = tracker->last_fence_val; i <= fence_val; i++)
-	{
-		hash_set_entry_t* ret_entry = find(tracker->resource_table, &i);
-		if (nullptr == ret_entry)
-		{
-			continue;
-		}
-// FIX ME : there is a random crash here that should be investigated
-		for_each_queue_t(ret_entry->data)
-		{
-			ID3D12Resource** ret_ptr = (ID3D12Resource**)entry->data;
-			ID3D12Resource*  res_ptr = *ret_ptr;
-			res_ptr->Release();
-			freed_resource_count++;
-		}
+    D3D12_RESOURCE_BARRIER barrier;
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = buffer->resource;
+    barrier.Transition.StateBefore = buffer->state;
+    barrier.Transition.StateAfter = after_state;
+    barrier.Transition.Subresource = sub_resource;
 
-		HLINFO(
-			"Released Per Frame Upload buffers\n \t frame sync value  : %d\n \t resource count : %d",
-			i,
-			freed_resource_count);
-		remove_entry(tracker->resource_table, &i);
-	}
+    cc->commandlist->ResourceBarrier(1u, &barrier);
 
-	tracker->last_fence_val = fence_val;
-	return freed_resource_count;
+    buffer->state = after_state;
 }
+
+void copy_buffer(directx_buffer* dest, directx_buffer* src)
+{
+    directx_cc* cc = request_commandlist(HK_COMMAND_COPY);
+
+    cc->commandlist->CopyResource(dest->resource, src->resource);
+}
+
+void resize_buffer(directx_buffer* buffer)
+{
+    D3D12_HEAP_PROPERTIES heap_prop{};
+    heap_prop.Type = D3D12_HEAP_TYPE_DEFAULT;
+    heap_prop.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heap_prop.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heap_prop.CreationNodeMask = 0;
+    heap_prop.VisibleNodeMask = 0;
+
+    HRESULT win32_rv = get_device()->logical_device->CreateCommittedResource(&heap_prop, D3D12_HEAP_FLAG_NONE, &buffer->desc,
+        D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&buffer->resource));
+    if (S_OK != win32_rv)
+    {
+        HLCRIT("failed to resize resource");
+    }
+}
+
+void load_buffer(directx_buffer* buffer, void* data,u64 size, u64 sub_resource)
+{
+    up_res res;
+    res.fence_val = get_current_fence_val();
+
+    D3D12_HEAP_PROPERTIES heap_prop{};
+    heap_prop.Type = D3D12_HEAP_TYPE_UPLOAD;
+    heap_prop.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heap_prop.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heap_prop.CreationNodeMask = 0;
+    heap_prop.VisibleNodeMask = 0;
+
+    directx_device* device = get_device();
+
+    HRESULT win32_rv = device->logical_device->CreateCommittedResource(&heap_prop, D3D12_HEAP_FLAG_NONE, &buffer->desc, D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr, IID_PPV_ARGS(&res.resource));
+    if (S_OK != win32_rv)
+    {
+        HLEMER("failed to create upload resource");
+        return;
+    }
+
+    u8* mapped_ptr = nullptr;
+    D3D12_RANGE range{0};
+// TODO : does sub resource th
+    win32_rv = res.resource->Map(sub_resource, &range, (void**)&mapped_ptr);
+    hmemory_copy(mapped_ptr, data, size);
+    res.resource->Unmap(sub_resource, nullptr);
+
+    enqueue(&upres_queue, &res);
+
+    directx_cc* cc = request_commandlist(HK_COMMAND_COPY);
+    cc->commandlist->CopyResource(buffer->resource, res.resource);
+}
+
+void reclaim_buffer(u64 fence_val)
+{
+    for_each_queue_t(&upres_queue)
+    {
+        up_res* res = (up_res*)entry->data;
+        if (res->fence_val < fence_val)
+        {
+// FIX ME : this is broken
+            //res->resource->Release();
+        }
+        else
+        {
+            return;
+        }
+    }
+}
+
+
+
+
+
+

@@ -15,8 +15,6 @@
 #include "directx_types.INL"
 #include "directx_backend.hpp"
 #include "renderer/renderer_types.inl"
-#include "gpu_descriptors.hpp"
-#include "cpu_descriptors.hpp"
 
 #include "shader.hpp"
 #include "pipeline_state.hpp"
@@ -25,21 +23,25 @@
 #pragma comment(lib, "D3d12.lib")
 #pragma comment(lib, "DXGI.lib")
 
+#include "buffer.hpp"
 
 // TODO : finish the back buffer clearing
 // TEST
-#include "buffer.hpp"
 static directx_shader_module* module;
 static directx_pipeline*	  pipeline;
-static directx_buffer		  buffer;
+
+static directx_buffer		    buffer;
 static directx_buffer         index;
+static directx_buffer         g_const;
+
+static D3D12_VERTEX_BUFFER_VIEW vert_view;
+static D3D12_INDEX_BUFFER_VIEW ind_view;
+
 static u64					  buffersize;
 static hk_vertex			  triangleVertices[] = { { { 0.0f, 0.25f, 0.5f,1.0f }, { 1.0f, 0.0f, 0.0f, 0.4f } },
 													 { { 0.25f, -0.25f, 0.5f,1.0f }, { 0.0f, 1.0f, 0.0f, 0.4f } },
 													 { { -0.25f, -0.25f, 0.5f ,1.0f}, { 0.0f, 0.0f, 1.0f, 0.4f } } };
 static u32 index_buffer[] = { 0, 1, 2 };
-D3D12_INDEX_BUFFER_VIEW       index_view;
-D3D12_VERTEX_BUFFER_VIEW	  vertex_view;
 
 
 /** directx context creation failure codes */
@@ -89,35 +91,18 @@ i8 create_device(void);
  * the initial routine part of the initialization code that is resposible for directx_context creation.
  */
 i8 create_context(void);
-/**
- * create all 3 type of directx_commandlist for further processing
- * \see queue_type.
- *
- * \param device directx_device to use for creation
- * \return H_OK on sucess and H_FAIL on failure
- */
-i8 create_commandlist(directx_device* device);
+
 /**
  * context destroy routine that is part of the shutdown routine.
  */
 void context_destroy(void);
-/**
- * command list destroy routine that is part of the backend shutdown.
- */
-void commandlist_destroy(void);
+
 /**
  * helper function to print the gpu specs to the console .
  *
  * \param adapter pointer to queried physical_device in directx_context
  */
 void print_adapter_spec(IDXGIAdapter1* adapter); // print gpu specs
-/**
- * directx_commandlist failure handle routine.
- *
- * \param fail_code corresponding commandlist_fails enum
- */
-i8 commandlist_fail_handler(
-	commandlist_fails fail_code); // command list fail handler since labels and gotos push me to c99 and I don't wike it
 
 /**
  * routine to clean up and handle potential directx_device failures.
@@ -135,27 +120,12 @@ i8 device_fail_handler(context_fails fail_code);
  */
 i8 context_fail_handler(directx_context* context, context_fails fail_code); // context fail handler
 
-// LEGACY
-/**
- * commandlist record function, this resets the commandlist with a new allocator and makes a it state to recording.
- *
- * \param commandlist* corresponding direct_commandlist pointer
- * \param type	type of queue used , used to get the approiate allocators
- */
-i8 commandlist_record(directx_commandlist* commandlist, queue_type type);
-/**
- * commandlist routine to end command allocation and close it for execution.
- *
- * \param	commandlist pointer to the concerned directx_commandlist
- * \param	type commandlist type concerned
- */
-i8 commandlist_end_recording(directx_commandlist* commandlist, queue_type type);
 /** singleton instance of directx context */
 static directx_context* context;
 static global_transforms transforms;
 
 
-i8 directx_initialize(renderer_backend* backend_ptr)
+i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 {
 	i8 ret_code = H_OK;
 
@@ -168,35 +138,34 @@ i8 directx_initialize(renderer_backend* backend_ptr)
 		HLEMER("directx_context creation failure");
 		return ret_code;
 	}
-	ret_code = initiate_upload_structure();
-	if (H_FAIL == ret_code)
-	{
-		HLEMER("upload structure creation failure");
-		context_destroy();
-		return ret_code;
-	}
-	ret_code = initialize_gpu_descritor_heap(&context->device);
-	if (H_FAIL == ret_code)
-	{
-		HLEMER("gpu visible heap creation failure");
-		context_destroy();
-		shutdown_upload_structure(context->queue.fence_val);
-		return H_FAIL;
-	}
+
+	ret_code = initialize_buffer_structures();
 
 // TEST : buffer test
-	test_descriptor();
 	buffersize = sizeof(triangleVertices);
-	create_buffer(context, &buffer, triangleVertices, buffersize, VERTEX_RESOURCE);
-	create_buffer(context, &index, index_buffer, 3 * sizeof(u32), INDEX_RESOURCE);
+	create_buffer(&context->device, &buffer, sizeof(hk_vertex) * 3u, 1u, 1u, D3D12_RESOURCE_DIMENSION_BUFFER);
+	create_buffer(&context->device, &index, sizeof(u32) * 3u, 1u, 1u, D3D12_RESOURCE_DIMENSION_BUFFER);
 
-	vertex_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
-	vertex_view.SizeInBytes	   = buffersize;
-	vertex_view.StrideInBytes  = sizeof(hk_vertex);
+	transition_buffer(&buffer, 0u, D3D12_RESOURCE_STATE_COPY_DEST);
+	load_buffer(&buffer, triangleVertices, sizeof(hk_vertex) * 3u, 0u);
+	transition_buffer(&buffer, 0u, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+	
+	transition_buffer(&index, 0u, D3D12_RESOURCE_STATE_COPY_DEST);
+	load_buffer(&index, index_buffer, sizeof(u32) * 3u, 0u);
+	transition_buffer(&index, 0u, D3D12_RESOURCE_STATE_INDEX_BUFFER);
 
-	index_view.BufferLocation = index.resource->GetGPUVirtualAddress();
-	index_view.SizeInBytes = 3;
-	index_view.Format = DXGI_FORMAT_R32_UINT;
+	vert_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
+	vert_view.SizeInBytes = 3 * sizeof(hk_vertex);
+	vert_view.StrideInBytes = sizeof(hk_vertex);
+
+	ind_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
+	ind_view.Format = DXGI_FORMAT_R32_UINT;
+	ind_view.SizeInBytes = sizeof(u32) * 3u;
+
+
+	end_commandlist_record(context->curr_cc[HK_COMMAND_RENDER]);
+	execute_command(context, context->curr_cc[HK_COMMAND_RENDER]);
+	next_frame_synchronization(&context->queue, context->curr_cc[HK_COMMAND_RENDER]);
 
 	return ret_code;
 }
@@ -205,54 +174,50 @@ void directx_shutdown(renderer_backend* backend_ptr)
 {
 	HLINFO("Directx Shutdown");
 	DEBUG_LAYER_SHUTDOWN();
+	
 	full_gpu_flush(&context->queue, HK_COMMAND_RENDER);
 
 	context_destroy();
 	command_context_shutdown(&context->queue);
-	commandlist_destroy();
 	command_buffer_pool_shutdown();
 	swapchain_shutdown(&context->swapchain);
 	hmemory_free(context, MEM_TAG_RENDERER);
-	shutdown_upload_structure(context->queue.fence_val);
-	shutdown_gpu_heap();
-
+	shutdown_buffer_structure();
 	// TEST
 	destroy_pipeline_state(pipeline);
-	release_buffer(&buffer);
 	release_buffer(&index);
+	release_buffer(&buffer);
 }
 
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 {
 	i8 ret_code = H_OK;
 
-	queue_type type = HK_COMMAND_RENDER;
-	ret_code		= prepare_commandlist_record(&context->commandlist[type]);
-	if (H_OK != ret_code)
+
+	context->curr_cc[HK_COMMAND_RENDER] = request_dxcc(HK_COMMAND_RENDER);
+	if (nullptr == context->curr_cc[HK_COMMAND_RENDER])
 	{
 		// TODO :stability work for this recovery
 		HLWARN("commandlist preparation failure, SLEEP CPU WORK HERE");
 		return H_FAIL;
 	}
-	context->is_ready[type] = true;
 
-	ret_code = set_render_target(&context->swapchain, &context->commandlist[HK_COMMAND_RENDER]);
+	ret_code = set_render_target(&context->swapchain, context->curr_cc[HK_COMMAND_RENDER]);
 	if (H_OK != ret_code)
 	{
 		HLWARN("swapchain preparation failure");
 		return H_FAIL;
 	}
 	// TEST
-	bind_pipeline_state(&context->commandlist[HK_COMMAND_RENDER], pipeline);
-	bind_rendertarget_and_depth_stencil(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
-	set_gpu_descriptor_heaps(&context->commandlist[HK_COMMAND_RENDER]);
+	bind_pipeline_state(context->curr_cc[HK_COMMAND_RENDER], pipeline);
+	bind_rendertarget_and_depth_stencil(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain);
 
-	clear_back_buffer(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain, 0.1f, 0.1f, 0.1f, 1.0f);
-	clear_depth_stencil(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
-	bind_scissor_rect(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
-	bind_view_port(&context->commandlist[HK_COMMAND_RENDER], &context->swapchain);
+	clear_back_buffer(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain, 0.1f, 0.1f, 0.1f, 1.0f);
+	clear_depth_stencil(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain);
+	bind_scissor_rect(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain);
+	bind_view_port(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain);
 
-	context->commandlist[HK_COMMAND_RENDER].commandlist->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	context->curr_cc[HK_COMMAND_RENDER]->commandlist->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	return ret_code;
 }
@@ -260,38 +225,52 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 {
 	i8 ret_code = H_OK;
+	// TODO this is not needed here at the moment
 
-	context->commandlist[HK_COMMAND_RENDER].commandlist->IASetIndexBuffer(&index_view);
-	context->commandlist[HK_COMMAND_RENDER].commandlist->IASetVertexBuffers(0, 1, &vertex_view);
-	context->commandlist[HK_COMMAND_RENDER].commandlist->DrawInstanced(3, 1, 0, 0);
+	context->curr_cc[HK_COMMAND_RENDER]->commandlist->IASetVertexBuffers(0u, 1u, &vert_view);
+	context->curr_cc[HK_COMMAND_RENDER]->commandlist->IASetIndexBuffer(&ind_view);
+
+
+	context->curr_cc[HK_COMMAND_RENDER]->commandlist->DrawInstanced(3, 1, 0, 0);
 	
 
-	if (true == context->is_ready[HK_COMMAND_COPY])
+	if (nullptr != context->curr_cc[HK_COMMAND_COPY])
 	{
-		ret_code = end_commandlist_record(&context->commandlist[HK_COMMAND_COPY]);
-		execute_command(context, &context->commandlist[HK_COMMAND_COPY]);
-		next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_COPY]);
-		context->is_ready[HK_COMMAND_COPY] = false;
+		ret_code = end_commandlist_record(context->curr_cc[HK_COMMAND_COPY]);
+		execute_command(context, context->curr_cc[HK_COMMAND_COPY]);
+		next_frame_synchronization(&context->queue, context->curr_cc[HK_COMMAND_COPY]);
 	}
 
-	if (true == context->is_ready[HK_COMMAND_COMPUTE])
+	if (nullptr != context->curr_cc[HK_COMMAND_COMPUTE])
 	{
-		ret_code = end_commandlist_record(&context->commandlist[HK_COMMAND_COMPUTE]);
-		execute_command(context, &context->commandlist[HK_COMMAND_COPY]);
-		next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_COMPUTE]);
-		context->is_ready[HK_COMMAND_COMPUTE] = false;
+		ret_code = end_commandlist_record(context->curr_cc[HK_COMMAND_COMPUTE]);
+		execute_command(context, context->curr_cc[HK_COMMAND_COPY]);
+		next_frame_synchronization(&context->queue, context->curr_cc[HK_COMMAND_COMPUTE]);
 	}
-	set_present_target(&context->swapchain, &context->commandlist[HK_COMMAND_RENDER]);
+	set_present_target(&context->swapchain, context->curr_cc[HK_COMMAND_RENDER]);
 
-	end_commandlist_record(&context->commandlist[HK_COMMAND_RENDER]);
-	execute_command(context, &context->commandlist[HK_COMMAND_RENDER]);
-	context->is_ready[HK_COMMAND_RENDER] = false;
-	next_frame_synchronization(&context->queue, &context->commandlist[HK_COMMAND_RENDER]);
+	end_commandlist_record(context->curr_cc[HK_COMMAND_RENDER]);
+	execute_command(context, context->curr_cc[HK_COMMAND_RENDER]);
+	next_frame_synchronization(&context->queue, context->curr_cc[HK_COMMAND_RENDER]);
 
 
 	ret_code = present_frame(&context->swapchain);
 
+	for (u32 i = 0; i < HK_COMMAND_MAX; i++)
+	{
+		if (nullptr != context->curr_cc[i])
+		{
+			context->curr_cc[i] = nullptr;
+		}
+	}
+
 	return ret_code;
+}
+
+// FIX ME : implement this
+i8 directx_update_global_transforms(renderer_backend* backend_ptr, void* ptr)
+{
+	return H_FAIL;
 }
 
 i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width)
@@ -332,10 +311,6 @@ i8 create_context(void)
 	HRESULT api_ret_code = S_OK;
 
 	context = (directx_context*)hmemory_alloc(sizeof(directx_context), MEM_TAG_RENDERER);
-	for (u64 i = 0; i < HK_COMMAND_MAX; i++)
-	{
-		context->is_ready[i] = false;
-	}
 
 	ret_code = create_device();
 	if (H_FAIL == ret_code)
@@ -364,7 +339,7 @@ i8 create_context(void)
 	}
 	HLINFO("directx command context created");
 
-	ret_code = command_buffer_pool(&context->device, 2 * command_allocator_size);
+	ret_code = command_buffer_pool(&context->device, 4 * command_allocator_size);
 	if (H_FAIL == ret_code)
 	{
 		HLEMER("haku command buffer pool creation failure");
@@ -372,15 +347,6 @@ i8 create_context(void)
 		return ret_code;
 	}
 	HLINFO("haku command buffer pool created");
-
-	ret_code = create_commandlist(&context->device);
-	if (H_FAIL == ret_code)
-	{
-		HLEMER("commandlist creation failure");
-		ret_code = context_fail_handler(context, commandlist_fail);
-		return ret_code;
-	}
-	HLINFO("commandlist created");
 
 	// TEST
 	create_shader_module(&module);
@@ -391,144 +357,6 @@ i8 create_context(void)
 	return ret_code;
 }
 
-// helper to create commandlists in context
-i8 create_commandlist(directx_device* device)
-{
-	i8		ret_code	 = H_OK;
-	HRESULT api_ret_code = S_OK;
-
-	directx_commandlist* commandlist = context->commandlist;
-	directx_allocator*	 allocator	 = request_command_buffer(HK_COMMAND_RENDER);
-
-	// render command list create
-	api_ret_code = device->logical_device->CreateCommandList(
-		0,
-		D3D12_COMMAND_LIST_TYPE_DIRECT,
-		allocator->allocator,
-		nullptr,
-		__uuidof(ID3D12GraphicsCommandList),
-		(void**)&commandlist[HK_COMMAND_RENDER].commandlist);
-	FRIENDLY_NAME(commandlist[HK_COMMAND_RENDER].commandlist, L"render commandlist");
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("render commandlist creation failed");
-		ret_code = commandlist_fail_handler(render_commandlist_fail);
-		return ret_code;
-	}
-	api_ret_code = commandlist[HK_COMMAND_RENDER].commandlist->Close();
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("render commandlist close failed");
-		ret_code = commandlist_fail_handler(copy_commandlist_fail);
-		return ret_code;
-	}
-	commandlist[HK_COMMAND_RENDER].type				= HK_COMMAND_RENDER;
-	commandlist[HK_COMMAND_RENDER].seeded_allocator = nullptr;
-	commandlist[HK_COMMAND_RENDER].state			= COMMANDLIST_STALE;
-	return_directx_allocator(allocator);
-
-	// copy list create
-	allocator	 = request_command_buffer(HK_COMMAND_COPY);
-	api_ret_code = device->logical_device->CreateCommandList(
-		0,
-		D3D12_COMMAND_LIST_TYPE_COPY,
-		allocator->allocator,
-		nullptr,
-		__uuidof(ID3D12GraphicsCommandList),
-		(void**)&commandlist[HK_COMMAND_COPY].commandlist);
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("copy commandlist creation failed");
-		ret_code = commandlist_fail_handler(copy_commandlist_fail);
-		return ret_code;
-	}
-	api_ret_code = commandlist[HK_COMMAND_COPY].commandlist->Close();
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("render commandlist close failed");
-		ret_code = commandlist_fail_handler(compute_commandlist_fail);
-		return ret_code;
-	}
-	FRIENDLY_NAME(commandlist[HK_COMMAND_RENDER].commandlist, L"copy commandlist");
-	commandlist[HK_COMMAND_COPY].type			  = HK_COMMAND_COPY;
-	commandlist[HK_COMMAND_COPY].seeded_allocator = nullptr;
-	commandlist[HK_COMMAND_COPY].state			  = COMMANDLIST_STALE;
-	return_directx_allocator(allocator);
-
-	// compute list create
-	allocator	 = request_command_buffer(HK_COMMAND_COMPUTE);
-	api_ret_code = device->logical_device->CreateCommandList(
-		0,
-		D3D12_COMMAND_LIST_TYPE_COMPUTE,
-		allocator->allocator,
-		nullptr,
-		__uuidof(ID3D12GraphicsCommandList),
-		(void**)&commandlist[HK_COMMAND_COMPUTE].commandlist);
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("compute commandlist creation failed");
-		ret_code = commandlist_fail_handler(compute_commandlist_fail);
-		return ret_code;
-	}
-	api_ret_code = commandlist[HK_COMMAND_COMPUTE].commandlist->Close();
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("render commandlist close failed");
-		ret_code = commandlist_fail_handler(clean_commandlist_fail);
-		return ret_code;
-	}
-	FRIENDLY_NAME(commandlist[HK_COMMAND_RENDER].commandlist, L"compute commandlist");
-	commandlist[HK_COMMAND_COMPUTE].type			 = HK_COMMAND_COMPUTE;
-	commandlist[HK_COMMAND_COMPUTE].seeded_allocator = nullptr;
-	commandlist[HK_COMMAND_COMPUTE].state			 = COMMANDLIST_STALE;
-	return_directx_allocator(allocator);
-
-	return ret_code;
-}
-
-// helper to clean commandlists
-void commandlist_destroy(void)
-{
-	HLINFO("command list shutdown");
-	directx_commandlist* commandlist = context->commandlist;
-	for (u64 i = 0; i < HK_COMMAND_MAX; i++)
-	{
-		commandlist[i].commandlist->Release();
-	}
-}
-
-i8 commandlist_record(directx_commandlist* commandlist, queue_type type)
-{
-	i8		ret_code	 = H_OK;
-	HRESULT api_ret_code = S_OK;
-
-	directx_allocator* alloc_ptr = request_command_buffer(type);
-
-	api_ret_code = commandlist[type].commandlist->Reset(alloc_ptr->allocator, nullptr);
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("command list is not resetted");
-		return H_FAIL;
-	}
-	commandlist[type].state = COMMANDLIST_RECORDING;
-
-	return ret_code;
-}
-
-i8 commandlist_end_recording(directx_commandlist* commandlist, queue_type type)
-{
-	i8		ret_code		= H_OK;
-	HRESULT api_ret_code	= S_OK;
-	commandlist[type].state = COMMANDLIST_RECORDING_ENDED;
-	api_ret_code			= commandlist[type].commandlist->Close();
-	if (S_OK != api_ret_code)
-	{
-		HLEMER("command list closing fail");
-		return H_FAIL;
-	}
-
-	return ret_code;
-}
 
 i8 create_device(void)
 {
@@ -585,23 +413,23 @@ i8 create_device(void)
 	return ret_code;
 }
 
-directx_commandlist* request_commandlist(queue_type type)
+directx_cc* request_commandlist(queue_type type)
 {
-	directx_commandlist* list = nullptr;
-
-	if (false == context->is_ready[type])
+	directx_cc* list = nullptr;
+	// TODO : this is not right
+	if (nullptr == context->curr_cc[type])
 	{
-		i8 ret_code = prepare_commandlist_record(&context->commandlist[type]);
-		if (H_OK != ret_code)
+		context->curr_cc[type] =  request_dxcc(type);
+		
+		if (nullptr == context->curr_cc[type])
 		{
 			// TODO :stability work for this recovery
 			HLWARN("commandlist preparation failure, SLEEP CPU WORK HERE");
-			return list;
+			return nullptr;
 		}
-		context->is_ready[type] = true;
 	}
 
-	list = &context->commandlist[type];
+	list = context->curr_cc[type];
 
 	return list;
 }
@@ -609,6 +437,11 @@ directx_commandlist* request_commandlist(queue_type type)
 directx_device* get_device()
 {
 	return &context->device;
+}
+
+u64 get_current_fence_val(void)
+{
+	return context->queue.fence_val;
 }
 
 // FAIL HANDLERS
@@ -622,23 +455,6 @@ i8 device_fail_handler(context_fails fail_code)
 	case fail_adapter:
 		context->device.physical_device->Release();
 	case fail_factory_6:
-		break;
-	}
-	return H_FAIL;
-}
-
-i8 commandlist_fail_handler(commandlist_fails fail_code)
-{
-	directx_commandlist* commandlist = context->commandlist;
-	switch (fail_code)
-	{
-	case clean_commandlist_fail:
-		commandlist[HK_COMMAND_COMPUTE].commandlist->Release();
-	case compute_commandlist_fail:
-		commandlist[HK_COMMAND_COPY].commandlist->Release();
-	case copy_commandlist_fail:
-		commandlist[HK_COMMAND_RENDER].commandlist->Release();
-	case render_commandlist_fail:
 		break;
 	}
 	return H_FAIL;
