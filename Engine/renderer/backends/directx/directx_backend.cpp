@@ -23,7 +23,8 @@
 #pragma comment(lib, "D3d12.lib")
 #pragma comment(lib, "DXGI.lib")
 
-
+// TEST : this needs to be ousted
+#include "descriptor_heaps.hpp"
 static directx_shader_module* module;
 
 static u64					  buffersize;
@@ -109,6 +110,9 @@ i8 device_fail_handler(context_fails fail_code);
  */
 i8 context_fail_handler(directx_context* context, context_fails fail_code); // context fail handler
 
+// TEST : this is descriptor heap test var
+static directx_descriptor_heap rv_heap;
+
 /** singleton instance of directx context */
 static directx_context* context;
 
@@ -126,6 +130,31 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 		return ret_code;
 	}
 
+	ret_code = create_descriptor_heap(&rv_heap, 4023, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	if (H_FAIL == ret_code)
+	{
+		HLEMER("shader visible heap creation failure");
+		return ret_code;
+	}
+	const u32 tr = 10;
+	descriptor_handle handle[tr];
+	for (u32 i = 1; i < tr; i++)
+	{
+		handle[i] = allocate(&rv_heap, i);
+		if (true == is_null(&handle[i]))
+		{
+			__debugbreak();
+		}
+		if (handle[i].size != i)
+		{
+			__debugbreak();
+		}
+	}
+
+	for (u32 i = 1; i < tr; i++)
+	{
+		free(&handle[i]);
+	}
 	return ret_code;
 }
 
@@ -136,6 +165,7 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	
 	full_gpu_flush(&context->queue, HK_COMMAND_RENDER);
 
+	destroy_descriptor_heap(&rv_heap);
 	context_destroy();
 	command_context_shutdown(&context->queue);
 	command_buffer_pool_shutdown();
@@ -334,8 +364,6 @@ i8 create_device(void)
 directx_cc* request_commandlist()
 {
 	directx_cc* list = nullptr;
-	// TODO : this is not right
-	if (nullptr == context->curr_cc)
 	{
 		context->curr_cc =  request_dxcc();
 		

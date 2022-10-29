@@ -31,7 +31,6 @@ i8 backend_initialize(renderer_backend* backend_ptr, i32 width, i32 height, f32 
 		backend_ptr->end_frame	 = directx_end_frame;
 		backend_ptr->shutdown	 = directx_shutdown;
 		backend_ptr->resize		 = directx_resize;
-		backend_ptr->update_global_transforms = directx_update_global_transforms;
 		// TODO : XMMatrixLookAtLH({ 0.0f,0.0f,0.0f }, { 0.0f,0.0f,0.5f }, { 0.0f, 1.0f, 0.0f });
 		backend_ptr->transforms.view_matrix = XMMatrixIdentity();
 		backend_ptr->transforms.projection_matix = XMMatrixPerspectiveFovLH(fov, width / height, 0.1f, 100.0f);

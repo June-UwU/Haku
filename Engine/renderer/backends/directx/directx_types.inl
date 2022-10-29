@@ -160,19 +160,6 @@ typedef enum command_buffer_state
 }command_buffer_state;
 
 
-/** commandlist state signifying enumerations */
-typedef enum commandlist_state
-{
-	/** the command list  currently recording */
-	COMMANDLIST_RECORDING,
-
-	/** the command list is currently ended its recording */
-	COMMANDLIST_RECORDING_ENDED,
-
-	/**  the command list is submitted for execution, it needs to resetted to be ready again */
-	COMMANDLIST_STALE
-}commandlist_state;
-
 /** directx command allocators */
 typedef struct directx_cc
 {

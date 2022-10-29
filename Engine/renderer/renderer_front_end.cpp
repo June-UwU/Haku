@@ -59,16 +59,6 @@ i8 renderer_resize(u16 height, u16 width, bool is_last)
 // TODO : update delta_time of packet
 i8 renderer_draw_frame(render_packet* packet)
 {
-	if (packet->height != backend->height || packet->width != backend->width || packet->fov != backend->fov)
-	{
-		if (packet->width > 0 && packet->height > 0)
-		{
-			backend->transforms.view_matrix = XMMatrixIdentity();
-			backend->transforms.projection_matix = XMMatrixPerspectiveFovLH(packet->fov, packet->width / packet->height, 0.1f, 100.0f);
-			// TODO : make sure this is properly checked
-			backend->update_global_transforms(backend,&backend->transforms);
-		}
-	}
 
 	i8 ret_code = backend->begin_frame(backend, packet->delta_time);
 

@@ -3,7 +3,7 @@
 #include "core/logger.hpp"
 #include "memory/hmemory.hpp"
 
-static u64				  pool_capacity;
+static u64				  POOL_CAPACITY;
 static directx_cc* pool;
 
 i8 command_pool_fail_handler();
@@ -12,18 +12,19 @@ i8 command_pool_fail_handler();
 i8 command_buffer_pool(const directx_device* device, const u64 pool_size)
 {
 	// HLWARN("Pool is being limited to 1 make it to %lld",pool_size);
-	pool_capacity		 = pool_size;
+	POOL_CAPACITY		 = pool_size;
 	i8		ret_code	 = H_OK;
 	HRESULT api_ret_code = S_OK;
 
 	HLINFO("attempting allcation of command buffer pool");
-	pool = (directx_cc*)hmemory_alloc(sizeof(directx_cc) * pool_size, MEM_TAG_RENDERER);
+	pool = (directx_cc*)hmemory_alloc(sizeof(directx_cc) * POOL_CAPACITY , MEM_TAG_RENDERER);
 
 	wchar_t allocator_name[256];
 
 	directx_cc* init_cc = pool;
-	for (u64 j = 0; j < pool_size; j++)
+	for (u64 j = 0; j < POOL_CAPACITY; j++)
 	{
+		swprintf(allocator_name, 256u, L"Direct X %s command allocator %lld ", COMMAND_NAME[HK_COMMAND_RENDER], j);
 		init_cc->fence_val = 0;
 		init_cc->state	  = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
 		api_ret_code			  = device->logical_device->CreateCommandAllocator(
@@ -60,7 +61,6 @@ i8 command_buffer_pool(const directx_device* device, const u64 pool_size)
 			return H_FAIL;
 		}
 		init_cc += 1;
-		swprintf(allocator_name, 256u, L"Direct X %s command allocator %lld ", COMMAND_NAME[HK_COMMAND_RENDER], j);
 	}
 
 	return ret_code;
@@ -71,7 +71,7 @@ void command_buffer_pool_shutdown(void)
 {
 	HLINFO("command buffer pool shutdown");
 	directx_cc* cc = pool;
-	for (u64 j = 0; j < pool_capacity; j++)
+	for (u64 j = 0; j < POOL_CAPACITY; j++)
 	{
 		cc->allocator->Release();
 		cc->commandlist->Release();
@@ -86,7 +86,7 @@ directx_cc* request_dxcc()
 	u64				   highest_fence_val = 0;
 
 
-	for (u64 i = 0; i < pool_capacity; i++)
+	for (u64 i = 0; i < POOL_CAPACITY; i++)
 	{
 		if (ret_ptr->fence_val > highest_fence_val)
 		{
@@ -110,32 +110,25 @@ directx_cc* request_dxcc()
 	HLCRIT("no allocator available, highest fence value : %lld", highest_fence_val);
 	return nullptr;
 }
-void return_directx_cc(directx_cc* obj)
-{
-	obj->state = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
-}
 
 void reintroduce_dxcc(u64 fence_value)
 {
-	for (u64 i = 0; i < HK_COMMAND_MAX; i++)
+	directx_cc* alloc_ptr = pool;
+	for (u64 j = 0; j < POOL_CAPACITY; j++)
 	{
-		directx_cc* alloc_ptr = pool;
-		for (u64 j = 0; j <= pool_capacity; j++)
+		if (alloc_ptr->fence_val < fence_value)
 		{
-			if (alloc_ptr->fence_val < fence_value)
-			{
-				alloc_ptr->state = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
-			}
-			// else check if the next command list is completed
-			alloc_ptr += 1;
+			alloc_ptr->state = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
 		}
+		alloc_ptr += 1;
+		// else check if the next command list is completed
 	}
 }
 
 i8 command_pool_fail_handler()
 {
 	directx_cc* cc = pool;
-	for (u64 i = 0; i < pool_capacity; i++)
+	for (u64 i = 0; i < POOL_CAPACITY; i++)
 	{
 		if (nullptr != cc->allocator)
 		{

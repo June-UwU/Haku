@@ -5,7 +5,6 @@
 
 // TODO : implement a wait function to do a gpu flush
 
-
 /**
  * routine to create a command pool of command allocator object.
  * 
@@ -28,12 +27,6 @@ void command_buffer_pool_shutdown(void);
  */
 directx_cc* request_dxcc();
 
-/**
- * routine to make the command allocator object back for request.
- * 
- * \param obj command allocator object to be reintroduced to the open pool
- */
-void return_directx_cc(directx_cc* obj);
 
 /**
  * routine that reintroduce the allocators thar are done executing in the command queue.

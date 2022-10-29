@@ -135,7 +135,7 @@ descriptor_handle allocate(directx_descriptor_heap* heap, u64 size)
 				r_handle.gpu_ptr.ptr = 0u;
 			}
 			r_handle.size = size;
-			if (size > 0u)
+			if (block->size > 0u)
 			{
 				block->cpu_base.ptr += size * heap->heap_inc;
 				if (true == heap->is_shader_visible)
@@ -150,6 +150,7 @@ descriptor_handle allocate(directx_descriptor_heap* heap, u64 size)
 			return r_handle;
 		}
 	}
+	return r_handle;
 }
 
 void free(descriptor_handle* handle)
