@@ -4,7 +4,7 @@
 #include "memory/hmemory.hpp"
 
 static u64				  pool_capacity;
-static directx_cc* pool[HK_COMMAND_MAX];
+static directx_cc* pool;
 
 i8 command_pool_fail_handler();
 
@@ -17,17 +17,13 @@ i8 command_buffer_pool(const directx_device* device, const u64 pool_size)
 	HRESULT api_ret_code = S_OK;
 
 	HLINFO("attempting allcation of command buffer pool");
-	for (u8 i = 0; i < HK_COMMAND_MAX; i++)
-	{
-		pool[i] = (directx_cc*)hmemory_alloc(sizeof(directx_cc) * pool_size, MEM_TAG_RENDERER);
-	}
+	pool = (directx_cc*)hmemory_alloc(sizeof(directx_cc) * pool_size, MEM_TAG_RENDERER);
 
 	wchar_t allocator_name[256];
 
-	directx_cc* init_cc = pool[HK_COMMAND_RENDER];
+	directx_cc* init_cc = pool;
 	for (u64 j = 0; j < pool_size; j++)
 	{
-		init_cc->type = HK_COMMAND_RENDER;
 		init_cc->fence_val = 0;
 		init_cc->state	  = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
 		api_ret_code			  = device->logical_device->CreateCommandAllocator(
@@ -67,95 +63,6 @@ i8 command_buffer_pool(const directx_device* device, const u64 pool_size)
 		swprintf(allocator_name, 256u, L"Direct X %s command allocator %lld ", COMMAND_NAME[HK_COMMAND_RENDER], j);
 	}
 
-	init_cc = pool[HK_COMMAND_COMPUTE];
-	for (u64 j = 0; j < pool_size; j++)
-	{
-		init_cc->type	  = HK_COMMAND_COMPUTE;
-		init_cc->fence_val = 0;
-		init_cc->state	  = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
-		api_ret_code			  = device->logical_device->CreateCommandAllocator(
-			 D3D12_COMMAND_LIST_TYPE_COMPUTE, __uuidof(ID3D12CommandAllocator), (void**)&init_cc->allocator);
-		if (S_OK != api_ret_code)
-		{
-			HLEMER("failed to allocate command pools");
-			ret_code = command_pool_fail_handler();
-			return ret_code;
-		}
-		FRIENDLY_NAME(init_cc->allocator, allocator_name);
-		// compute command list create
-		api_ret_code = device->logical_device->CreateCommandList(
-			0,
-			D3D12_COMMAND_LIST_TYPE_COMPUTE,
-			init_cc->allocator,
-			nullptr,
-			__uuidof(ID3D12GraphicsCommandList),
-			(void**)&init_cc->commandlist);
-		FRIENDLY_NAME(init_cc->commandlist, L"compute commandlist");
-
-		if (S_OK != api_ret_code)
-		{
-			HLEMER("failed to allocate command list");
-			ret_code = command_pool_fail_handler();
-			return H_FAIL;
-		}
-
-		api_ret_code = init_cc->commandlist->Close();
-		if (S_OK != api_ret_code)
-		{
-			HLEMER("failed to close command list");
-			ret_code = command_pool_fail_handler();
-			return H_FAIL;
-		}
-
-		
-		swprintf(allocator_name, 256u, L"Direct X %s command allocator %lld ", COMMAND_NAME[HK_COMMAND_COMPUTE], j);		
-		init_cc += 1;
-	}
-
-	init_cc = pool[HK_COMMAND_COPY];
-	for (u64 j = 0; j < pool_size; j++)
-	{
-		init_cc->type = HK_COMMAND_COPY;
-		init_cc->fence_val = 0;
-		init_cc->state	  = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
-		api_ret_code			  = device->logical_device->CreateCommandAllocator(
-			 D3D12_COMMAND_LIST_TYPE_COPY, __uuidof(ID3D12CommandAllocator), (void**)&init_cc->allocator);
-		if (S_OK != api_ret_code)
-		{
-			HLEMER("failed to allocate command pools");
-			ret_code = command_pool_fail_handler();
-			return ret_code;
-		}
-		FRIENDLY_NAME(init_cc->allocator, allocator_name);
-
-		api_ret_code = device->logical_device->CreateCommandList(
-			0,
-			D3D12_COMMAND_LIST_TYPE_COPY,
-			init_cc->allocator,
-			nullptr,
-			__uuidof(ID3D12GraphicsCommandList),
-			(void**)&init_cc->commandlist);
-		FRIENDLY_NAME(init_cc->commandlist, L"copy commandlist");
-
-		if (S_OK != api_ret_code)
-		{
-			HLEMER("failed to allocate command list");
-			ret_code = command_pool_fail_handler();
-			return H_FAIL;
-		}
-		api_ret_code = init_cc->commandlist->Close();
-		if (S_OK != api_ret_code)
-		{
-			HLEMER("failed to close command list");
-			ret_code = command_pool_fail_handler();
-			return H_FAIL;
-		}
-
-		swprintf(allocator_name, 256u, L"Direct X %s command allocator %lld ", COMMAND_NAME[HK_COMMAND_COPY], j);
-		
-		init_cc += 1;
-	}
-
 	return ret_code;
 }
 
@@ -163,45 +70,21 @@ i8 command_buffer_pool(const directx_device* device, const u64 pool_size)
 void command_buffer_pool_shutdown(void)
 {
 	HLINFO("command buffer pool shutdown");
-	for (u64 i = 0; i < HK_COMMAND_MAX; i++)
+	directx_cc* cc = pool;
+	for (u64 j = 0; j < pool_capacity; j++)
 	{
-		directx_cc* cc = pool[i];
-		for (u64 j = 0; j < pool_capacity; j++)
-		{
-			cc->allocator->Release();
-			cc->commandlist->Release();
-			cc += 1;
-		}
-		hmemory_free(pool[i], MEM_TAG_RENDERER);
+		cc->allocator->Release();
+		cc->commandlist->Release();
+		cc += 1;
 	}
+	hmemory_free(pool, MEM_TAG_RENDERER);
 }
 
-directx_cc* request_dxcc(queue_type type)
+directx_cc* request_dxcc()
 {
-	directx_cc* ret_ptr			 = nullptr;
+	directx_cc* ret_ptr			 = pool;
 	u64				   highest_fence_val = 0;
 
-	switch (type)
-	{
-	case HK_COMMAND_RENDER:
-	{
-		ret_ptr = pool[HK_COMMAND_RENDER];
-		break;
-	}
-	case HK_COMMAND_COPY:
-	{
-		ret_ptr = pool[HK_COMMAND_COPY];
-		break;
-	}
-	case HK_COMMAND_COMPUTE:
-	{
-		ret_ptr = pool[HK_COMMAND_COMPUTE];
-		break;
-	}
-	default:
-		HLCRIT(" unknown  queue type passed");
-		return nullptr;
-	}
 
 	for (u64 i = 0; i < pool_capacity; i++)
 	{
@@ -215,7 +98,7 @@ directx_cc* request_dxcc(queue_type type)
 			HRESULT win32_rv = ret_ptr->commandlist->Reset(ret_ptr->allocator, NULL);
 			if (S_OK != win32_rv)
 			{
-				HLEMER("commandlist reset failure : \n \t %ls",COMMAND_NAME[type]);
+				HLEMER("commandlist reset failure ",);
 				return nullptr;
 			}
 			return ret_ptr;
@@ -236,7 +119,7 @@ void reintroduce_dxcc(u64 fence_value)
 {
 	for (u64 i = 0; i < HK_COMMAND_MAX; i++)
 	{
-		directx_cc* alloc_ptr = pool[i];
+		directx_cc* alloc_ptr = pool;
 		for (u64 j = 0; j <= pool_capacity; j++)
 		{
 			if (alloc_ptr->fence_val < fence_value)
@@ -251,21 +134,18 @@ void reintroduce_dxcc(u64 fence_value)
 
 i8 command_pool_fail_handler()
 {
-	for (u64 i = 0; i < HK_COMMAND_MAX; i++)
+	directx_cc* cc = pool;
+	for (u64 i = 0; i < pool_capacity; i++)
 	{
-		directx_cc* cc = pool[i];
-		for (u64 i = 0; i < pool_capacity; i++)
+		if (nullptr != cc->allocator)
 		{
-			if (nullptr != cc->allocator)
-			{
-				cc->allocator->Release();
-			}
-			if (nullptr != cc->commandlist)
-			{
-				cc->commandlist->Release();
-			}
-			cc += 1;
+			cc->allocator->Release();
 		}
+		if (nullptr != cc->commandlist)
+		{
+			cc->commandlist->Release();
+		}
+		cc += 1;
 	}
 	return H_FAIL;
 }

@@ -24,8 +24,6 @@
 #pragma comment(lib, "DXGI.lib")
 
 
-// TODO : finish the back buffer clearing
-// TEST
 static directx_shader_module* module;
 
 static u64					  buffersize;
@@ -113,8 +111,6 @@ i8 context_fail_handler(directx_context* context, context_fails fail_code); // c
 
 /** singleton instance of directx context */
 static directx_context* context;
-static global_transforms* transforms;
-
 
 i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 {
@@ -123,19 +119,10 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 	HLINFO("Directx initialize");
 	ENABLE_DEBUG_LAYER();
 
-	transforms = (global_transforms*)hmemory_alloc(sizeof(global_transforms), MEM_TAG_RENDERER);
-	if (nullptr == transforms)
-	{
-		HLEMER("failed to allocate global memory");
-		return H_FAIL;
-	}
-	hmemory_copy(transforms, data, sizeof(global_transforms));
-
 	ret_code = create_context();
 	if (H_FAIL == ret_code)
 	{
 		HLEMER("directx_context creation failure");
-		hmemory_free(transforms, MEM_TAG_RENDERER);
 		return ret_code;
 	}
 
@@ -154,7 +141,6 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	command_buffer_pool_shutdown();
 	swapchain_shutdown(&context->swapchain);
 	hmemory_free(context, MEM_TAG_RENDERER);
-	hmemory_free(transforms, MEM_TAG_RENDERER);
 }
 
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
@@ -162,29 +148,29 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 	i8 ret_code = H_OK;
 
 
-	context->curr_cc[HK_COMMAND_RENDER] = request_dxcc(HK_COMMAND_RENDER);
-	if (nullptr == context->curr_cc[HK_COMMAND_RENDER])
+	context->curr_cc = request_dxcc();
+	if (nullptr == context->curr_cc)
 	{
 		// TODO :stability work for this recovery
 		HLWARN("commandlist preparation failure, SLEEP CPU WORK HERE");
 		return H_FAIL;
 	}
 
-	ret_code = set_render_target(&context->swapchain, context->curr_cc[HK_COMMAND_RENDER]);
+	ret_code = set_render_target(&context->swapchain, context->curr_cc);
 	if (H_OK != ret_code)
 	{
 		HLWARN("swapchain preparation failure");
 		return H_FAIL;
 	}
 	// TEST
-	bind_rendertarget_and_depth_stencil(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain);
+	bind_rendertarget_and_depth_stencil(context->curr_cc, &context->swapchain);
 
-	clear_back_buffer(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain, 0.1f, 0.1f, 0.1f, 1.0f);
-	clear_depth_stencil(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain);
-	bind_scissor_rect(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain);
-	bind_view_port(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain);
+	clear_back_buffer(context->curr_cc, &context->swapchain, 0.1f, 0.1f, 0.1f, 1.0f);
+	clear_depth_stencil(context->curr_cc, &context->swapchain);
+	bind_scissor_rect(context->curr_cc, &context->swapchain);
+	bind_view_port(context->curr_cc, &context->swapchain);
 
-	context->curr_cc[HK_COMMAND_RENDER]->commandlist->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	context->curr_cc->commandlist->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	return ret_code;
 }
@@ -194,43 +180,16 @@ i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 	i8 ret_code = H_OK;
 
 
-	if (nullptr != context->curr_cc[HK_COMMAND_COPY])
-	{
-		ret_code = end_commandlist_record(context->curr_cc[HK_COMMAND_COPY]);
-		execute_command(context, context->curr_cc[HK_COMMAND_COPY]);
-		next_frame_synchronization(&context->queue, context->curr_cc[HK_COMMAND_COPY]);
-	}
+	set_present_target(&context->swapchain, context->curr_cc);
 
-	if (nullptr != context->curr_cc[HK_COMMAND_COMPUTE])
-	{
-		ret_code = end_commandlist_record(context->curr_cc[HK_COMMAND_COMPUTE]);
-		execute_command(context, context->curr_cc[HK_COMMAND_COPY]);
-		next_frame_synchronization(&context->queue, context->curr_cc[HK_COMMAND_COMPUTE]);
-	}
-	set_present_target(&context->swapchain, context->curr_cc[HK_COMMAND_RENDER]);
-
-	end_commandlist_record(context->curr_cc[HK_COMMAND_RENDER]);
-	execute_command(context, context->curr_cc[HK_COMMAND_RENDER]);
-	next_frame_synchronization(&context->queue, context->curr_cc[HK_COMMAND_RENDER]);
+	end_commandlist_record(context->curr_cc);
+	execute_command(context, context->curr_cc);
+	next_frame_synchronization(&context->queue, context->curr_cc);
 
 
 	ret_code = present_frame(&context->swapchain);
 
-	for (u32 i = 0; i < HK_COMMAND_MAX; i++)
-	{
-		if (nullptr != context->curr_cc[i])
-		{
-			context->curr_cc[i] = nullptr;
-		}
-	}
-
 	return ret_code;
-}
-
-// FIX ME : implement this
-i8 directx_update_global_transforms(renderer_backend* backend_ptr, void* ptr)
-{
-	return H_OK;
 }
 
 i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width)
@@ -372,15 +331,15 @@ i8 create_device(void)
 	return ret_code;
 }
 
-directx_cc* request_commandlist(queue_type type)
+directx_cc* request_commandlist()
 {
 	directx_cc* list = nullptr;
 	// TODO : this is not right
-	if (nullptr == context->curr_cc[type])
+	if (nullptr == context->curr_cc)
 	{
-		context->curr_cc[type] =  request_dxcc(type);
+		context->curr_cc =  request_dxcc();
 		
-		if (nullptr == context->curr_cc[type])
+		if (nullptr == context->curr_cc)
 		{
 			// TODO :stability work for this recovery
 			HLWARN("commandlist preparation failure, SLEEP CPU WORK HERE");
@@ -388,7 +347,7 @@ directx_cc* request_commandlist(queue_type type)
 		}
 	}
 
-	list = context->curr_cc[type];
+	list = context->curr_cc;
 
 	return list;
 }

@@ -90,7 +90,7 @@ i8 swapchain_initialize(directx_context* context)
 	sdesc.OutputWindow = *(HWND*)handle;
 
 	IDXGISwapChain* tswapchain;
-	api_ret_code = device->factory->CreateSwapChain(queue->directx_queue[HK_COMMAND_RENDER], &sdesc, &tswapchain);
+	api_ret_code = device->factory->CreateSwapChain(queue->directx_queue, &sdesc, &tswapchain);
 
 	if (S_OK != api_ret_code)
 	{

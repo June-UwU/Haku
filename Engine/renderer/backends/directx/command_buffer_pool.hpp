@@ -26,7 +26,7 @@ void command_buffer_pool_shutdown(void);
  * \param type command pool type that points the type 
  * \return directx command allocator
  */
-directx_cc* request_dxcc(queue_type type);
+directx_cc* request_dxcc();
 
 /**
  * routine to make the command allocator object back for request.

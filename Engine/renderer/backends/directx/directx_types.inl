@@ -14,7 +14,7 @@
 #include <D3d12.h>
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
-#include "generics/darray.hpp"
+#include "generics/queue.hpp"
 
 /** macro to set friendly names to directx 12 objects */
 #define FRIENDLY_NAME(ID3D12Obj,name) ID3D12Obj->SetName(name)
@@ -63,6 +63,35 @@ constexpr const char* RESOURCE_TYPE_STRING[RESOURCE_TYPE_MAX]
 	"unordered resource"
 };
 
+
+typedef struct descriptor_block
+{
+	D3D12_CPU_DESCRIPTOR_HANDLE cpu_base;
+
+	D3D12_GPU_DESCRIPTOR_HANDLE gpu_base;
+
+	u64 size;
+
+}descriptor_block;
+
+typedef struct directx_descriptor_heap
+{
+	queue_t block_list;
+
+	ID3D12DescriptorHeap* heap;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE cpu_base;
+
+	D3D12_GPU_DESCRIPTOR_HANDLE gpu_base;
+
+	u64 heap_inc;
+
+	u64 capacity;
+
+	u64 largest_block;
+
+	bool is_shader_visible;
+}directx_descriptor_heap;
 
 /** enumeration to signify the different programmable shader stage */
 typedef enum shader_stages
@@ -147,9 +176,6 @@ typedef enum commandlist_state
 /** directx command allocators */
 typedef struct directx_cc
 {
-	/** allocator type */
-	queue_type type;
-
 	/** this val is the completed value when the allocator is off flight */
 	u64 fence_val;
 
@@ -159,6 +185,7 @@ typedef struct directx_cc
 	/** directx  12 specfic command allocator object */
 	ID3D12CommandAllocator* allocator;
 
+	/** assioated command list */
 	ID3D12GraphicsCommandList* commandlist;
 }directx_cc;
 
@@ -176,7 +203,7 @@ typedef struct directx_queue
 	HANDLE event;
 
 	/** command queue list , equal to HK_COMMAND_MAX */
-	ID3D12CommandQueue* directx_queue[HK_COMMAND_MAX];
+	ID3D12CommandQueue* directx_queue;
 }directx_queue;
 
 /** directx swapchain object */
@@ -246,7 +273,7 @@ typedef struct directx_context
 	directx_device          device;
 
 	/** pointer that hold the current list working with*/
-	directx_cc* curr_cc[HK_COMMAND_MAX];
+	directx_cc* curr_cc;
 }directx_context;
 
 
@@ -255,17 +282,12 @@ constexpr const u64 ROOT_PARAM_MAX = 64u;
 /** root signature structure */
 typedef struct directx_root_signature
 {
-	/** number of parameter in a root signature */
-	u64 parameter_count;
-
-	/** size of the parameter size allocated */
-	u64 allocate_parameter;
-
+// FIX ME : this needs to be made properly
 	/** sampler array for carrying samplers */
-	darray sampler_array;
+//	D3D12_SAMPLER_DESC sampler_array[ROOT_PARAM_MAX];
 	
 	/** root parameter darray */
-	darray parameter_array;
+//	D3D12_ROOT_PARAMETER_DESC parameter_array[ROOT_PARAM_MAX];
 	
 	/** root signature of directx api */
 	ID3D12RootSignature* root_signature;
