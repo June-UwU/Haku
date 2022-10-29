@@ -15,7 +15,6 @@
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
 #include "generics/darray.hpp"
-#include "cpu_descriptors.hpp"
 
 /** macro to set friendly names to directx 12 objects */
 #define FRIENDLY_NAME(ID3D12Obj,name) ID3D12Obj->SetName(name)
@@ -63,19 +62,6 @@ constexpr const char* RESOURCE_TYPE_STRING[RESOURCE_TYPE_MAX]
 	"constant resource",
 	"unordered resource"
 };
-
-/** struct to handle directx resources and their usage */
-typedef struct directx_buffer
-{
-	/** currently not used at the moment */
-	D3D12_RESOURCE_STATES state;
-
-	/** buffer descriptions */
-	D3D12_RESOURCE_DESC desc;
-
-	/** underlying resource */
-	ID3D12Resource* resource;
-}directx_buffer;
 
 
 /** enumeration to signify the different programmable shader stage */
@@ -269,18 +255,6 @@ constexpr const u64 ROOT_PARAM_MAX = 64u;
 /** root signature structure */
 typedef struct directx_root_signature
 {
-	/** constant buffer view base register */
-	u64 cbv_base;
-
-	/** unordered access view base register */
-	u64 uav_base;
-
-	/** current shader resource view base */
-	u64 srv_base;
-
-	/** current sampler base register */
-	u64 sampler_base;
-
 	/** number of parameter in a root signature */
 	u64 parameter_count;
 

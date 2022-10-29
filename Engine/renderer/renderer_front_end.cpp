@@ -66,7 +66,7 @@ i8 renderer_draw_frame(render_packet* packet)
 			backend->transforms.view_matrix = XMMatrixIdentity();
 			backend->transforms.projection_matix = XMMatrixPerspectiveFovLH(packet->fov, packet->width / packet->height, 0.1f, 100.0f);
 			// TODO : make sure this is properly checked
-		//	backend->update_global_transforms(backend,&backend->transforms);
+			backend->update_global_transforms(backend,&backend->transforms);
 		}
 	}
 

@@ -248,6 +248,43 @@ TEST(generic_test, bound_test)
 	destroy_hash_table(&hash_set);
 }
 
+TEST(generic_test, queue_remove_at)
+{
+	queue_t queue;
+	create_queue(&queue, sizeof(u64));
+	u64 test_range = 512;
+
+	for (u64 i = 0; i < test_range; i++)
+	{
+		enqueue(&queue, &i);
+	}
+	queue_entry_t* rm_ety = nullptr;
+	for_queue_t(&queue, entry != nullptr)
+	{
+		u64* data_ptr = (u64*)entry->data;
+		if (300 == *data_ptr)
+		{
+			rm_ety = entry;
+			break;
+		}
+	}
+
+
+	remove_at(&queue, rm_ety);
+	int check_val = 0;
+	for_queue_t(&queue, entry != nullptr)
+	{
+		u64* data_ptr = (u64*)entry->data;
+		if (300 == check_val)
+		{
+			EXPECT_NE(check_val, *data_ptr);
+			check_val++;
+		}
+		EXPECT_EQ(check_val, *data_ptr);
+		check_val++;
+	}
+}
+
 int main(int argc, char** argv) 
 {
 	prepare_subsystem_for_test();

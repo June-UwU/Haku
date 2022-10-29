@@ -57,6 +57,16 @@ i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time);
  */
 i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width);
 
+/**
+ * function to update global transform.
+ * 
+ * \param backend pointer to the render backend
+ * \param data pointer to the global_transforms
+ * 
+ * \return H_OK on sucess
+ */
+i8 directx_update_global_transforms(renderer_backend* backend, void* data);
+
 
 
 

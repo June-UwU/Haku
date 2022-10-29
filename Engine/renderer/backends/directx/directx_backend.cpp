@@ -16,26 +16,17 @@
 #include "directx_backend.hpp"
 #include "renderer/renderer_types.inl"
 
+
 #include "shader.hpp"
-#include "pipeline_state.hpp"
 
 
 #pragma comment(lib, "D3d12.lib")
 #pragma comment(lib, "DXGI.lib")
 
-#include "buffer.hpp"
 
 // TODO : finish the back buffer clearing
 // TEST
 static directx_shader_module* module;
-static directx_pipeline*	  pipeline;
-
-static directx_buffer		    buffer;
-static directx_buffer         index;
-static directx_buffer         g_const;
-
-static D3D12_VERTEX_BUFFER_VIEW vert_view;
-static D3D12_INDEX_BUFFER_VIEW ind_view;
 
 static u64					  buffersize;
 static hk_vertex			  triangleVertices[] = { { { 0.0f, 0.25f, 0.5f,1.0f }, { 1.0f, 0.0f, 0.0f, 0.4f } },
@@ -122,7 +113,7 @@ i8 context_fail_handler(directx_context* context, context_fails fail_code); // c
 
 /** singleton instance of directx context */
 static directx_context* context;
-static global_transforms transforms;
+static global_transforms* transforms;
 
 
 i8 directx_initialize(renderer_backend* backend_ptr,void* data)
@@ -132,40 +123,21 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 	HLINFO("Directx initialize");
 	ENABLE_DEBUG_LAYER();
 
+	transforms = (global_transforms*)hmemory_alloc(sizeof(global_transforms), MEM_TAG_RENDERER);
+	if (nullptr == transforms)
+	{
+		HLEMER("failed to allocate global memory");
+		return H_FAIL;
+	}
+	hmemory_copy(transforms, data, sizeof(global_transforms));
+
 	ret_code = create_context();
 	if (H_FAIL == ret_code)
 	{
 		HLEMER("directx_context creation failure");
+		hmemory_free(transforms, MEM_TAG_RENDERER);
 		return ret_code;
 	}
-
-	ret_code = initialize_buffer_structures();
-
-// TEST : buffer test
-	buffersize = sizeof(triangleVertices);
-	create_buffer(&context->device, &buffer, sizeof(hk_vertex) * 3u, 1u, 1u, D3D12_RESOURCE_DIMENSION_BUFFER);
-	create_buffer(&context->device, &index, sizeof(u32) * 3u, 1u, 1u, D3D12_RESOURCE_DIMENSION_BUFFER);
-
-	transition_buffer(&buffer, 0u, D3D12_RESOURCE_STATE_COPY_DEST);
-	load_buffer(&buffer, triangleVertices, sizeof(hk_vertex) * 3u, 0u);
-	transition_buffer(&buffer, 0u, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-	
-	transition_buffer(&index, 0u, D3D12_RESOURCE_STATE_COPY_DEST);
-	load_buffer(&index, index_buffer, sizeof(u32) * 3u, 0u);
-	transition_buffer(&index, 0u, D3D12_RESOURCE_STATE_INDEX_BUFFER);
-
-	vert_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
-	vert_view.SizeInBytes = 3 * sizeof(hk_vertex);
-	vert_view.StrideInBytes = sizeof(hk_vertex);
-
-	ind_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
-	ind_view.Format = DXGI_FORMAT_R32_UINT;
-	ind_view.SizeInBytes = sizeof(u32) * 3u;
-
-
-	end_commandlist_record(context->curr_cc[HK_COMMAND_RENDER]);
-	execute_command(context, context->curr_cc[HK_COMMAND_RENDER]);
-	next_frame_synchronization(&context->queue, context->curr_cc[HK_COMMAND_RENDER]);
 
 	return ret_code;
 }
@@ -182,11 +154,7 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	command_buffer_pool_shutdown();
 	swapchain_shutdown(&context->swapchain);
 	hmemory_free(context, MEM_TAG_RENDERER);
-	shutdown_buffer_structure();
-	// TEST
-	destroy_pipeline_state(pipeline);
-	release_buffer(&index);
-	release_buffer(&buffer);
+	hmemory_free(transforms, MEM_TAG_RENDERER);
 }
 
 i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
@@ -209,7 +177,6 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 		return H_FAIL;
 	}
 	// TEST
-	bind_pipeline_state(context->curr_cc[HK_COMMAND_RENDER], pipeline);
 	bind_rendertarget_and_depth_stencil(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain);
 
 	clear_back_buffer(context->curr_cc[HK_COMMAND_RENDER], &context->swapchain, 0.1f, 0.1f, 0.1f, 1.0f);
@@ -225,14 +192,7 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 {
 	i8 ret_code = H_OK;
-	// TODO this is not needed here at the moment
 
-	context->curr_cc[HK_COMMAND_RENDER]->commandlist->IASetVertexBuffers(0u, 1u, &vert_view);
-	context->curr_cc[HK_COMMAND_RENDER]->commandlist->IASetIndexBuffer(&ind_view);
-
-
-	context->curr_cc[HK_COMMAND_RENDER]->commandlist->DrawInstanced(3, 1, 0, 0);
-	
 
 	if (nullptr != context->curr_cc[HK_COMMAND_COPY])
 	{
@@ -270,7 +230,7 @@ i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 // FIX ME : implement this
 i8 directx_update_global_transforms(renderer_backend* backend_ptr, void* ptr)
 {
-	return H_FAIL;
+	return H_OK;
 }
 
 i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width)
@@ -352,7 +312,6 @@ i8 create_context(void)
 	create_shader_module(&module);
 	create_shader_byte_code(context, L"D:\\Haku\\bin\\BuiltIn_Vertex.cso", HK_VERTEX_SHADER, module);
 	create_shader_byte_code(context, L"D:\\Haku\\bin\\BuiltIn_Pixel.cso", HK_PIXEL_SHADER, module);
-	pipeline = create_pipeline_state(&context->device, module);
 
 	return ret_code;
 }
@@ -442,6 +401,15 @@ directx_device* get_device()
 u64 get_current_fence_val(void)
 {
 	return context->queue.fence_val;
+}
+
+bool is_work_copy(D3D12_RESOURCE_STATES state)
+{
+	if (state == D3D12_RESOURCE_STATE_COPY_DEST || state == D3D12_RESOURCE_STATE_COMMON || state == D3D12_RESOURCE_STATE_COPY_SOURCE || state == D3D12_RESOURCE_STATE_GENERIC_READ)
+	{
+		return true;
+	}
+	return false;
 }
 
 // FAIL HANDLERS

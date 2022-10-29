@@ -21,3 +21,6 @@ directx_cc* request_commandlist(queue_type type);
 directx_device* get_device();
 
 u64 get_current_fence_val(void);
+
+bool is_work_copy(D3D12_RESOURCE_STATES state);
+

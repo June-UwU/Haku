@@ -1,4 +1,3 @@
-#include "buffer.hpp"
 #include "core/logger.hpp"
 #include "command_context.hpp"
 #include "command_buffer_pool.hpp"
@@ -197,7 +196,6 @@ i8 next_frame_synchronization(directx_queue* queue, directx_cc* commandlist)
 		completed_val--;
 	}
 	reintroduce_dxcc(completed_val);
-	reclaim_buffer(completed_val);
 
 
 	return ret_code;

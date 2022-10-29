@@ -162,8 +162,6 @@ HAPI u64 count(darray ptr)
 	u64 ret_val = 0;
 
 	ret_val = size(ptr);
-	darray_attr* attr = get_darray_attr(ptr);
-	ret_val = ret_val / attr->element_size;
 
 	return ret_val;
 }
