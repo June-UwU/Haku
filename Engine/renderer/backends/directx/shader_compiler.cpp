@@ -1,5 +1,5 @@
 /*****************************************************************//**
- * \file   shader.cpp
+ * \file   shader_compiler.cpp
  * \brief  shader compilation and implementation file
  * 
  * \author June
@@ -7,23 +7,12 @@
  *********************************************************************/
 #pragma comment(lib , "D3DCompiler.lib")
 
-#include "shader.hpp"
+#include "shader_compiler.hpp"
 #include "core/logger.hpp"
 #include "memory/hmemory.hpp"
 
 
-i8 create_shader_module(directx_shader_module** ppmodule)
-{
-	*ppmodule = (directx_shader_module*)hmemory_alloc(sizeof(directx_shader_module), MEM_TAG_RENDERER);
-	directx_shader_module* mod = *ppmodule;
-	for (u64 i = 0; i < HK_SHADER_MAX; i++)
-	{
-		mod->compiled_shaders[i] = nullptr;
-	}
-	return H_OK;
-}
-
-i8 compile_shader(const directx_context* context, const char* path, shader_stages stage, directx_shader_module* module)
+ID3D10Blob* compile_shader(const char* path, shader_stages stage)
 {
 	wchar_t* wide_path = nullptr;
 	mbstowcs(wide_path, path, strlen(path));
@@ -36,38 +25,37 @@ i8 compile_shader(const directx_context* context, const char* path, shader_stage
 #endif
 
 	ID3DBlob* error_blob = nullptr;
-
+	ID3DBlob* rp_blob = nullptr;
 	if (nullptr == wide_path)
 	{
 		HLCRIT("path is none");
-		return H_FAIL;
+		return nullptr;
 	}
 
 	HRESULT api_ret_val = D3DCompileFromFile(wide_path,NULL,D3D_COMPILE_STANDARD_FILE_INCLUDE,SHADER_MAIN,
-		SHADER_PROFILE_11_0[stage],flags,0,&module->compiled_shaders[stage],&error_blob
+		SHADER_PROFILE_11_0[stage],flags,0,&rp_blob,&error_blob
 	);
 
 	if (S_OK != api_ret_val)
 	{
 		HLCRIT("shader compilation failure : %s", (char*)error_blob->GetBufferPointer());
-		return H_FAIL;
+		return nullptr;
 	}
 
 	HLINFO("shader compilation for path : %s ", path);
 	
-	return H_OK;
+	return rp_blob;
 }
 
-i8 create_shader_byte_code(const directx_context* context, const wchar_t* path, shader_stages stage, directx_shader_module* module)
+ID3DBlob* create_shader_byte_code(const wchar_t* path, shader_stages stage)
 {
 	ID3DBlob* blob;
 	HRESULT api_ret_val = D3DReadFileToBlob(path, &blob);
-	module->compiled_shaders[stage] = blob;
 	if (S_OK != api_ret_val)
 	{
 		HLCRIT("shader byte code creation failed : %s ", path);
-		return H_FAIL;
+		return nullptr;
 	}
 
-	return H_OK;
+	return blob;
 }

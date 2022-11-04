@@ -1,6 +1,6 @@
 #pragma once
 /*****************************************************************//**
- * \file   shader.hpp
+ * \file   shader_compiler.hpp
  * \brief  shader compilation and creation system
  * 
  * \author June
@@ -32,28 +32,24 @@ constexpr const char* SHADER_PROFILE_10_0[HK_SHADER_MAX]{
 	"cs_4_0"  // compute shader stage enumerations
 };
 
-i8 create_shader_module(directx_shader_module** ppmodule);
-
 /**
  * function to compile shaders at runtime.
  * 
- * \param context pointer to directx_context 
  * \param path pointer to the file path
  * \param stage stage for the directx compile
  * \param module module to compile and place the shader into
  * \return H_OK on sucess else H_FAIL
  */
-i8 compile_shader(const directx_context* context, const char* path, shader_stages stage,directx_shader_module* module);
+ID3DBlob* compile_shader(const char* path, shader_stages stage);
 
 /**
  * function to create code byte code blob from a compiled shader.
  *
- * \param context pointer to directx_context
  * \param path pointer to the file path
  * \param stage stage for the directx compile
  * \param module module to compile and place the shader into
  * \return H_OK on sucess else H_FAIL
  */
-i8 create_shader_byte_code(const directx_context* context, const wchar_t* path, shader_stages stage, directx_shader_module* module);
+ID3DBlob* create_shader_byte_code(const wchar_t* path, shader_stages stage);
 
 

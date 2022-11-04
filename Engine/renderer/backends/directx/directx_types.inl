@@ -24,6 +24,30 @@ constexpr u64 frame_count = 3u;
 /** command allcator size for the command allocator pool */
 constexpr u64 command_allocator_size = 4u;
 
+constexpr const D3D12_HEAP_PROPERTIES HEAP_PROPS[D3D12_HEAP_TYPE_CUSTOM]
+{
+	{
+		D3D12_HEAP_TYPE_DEFAULT,
+		D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+		D3D12_MEMORY_POOL_UNKNOWN,
+		0,
+		0
+	},
+	{
+		D3D12_HEAP_TYPE_UPLOAD,
+		D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+		D3D12_MEMORY_POOL_UNKNOWN,
+		0,
+		0
+	},
+	{
+		// READ BACK
+    },  
+    {
+		// COSTOM HEAP
+    }
+};
+
 // TODO : HAVE CPU ACCESSIBLE MODIFYING RESOURCES
 /** resource type enumerations (THIS WILL PROLLY HAVE MODIFIABLE AND NON MODIFIABLE RESOURCES BASED ON THE TYPE USED) */
 typedef enum resource_type
@@ -264,25 +288,6 @@ typedef struct directx_context
 }directx_context;
 
 
-/** rootsignature max capacity */
-constexpr const u64 ROOT_PARAM_MAX = 64u;
-/** root signature structure */
-typedef struct directx_root_signature
-{
-// FIX ME : this needs to be made properly
-	/** sampler array for carrying samplers */
-//	D3D12_SAMPLER_DESC sampler_array[ROOT_PARAM_MAX];
-	
-	/** root parameter darray */
-//	D3D12_ROOT_PARAMETER_DESC parameter_array[ROOT_PARAM_MAX];
-	
-	/** root signature of directx api */
-	ID3D12RootSignature* root_signature;
-
-	/** default shader visibility used */
-	D3D12_SHADER_VISIBILITY default_visibility;
-}directx_root_signature;
-
 /** directx resource types */
 typedef enum descriptor_type
 {
@@ -303,28 +308,6 @@ typedef enum descriptor_type
 
 }descriptor_type;
 
-
-/** directx shader module  */
-typedef struct directx_shader_module
-{
-	/** all directx shader for a module, nullptr if its absent */
-	ID3DBlob* compiled_shaders[HK_SHADER_MAX];
-}directx_shader_module;
-
-/** directx pipeline state structure */
-typedef struct directx_pipeline
-{
-	/** the pipeline state created */
-	ID3D12PipelineState* state;
-
-	/** the shader structure */
-	directx_shader_module* shaders;
-
-	/** the root signature assioated with the pipeline */
-	directx_root_signature* signature;
-}directx_pipeline;
-
-
 /** haku's vertex types */
 typedef struct hk_vertex
 {
@@ -334,3 +317,17 @@ typedef struct hk_vertex
 	/** variable that hold the color data */
 	DirectX::XMVECTOR color;
 }hk_vertex;
+
+constexpr const u32 INPUT_ELEMENT_COUNT = 2u;
+
+constexpr const D3D12_INPUT_ELEMENT_DESC INPUT_ELEMENT_DESC[2]
+{
+	{ "POSITION", 0,DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+};
+
+constexpr const D3D12_INPUT_LAYOUT_DESC INPUT_LAYOUT_DESC
+{
+	INPUT_ELEMENT_DESC,
+	INPUT_ELEMENT_COUNT
+};

@@ -1,10 +1,4 @@
 
-cbuffer g_const : register(b0)
-{
-	matrix  proj;
-	matrix  view;
-	matrix  padd[2];	
-};
 
 struct PixelData
 {
@@ -22,8 +16,7 @@ struct VextexData
 PixelData main(VextexData data)
 {
     PixelData ret;
-	float4 inter = mul(data.pos, proj);
-    ret.p_pos =  mul(inter , view);
+	ret.p_pos = data.pos;
     ret.p_col = data.col;
     return ret;
 }

@@ -15,23 +15,29 @@
 #include "directx_types.INL"
 #include "directx_backend.hpp"
 #include "renderer/renderer_types.inl"
-
-
-#include "shader.hpp"
-
+#include "engine_shaders.hpp"
+#include "descriptor_heaps.hpp"
 
 #pragma comment(lib, "D3d12.lib")
 #pragma comment(lib, "DXGI.lib")
 
-// TEST : this needs to be ousted
-#include "descriptor_heaps.hpp"
-static directx_shader_module* module;
+
+#include "resources.hpp"
+#include "helpers.hpp"
+#include "rootsig.hpp"
+#include "pso.hpp"
 
 static u64					  buffersize;
 static hk_vertex			  triangleVertices[] = { { { 0.0f, 0.25f, 0.5f,1.0f }, { 1.0f, 0.0f, 0.0f, 0.4f } },
 													 { { 0.25f, -0.25f, 0.5f,1.0f }, { 0.0f, 1.0f, 0.0f, 0.4f } },
 													 { { -0.25f, -0.25f, 0.5f ,1.0f}, { 0.0f, 0.0f, 1.0f, 0.4f } } };
 static u32 index_buffer[] = { 0, 1, 2 };
+static ID3D12PipelineState* pso = nullptr;
+static ID3D12RootSignature* rootsig = nullptr;
+ID3D12Resource* vertex_resource = nullptr;
+ID3D12Resource* index_resource = nullptr;
+ID3D12Resource* upvertex_resource = nullptr;
+ID3D12Resource* upindex_resource = nullptr;
 
 
 /** directx context creation failure codes */
@@ -136,25 +142,84 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 		HLEMER("shader visible heap creation failure");
 		return ret_code;
 	}
-	const u32 tr = 10;
-	descriptor_handle handle[tr];
-	for (u32 i = 1; i < tr; i++)
+	
+	ret_code = initialize_engine_shader();
+	if (H_FAIL == ret_code)
 	{
-		handle[i] = allocate(&rv_heap, i);
-		if (true == is_null(&handle[i]))
-		{
-			__debugbreak();
-		}
-		if (handle[i].size != i)
-		{
-			__debugbreak();
-		}
+		HLEMER("failed to initialze shader");
+		return H_FAIL;
+	}
+	
+// TEST 
+	D3D12_ROOT_PARAMETER parameter[10u]{};
+	D3D12_DESCRIPTOR_RANGE range[10]{};
+	
+	rootsig = create_rootsignature(0u, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	D3D12_RASTERIZER_DESC raster = make_rasterize_desc(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, false, D3D12_DEFAULT_DEPTH_BIAS,
+		D3D12_DEFAULT_DEPTH_BIAS_CLAMP, D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+
+	D3D12_BLEND_DESC blend = default_blend_desc();
+
+	DXGI_FORMAT format[8u]{};
+	format[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+
+	D3D12_DEPTH_STENCIL_DESC ds_desc = make_depth_stencil(true, D3D12_DEPTH_WRITE_MASK_ALL, D3D12_COMPARISON_FUNC_LESS, false,
+		D3D12_DEFAULT_STENCIL_READ_MASK, D3D12_DEFAULT_STENCIL_WRITE_MASK, { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS }
+	, { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS });
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = make_pso_desc(rootsig, get_shader(FULL_TRIANGLE_VERTEX_SHADER), get_shader(FULL_TRIANGLE_PIXEL_SHADER), nullptr,
+		nullptr, nullptr, raster, blend, ds_desc, format, 0xFFFFFFFF, 1u, 1, 0u);
+
+	pso = create_pipelinestate(pso_desc);
+
+	
+	vertex_resource = create_resource(1u,sizeof(hk_vertex) * 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_DEFAULT,
+		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_FLAG_NONE);
+
+
+	index_resource = create_resource(1u, 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_DEFAULT,
+		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_FLAG_NONE);
+
+
+	upvertex_resource = create_resource(1u, sizeof(hk_vertex) * 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_UPLOAD,
+		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE);
+
+
+	upindex_resource = create_resource(1u, 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_UPLOAD,
+		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE);
+
+
+	u8* vertex_map = nullptr;
+	D3D12_RANGE uprange{};
+	upvertex_resource->Map(0u, &uprange, (void**)&vertex_map);
+	hmemory_copy(vertex_map, triangleVertices, sizeof(hk_vertex) * 3u);
+	upvertex_resource->Unmap(0u, nullptr);
+
+	u8* index_map = nullptr;
+	upindex_resource->Map(0u, &uprange, (void**)&vertex_map);
+	hmemory_copy(vertex_map, index_buffer, 3u);
+	upindex_resource->Unmap(0u, nullptr);
+
+	context->curr_cc = request_dxcc();
+	if (nullptr == context->curr_cc)
+	{
+		// TODO :stability work for this recovery
+		HLWARN("commandlist preparation failure, SLEEP CPU WORK HERE");
+		return H_FAIL;
 	}
 
-	for (u32 i = 1; i < tr; i++)
-	{
-		free(&handle[i]);
-	}
+	context->curr_cc->commandlist->CopyResource(vertex_resource, upvertex_resource);
+
+	context->curr_cc->commandlist->CopyResource(index_resource, upindex_resource);
+
+
+	end_commandlist_record(context->curr_cc);
+	execute_command(context, context->curr_cc);
+	next_frame_synchronization(&context->queue, context->curr_cc);
+
+
 	return ret_code;
 }
 
@@ -165,6 +230,11 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	
 	full_gpu_flush(&context->queue, HK_COMMAND_RENDER);
 
+// TEST : 
+	pso->Release();
+	rootsig->Release();
+
+	shutdown_engine_shader();
 	destroy_descriptor_heap(&rv_heap);
 	context_destroy();
 	command_context_shutdown(&context->queue);
@@ -192,7 +262,6 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 		HLWARN("swapchain preparation failure");
 		return H_FAIL;
 	}
-	// TEST
 	bind_rendertarget_and_depth_stencil(context->curr_cc, &context->swapchain);
 
 	clear_back_buffer(context->curr_cc, &context->swapchain, 0.1f, 0.1f, 0.1f, 1.0f);
@@ -201,7 +270,8 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 	bind_view_port(context->curr_cc, &context->swapchain);
 
 	context->curr_cc->commandlist->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
+	context->curr_cc->commandlist->SetGraphicsRootSignature(rootsig);
+	context->curr_cc->commandlist->SetPipelineState(pso);
 	return ret_code;
 }
 
@@ -209,6 +279,14 @@ i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 {
 	i8 ret_code = H_OK;
 
+
+	D3D12_VERTEX_BUFFER_VIEW vert_view{};
+	vert_view.BufferLocation = vertex_resource->GetGPUVirtualAddress();
+	vert_view.SizeInBytes = sizeof(hk_vertex) * 3u;
+	vert_view.StrideInBytes = sizeof(hk_vertex);
+
+	context->curr_cc->commandlist->IASetVertexBuffers(0, 1, &vert_view);
+	context->curr_cc->commandlist->DrawInstanced(3,1,0,0);
 
 	set_present_target(&context->swapchain, context->curr_cc);
 
@@ -297,11 +375,7 @@ i8 create_context(void)
 	}
 	HLINFO("haku command buffer pool created");
 
-	// TEST
-	create_shader_module(&module);
-	create_shader_byte_code(context, L"D:\\Haku\\bin\\BuiltIn_Vertex.cso", HK_VERTEX_SHADER, module);
-	create_shader_byte_code(context, L"D:\\Haku\\bin\\BuiltIn_Pixel.cso", HK_PIXEL_SHADER, module);
-
+	
 	return ret_code;
 }
 
@@ -388,15 +462,6 @@ directx_device* get_device()
 u64 get_current_fence_val(void)
 {
 	return context->queue.fence_val;
-}
-
-bool is_work_copy(D3D12_RESOURCE_STATES state)
-{
-	if (state == D3D12_RESOURCE_STATE_COPY_DEST || state == D3D12_RESOURCE_STATE_COMMON || state == D3D12_RESOURCE_STATE_COPY_SOURCE || state == D3D12_RESOURCE_STATE_GENERIC_READ)
-	{
-		return true;
-	}
-	return false;
 }
 
 // FAIL HANDLERS
