@@ -59,7 +59,7 @@ i8 create_descriptor_heap(directx_descriptor_heap* out_heap, u64 number_of_descr
 		}
 	}
 	heap_desc.NumDescriptors = number_of_descriptors;
-
+	heap_desc.Flags |= flag;
 	HRESULT win32_rv = dev->logical_device->CreateDescriptorHeap(&heap_desc, IID_PPV_ARGS(&out_heap->heap));
 	if (S_OK != win32_rv)
 	{

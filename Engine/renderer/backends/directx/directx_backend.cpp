@@ -40,6 +40,13 @@ ID3D12Resource* upvertex_resource = nullptr;
 ID3D12Resource* upindex_resource = nullptr;
 
 
+static ID3D12Resource* global_const[frame_count];
+static descriptor_handle global_handle[frame_count];
+static D3D12_CONSTANT_BUFFER_VIEW_DESC const_view[frame_count];
+static u8* const_mapped_ptr[frame_count];
+static global_transforms glob_transforms;
+
+
 /** directx context creation failure codes */
 typedef enum context_fails
 {
@@ -150,11 +157,50 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 		return H_FAIL;
 	}
 	
+	glob_transforms.projection_matix = DirectX::XMMatrixIdentity();
+	glob_transforms.view_matrix = DirectX::XMMatrixIdentity();
+	for (u32 i = 0; i < frame_count; i++)
+	{
+		global_const[i] = create_resource(1u, sizeof(global_transforms), 1u, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_UPLOAD,
+			D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE);
+		if (nullptr == global_const[i])
+		{
+			HLCRIT("failed creating global  const buffer");
+			return H_FAIL;
+		}
+
+		global_handle[i] = allocate(&rv_heap, 1u);
+		if (true == is_null(global_handle))
+		{
+			HLEMER("failed to allocate visible heap handle");
+			return H_FAIL;
+		}
+
+		const_view[i].BufferLocation = global_const[i]->GetGPUVirtualAddress();
+		const_view[i].SizeInBytes = sizeof(global_transforms);
+
+		context->device.logical_device->CreateConstantBufferView(&const_view[i], global_handle[i].cpu_ptr);
+	
+		D3D12_RANGE range{};
+		HRESULT win32_rv = global_const[i]->Map(0u, &range, (void**)&const_mapped_ptr[i]);
+		if(S_OK != win32_rv)
+		{
+			HLEMER("failed to map ptr");;
+			return H_FAIL;
+		}
+
+		hmemory_copy(const_mapped_ptr[i], &glob_transforms, sizeof(global_transforms));
+	}
+
+
+
 // TEST 
 	D3D12_ROOT_PARAMETER parameter[10u]{};
 	D3D12_DESCRIPTOR_RANGE range[10]{};
 	
-	rootsig = create_rootsignature(0u, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	parameter[0] = make_rootdescriptors(0u, 0u, D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_ALL);
+
+	rootsig = create_rootsignature(1u, parameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	D3D12_RASTERIZER_DESC raster = make_rasterize_desc(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, false, D3D12_DEFAULT_DEPTH_BIAS,
 		D3D12_DEFAULT_DEPTH_BIAS_CLAMP, D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
@@ -179,7 +225,7 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_FLAG_NONE);
 
 
-	index_resource = create_resource(1u, 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_DEFAULT,
+	index_resource = create_resource(1u, sizeof(u32) * 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_DEFAULT,
 		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_FLAG_NONE);
 
 
@@ -187,7 +233,7 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE);
 
 
-	upindex_resource = create_resource(1u, 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_UPLOAD,
+	upindex_resource = create_resource(1u, sizeof(u32) * 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_UPLOAD,
 		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE);
 
 
@@ -199,7 +245,7 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 
 	u8* index_map = nullptr;
 	upindex_resource->Map(0u, &uprange, (void**)&vertex_map);
-	hmemory_copy(vertex_map, index_buffer, 3u);
+	hmemory_copy(vertex_map, index_buffer, sizeof(u32) * 3u);
 	upindex_resource->Unmap(0u, nullptr);
 
 	context->curr_cc = request_dxcc();
@@ -272,6 +318,8 @@ i8 directx_begin_frame(renderer_backend* backend_ptr, f64 delta_time)
 	context->curr_cc->commandlist->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	context->curr_cc->commandlist->SetGraphicsRootSignature(rootsig);
 	context->curr_cc->commandlist->SetPipelineState(pso);
+	context->curr_cc->commandlist->SetDescriptorHeaps(1u, &rv_heap.heap);
+	
 	return ret_code;
 }
 
@@ -285,14 +333,33 @@ i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 	vert_view.SizeInBytes = sizeof(hk_vertex) * 3u;
 	vert_view.StrideInBytes = sizeof(hk_vertex);
 
+	D3D12_INDEX_BUFFER_VIEW ind_view{};
+	ind_view.BufferLocation = index_resource->GetGPUVirtualAddress();
+	ind_view.SizeInBytes = sizeof(u32) * 3u;
+	ind_view.Format = DXGI_FORMAT_R32_UINT;
+
+
+	context->curr_cc->commandlist->SetGraphicsRootConstantBufferView(0u, global_const[context->queue.fence_val % frame_count]->GetGPUVirtualAddress());
+	context->curr_cc->commandlist->IASetIndexBuffer(&ind_view);
 	context->curr_cc->commandlist->IASetVertexBuffers(0, 1, &vert_view);
-	context->curr_cc->commandlist->DrawInstanced(3,1,0,0);
+	context->curr_cc->commandlist->DrawIndexedInstanced(3, 1, 0, 0, 0);
+
 
 	set_present_target(&context->swapchain, context->curr_cc);
 
 	end_commandlist_record(context->curr_cc);
 	execute_command(context, context->curr_cc);
 	next_frame_synchronization(&context->queue, context->curr_cc);
+// TEST : const buffer test
+	static f32 z = 0.0f;
+	z += 0.001f;
+
+	glob_transforms.view_matrix = DirectX::XMMatrixTranslation(0.0f, 0.0f, z);
+	for (u32 i = 0; i < frame_count; i++)
+	{
+		global_const[i]->Map(0u, {}, (void**)&const_mapped_ptr[i]);
+		hmemory_copy(const_mapped_ptr[i], &glob_transforms, sizeof(global_transforms));
+	}
 
 
 	ret_code = present_frame(&context->swapchain);
