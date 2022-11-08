@@ -34,13 +34,14 @@ i8 backend_initialize(renderer_backend* backend_ptr, i32 width, i32 height, f32 
 		// TODO : XMMatrixLookAtLH({ 0.0f,0.0f,0.0f }, { 0.0f,0.0f,0.5f }, { 0.0f, 1.0f, 0.0f });
 		backend_ptr->transforms.view_matrix = XMMatrixIdentity();
 		backend_ptr->transforms.projection_matix = XMMatrixPerspectiveFovLH(fov, width / height, 0.1f, 100.0f);
+		backend_ptr->update_global_transforms = directx_update_global_transforms;
 		ret_code = backend_ptr->initialize(backend_ptr, &backend_ptr->transforms);
 		if (H_OK != ret_code)
 		{
 			HLEMER("backend initialization failure");
 			return H_FAIL;
 		}
-//		ret_code = backend_ptr->update_global_transforms(backend_ptr, &backend_ptr->transforms);
+		ret_code = backend_ptr->update_global_transforms(backend_ptr, &backend_ptr->transforms);
 		break;
 	}
 	default:

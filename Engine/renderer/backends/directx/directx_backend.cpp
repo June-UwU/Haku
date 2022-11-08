@@ -41,8 +41,6 @@ ID3D12Resource* upindex_resource = nullptr;
 
 
 static ID3D12Resource* global_const[frame_count];
-static descriptor_handle global_handle[frame_count];
-static D3D12_CONSTANT_BUFFER_VIEW_DESC const_view[frame_count];
 static u8* const_mapped_ptr[frame_count];
 static global_transforms glob_transforms;
 
@@ -169,18 +167,7 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 			return H_FAIL;
 		}
 
-		global_handle[i] = allocate(&rv_heap, 1u);
-		if (true == is_null(global_handle))
-		{
-			HLEMER("failed to allocate visible heap handle");
-			return H_FAIL;
-		}
 
-		const_view[i].BufferLocation = global_const[i]->GetGPUVirtualAddress();
-		const_view[i].SizeInBytes = sizeof(global_transforms);
-
-		context->device.logical_device->CreateConstantBufferView(&const_view[i], global_handle[i].cpu_ptr);
-	
 		D3D12_RANGE range{};
 		HRESULT win32_rv = global_const[i]->Map(0u, &range, (void**)&const_mapped_ptr[i]);
 		if(S_OK != win32_rv)
@@ -188,6 +175,8 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 			HLEMER("failed to map ptr");;
 			return H_FAIL;
 		}
+
+		FRIENDLY_NAME(global_const[i], L"Global constant buffers");
 
 		hmemory_copy(const_mapped_ptr[i], &glob_transforms, sizeof(global_transforms));
 	}
@@ -286,6 +275,11 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	command_context_shutdown(&context->queue);
 	command_buffer_pool_shutdown();
 	swapchain_shutdown(&context->swapchain);
+	for (u8 i = 0; i < frame_count; i++)
+	{
+		global_const[i]->Unmap(0u, {});
+		global_const[i]->Release();
+	}
 	hmemory_free(context, MEM_TAG_RENDERER);
 }
 
@@ -350,21 +344,26 @@ i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 	end_commandlist_record(context->curr_cc);
 	execute_command(context, context->curr_cc);
 	next_frame_synchronization(&context->queue, context->curr_cc);
-// TEST : const buffer test
-	static f32 z = 0.0f;
-	z += 0.001f;
-
-	glob_transforms.view_matrix = DirectX::XMMatrixTranslation(0.0f, 0.0f, z);
+	
+	
 	for (u32 i = 0; i < frame_count; i++)
 	{
-		global_const[i]->Map(0u, {}, (void**)&const_mapped_ptr[i]);
 		hmemory_copy(const_mapped_ptr[i], &glob_transforms, sizeof(global_transforms));
 	}
-
 
 	ret_code = present_frame(&context->swapchain);
 
 	return ret_code;
+}
+
+i8 directx_update_global_transforms(renderer_backend* backend, void* data)
+{
+	for (u32 i = 0; i < frame_count; i++)
+	{
+		hmemory_copy(const_mapped_ptr[i], data, sizeof(global_transforms));
+	}
+
+	return H_OK;
 }
 
 i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width)

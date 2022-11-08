@@ -21,7 +21,8 @@ struct VextexData
 PixelData main(VextexData data)
 {
     PixelData ret;
-	ret.p_pos = mul(data.pos,proj_mat);
+	ret.p_pos = mul(ret.p_pos, proj_mat);
+	ret.p_pos = mul(data.pos,view_mat);
     ret.p_col = data.col;
     return ret;
 }
