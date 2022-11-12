@@ -255,3 +255,9 @@ darray remove_at(darray ptr, u64 pos)
 
 	return ptr;
 }
+
+void clear(darray ptr)
+{
+	darray_attr* attr = get_darray_attr(ptr);
+	attr->size = 0;
+}

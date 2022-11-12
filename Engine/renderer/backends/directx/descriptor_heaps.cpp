@@ -161,6 +161,7 @@ void free(descriptor_handle* handle)
 void destroy_descriptor_heap(directx_descriptor_heap* heap)
 {
 	heap->heap->Release();
+	destroy_queue(&heap->block_list);
 }
 
 

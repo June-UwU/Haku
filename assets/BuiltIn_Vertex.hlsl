@@ -1,7 +1,7 @@
 cbuffer global_const : register(b0)
 {
-	matrix view_mat;
 	matrix proj_mat;
+	matrix view_mat;
 	matrix padding[2];
 }
 
@@ -21,8 +21,9 @@ struct VextexData
 PixelData main(VextexData data)
 {
     PixelData ret;
-	ret.p_pos = mul(ret.p_pos, proj_mat);
-	ret.p_pos = mul(data.pos,view_mat);
+	matrix mat = mul(view_mat , proj_mat);
+	ret.p_pos = ret.p_pos * float4(0.0f, 0.0f, 10.0f, 0.0f);
+	ret.p_pos = mul(data.pos, mat);
     ret.p_col = data.col;
     return ret;
 }

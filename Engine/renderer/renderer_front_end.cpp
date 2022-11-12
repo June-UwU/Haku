@@ -62,7 +62,8 @@ i8 renderer_draw_frame(render_packet* packet)
 	if (packet->width != backend->width || packet->height != backend->height || packet->fov != backend->fov)
 	{
 		//backend->transforms.view_matrix = XMMatrixIdentity();
-		backend->transforms.projection_matix = XMMatrixPerspectiveFovLH(packet->fov, packet->width / packet->height, 0.1f, 100.0f);
+		backend->transforms.projection_matix = 
+			XMMatrixTranspose(XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(packet->fov), packet->width / packet->height, 0.1f, 1000.0f));
 
 		i8 api_rv = backend->update_global_transforms(backend, &backend->transforms);
 		if (H_OK != api_rv)

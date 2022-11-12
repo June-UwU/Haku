@@ -15,3 +15,5 @@ ID3D12Resource* create_resource(u64 height, u64 width, u32 depth, D3D12_RESOURCE
 
 
 void destroy_resource(ID3D12Resource* resource);
+
+

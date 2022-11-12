@@ -17,6 +17,7 @@
 #include "renderer/renderer_types.inl"
 #include "engine_shaders.hpp"
 #include "descriptor_heaps.hpp"
+#include "copyengine/copyengine.hpp"
 
 #pragma comment(lib, "D3d12.lib")
 #pragma comment(lib, "DXGI.lib")
@@ -28,10 +29,12 @@
 #include "pso.hpp"
 
 static u64					  buffersize;
-static hk_vertex			  triangleVertices[] = { { { 0.0f, 0.25f, 0.5f,1.0f }, { 1.0f, 0.0f, 0.0f, 0.4f } },
+static hk_vertex			  triangleVertices[] = { { { -0.25f, 0.25f, 0.5f,1.0f }, { 1.0f, 0.0f, 0.0f, 0.4f } },
+	                                                 { { 0.25f, 0.25f, 0.5f,1.0f }, { 1.0f, 0.0f, 0.0f, 0.4f } },
 													 { { 0.25f, -0.25f, 0.5f,1.0f }, { 0.0f, 1.0f, 0.0f, 0.4f } },
 													 { { -0.25f, -0.25f, 0.5f ,1.0f}, { 0.0f, 0.0f, 1.0f, 0.4f } } };
-static u32 index_buffer[] = { 0, 1, 2 };
+static u32 index_buffer[] = { 0, 1, 2 , 2, 3, 0};
+constexpr const u32 ind_cnt = 6u;
 static ID3D12PipelineState* pso = nullptr;
 static ID3D12RootSignature* rootsig = nullptr;
 ID3D12Resource* vertex_resource = nullptr;
@@ -40,8 +43,8 @@ ID3D12Resource* upvertex_resource = nullptr;
 ID3D12Resource* upindex_resource = nullptr;
 
 
-static ID3D12Resource* global_const[frame_count];
-static u8* const_mapped_ptr[frame_count];
+static ID3D12Resource* global_const;
+static u8* const_mapped_ptr;
 static global_transforms glob_transforms;
 
 
@@ -154,32 +157,37 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 		HLEMER("failed to initialze shader");
 		return H_FAIL;
 	}
-	
-	glob_transforms.projection_matix = DirectX::XMMatrixIdentity();
-	glob_transforms.view_matrix = DirectX::XMMatrixIdentity();
-	for (u32 i = 0; i < frame_count; i++)
+
+	ret_code = initialize_copy_engine();
+	if (H_FAIL == ret_code)
 	{
-		global_const[i] = create_resource(1u, sizeof(global_transforms), 1u, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_UPLOAD,
-			D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE);
-		if (nullptr == global_const[i])
-		{
-			HLCRIT("failed creating global  const buffer");
-			return H_FAIL;
-		}
-
-
-		D3D12_RANGE range{};
-		HRESULT win32_rv = global_const[i]->Map(0u, &range, (void**)&const_mapped_ptr[i]);
-		if(S_OK != win32_rv)
-		{
-			HLEMER("failed to map ptr");;
-			return H_FAIL;
-		}
-
-		FRIENDLY_NAME(global_const[i], L"Global constant buffers");
-
-		hmemory_copy(const_mapped_ptr[i], &glob_transforms, sizeof(global_transforms));
+		HLEMER("failed to initialize copy engine");
+		return H_FAIL;
 	}
+		
+	global_const = create_resource(1u, sizeof(global_transforms), 1u, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_UPLOAD,
+			D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE);
+	if (nullptr == global_const)
+	{
+		HLCRIT("failed creating global  const buffer");
+		return H_FAIL;
+	}
+
+
+	D3D12_RANGE readrange{};
+	const_mapped_ptr = (u8*)hmemory_alloc(sizeof(global_transforms), MEM_TAG_RENDERER);
+	hmemory_copy(const_mapped_ptr, data, sizeof(global_transforms));
+	HRESULT win32_rv = global_const->Map(0u, &readrange, (void**)&const_mapped_ptr);
+	if(S_OK != win32_rv)
+	{
+		HLEMER("failed to map ptr");;
+		return H_FAIL;
+	}
+
+	FRIENDLY_NAME(global_const, L"Global constant buffers");
+
+	hmemory_copy(const_mapped_ptr, data, sizeof(global_transforms));
+	
 
 
 
@@ -210,50 +218,20 @@ i8 directx_initialize(renderer_backend* backend_ptr,void* data)
 	pso = create_pipelinestate(pso_desc);
 
 	
-	vertex_resource = create_resource(1u,sizeof(hk_vertex) * 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_DEFAULT,
+	vertex_resource = create_resource(1u,sizeof(hk_vertex) * 4u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_DEFAULT,
 		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_FLAG_NONE);
 
 
-	index_resource = create_resource(1u, sizeof(u32) * 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_DEFAULT,
+	index_resource = create_resource(1u, sizeof(u32) * ind_cnt, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_DEFAULT,
 		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_FLAG_NONE);
 
+// test
 
-	upvertex_resource = create_resource(1u, sizeof(hk_vertex) * 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_UPLOAD,
-		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE);
+	copy_buffer(vertex_resource, triangleVertices, 1u, sizeof(hk_vertex) * 4u, 1u, D3D12_RESOURCE_DIMENSION_BUFFER);
+	transition_buffer_immediate(vertex_resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,0u);
 
-
-	upindex_resource = create_resource(1u, sizeof(u32) * 3u, 1, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_HEAP_TYPE_UPLOAD,
-		D3D12_HEAP_FLAG_NONE, DXGI_FORMAT_UNKNOWN, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_FLAG_NONE);
-
-
-	u8* vertex_map = nullptr;
-	D3D12_RANGE uprange{};
-	upvertex_resource->Map(0u, &uprange, (void**)&vertex_map);
-	hmemory_copy(vertex_map, triangleVertices, sizeof(hk_vertex) * 3u);
-	upvertex_resource->Unmap(0u, nullptr);
-
-	u8* index_map = nullptr;
-	upindex_resource->Map(0u, &uprange, (void**)&vertex_map);
-	hmemory_copy(vertex_map, index_buffer, sizeof(u32) * 3u);
-	upindex_resource->Unmap(0u, nullptr);
-
-	context->curr_cc = request_dxcc();
-	if (nullptr == context->curr_cc)
-	{
-		// TODO :stability work for this recovery
-		HLWARN("commandlist preparation failure, SLEEP CPU WORK HERE");
-		return H_FAIL;
-	}
-
-	context->curr_cc->commandlist->CopyResource(vertex_resource, upvertex_resource);
-
-	context->curr_cc->commandlist->CopyResource(index_resource, upindex_resource);
-
-
-	end_commandlist_record(context->curr_cc);
-	execute_command(context, context->curr_cc);
-	next_frame_synchronization(&context->queue, context->curr_cc);
-
+	copy_buffer(index_resource, index_buffer, 1u, sizeof(u32) * 6, 1u, D3D12_RESOURCE_DIMENSION_BUFFER);
+	transition_buffer_immediate(index_resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,0u);
 
 	return ret_code;
 }
@@ -275,11 +253,9 @@ void directx_shutdown(renderer_backend* backend_ptr)
 	command_context_shutdown(&context->queue);
 	command_buffer_pool_shutdown();
 	swapchain_shutdown(&context->swapchain);
-	for (u8 i = 0; i < frame_count; i++)
-	{
-		global_const[i]->Unmap(0u, {});
-		global_const[i]->Release();
-	}
+	global_const->Unmap(0u, {});
+	global_const->Release();
+	shutdown_copy_engine();
 	hmemory_free(context, MEM_TAG_RENDERER);
 }
 
@@ -324,19 +300,19 @@ i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 
 	D3D12_VERTEX_BUFFER_VIEW vert_view{};
 	vert_view.BufferLocation = vertex_resource->GetGPUVirtualAddress();
-	vert_view.SizeInBytes = sizeof(hk_vertex) * 3u;
+	vert_view.SizeInBytes = sizeof(hk_vertex) * 4u;
 	vert_view.StrideInBytes = sizeof(hk_vertex);
 
 	D3D12_INDEX_BUFFER_VIEW ind_view{};
 	ind_view.BufferLocation = index_resource->GetGPUVirtualAddress();
-	ind_view.SizeInBytes = sizeof(u32) * 3u;
+	ind_view.SizeInBytes = sizeof(u32) * ind_cnt;
 	ind_view.Format = DXGI_FORMAT_R32_UINT;
 
 
-	context->curr_cc->commandlist->SetGraphicsRootConstantBufferView(0u, global_const[context->queue.fence_val % frame_count]->GetGPUVirtualAddress());
+	context->curr_cc->commandlist->SetGraphicsRootConstantBufferView(0u, global_const->GetGPUVirtualAddress());
 	context->curr_cc->commandlist->IASetIndexBuffer(&ind_view);
 	context->curr_cc->commandlist->IASetVertexBuffers(0, 1, &vert_view);
-	context->curr_cc->commandlist->DrawIndexedInstanced(3, 1, 0, 0, 0);
+	context->curr_cc->commandlist->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 
 	set_present_target(&context->swapchain, context->curr_cc);
@@ -346,10 +322,7 @@ i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 	next_frame_synchronization(&context->queue, context->curr_cc);
 	
 	
-	for (u32 i = 0; i < frame_count; i++)
-	{
-		hmemory_copy(const_mapped_ptr[i], &glob_transforms, sizeof(global_transforms));
-	}
+	//hmemory_copy(const_mapped_ptr, &glob_transforms, sizeof(global_transforms));
 
 	ret_code = present_frame(&context->swapchain);
 
@@ -358,11 +331,14 @@ i8 directx_end_frame(renderer_backend* backend_ptr, f64 delta_time)
 
 i8 directx_update_global_transforms(renderer_backend* backend, void* data)
 {
-	for (u32 i = 0; i < frame_count; i++)
+	HRESULT win32_rv = global_const->Map(0u, {}, (void**)&const_mapped_ptr);
+	if (S_OK != win32_rv)
 	{
-		hmemory_copy(const_mapped_ptr[i], data, sizeof(global_transforms));
+		HLCRIT("failed to map global const pointer");
+		return H_FAIL;
 	}
-
+	hmemory_copy(const_mapped_ptr, data, sizeof(global_transforms));
+	global_const->Unmap(0u, nullptr);
 	return H_OK;
 }
 
@@ -381,7 +357,8 @@ i8 directx_resize(renderer_backend* backend_ptr, u16 height, u16 width)
 		HLWARN("swapchain resize failure");
 		return H_FAIL;
 	}
-	return H_OK;
+	glob_transforms.projection_matix = DirectX::XMMatrixPerspectiveLH(width, height, 0.1f, 100.0f);
+	return directx_update_global_transforms(backend_ptr, &glob_transforms);
 }
 
 // INTERNAL HELPERS

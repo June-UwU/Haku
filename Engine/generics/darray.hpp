@@ -119,6 +119,8 @@ HAPI void insert_at(darray ptr, void* obj, u64 pos);
 // @param	: position to be removed
 HAPI darray remove_at(darray ptr, u64 pos);
 
+HAPI void clear(darray ptr);
+
 /** routine to test darray functionalites */ 
 void darray_test();
 
