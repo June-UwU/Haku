@@ -1,7 +1,7 @@
 #include "haku.hpp"
+#include <stdio.h>
 
-
-i8 CreateGame()
+s8 createGame()
 {
 	return true;
 }

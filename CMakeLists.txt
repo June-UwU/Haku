@@ -6,9 +6,8 @@ if (WIN32)
 endif (WIN32)
 
 if (UNIX)
-	error(" Haku only has windows support")
-endif(UNIX)
-
+	add_compile_definitions(HUNIX)
+endif (UNIX)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(PROJECT_NAME "Haku")
@@ -30,7 +29,5 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message("Cmake C++ standard : ${CMAKE_CXX_STANDARD}")
 
-add_subdirectory("assets")
 add_subdirectory("Engine")
 add_subdirectory("Testbed")
-add_subdirectory("test")
