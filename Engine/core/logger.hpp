@@ -10,11 +10,17 @@ typedef enum
   LOG_LEVEL_MAX
 }log_level;
 
-constexpr const char* LOG_LEVEL_STR[LOG_LEVEL_MAX] = { "\033[32m TRACE : " , "\033[33m WARN : ", "\033[31m CRITICAL : ", "\033[1;31m FATAL : "};
+constexpr const char* LOG_LEVEL_STR[LOG_LEVEL_MAX] = 
+{ 
+  "\033[32m TRACE : " ,
+  "\033[33m WARN : ", 
+  "\033[31m CRITICAL : ", 
+  "\033[1;31m FATAL : "
+};
 
 const s8 initializeLogger(void);
 void log(log_level lvl,const char* message,...);
-const s8 shutdownLogger(void);
+void shutdownLogger(void);
 
 
 #define LOG_TRACE(message,...)        log(TRACE,message,##__VA_ARGS__)

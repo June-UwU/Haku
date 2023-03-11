@@ -2,25 +2,26 @@
 #include <cstdint>
 #include <cstdlib>
 
-
-/*********************************HAKU TYPES DEFINES**********************************/
-#define H_OK       0x0
-#define H_FAIL    -0x1
-
-
 /*********************************SIGNED TYPES****************************************/
-#define s8    int8_t 
-#define s16   int16_t 
-#define s32   int32_t 
-#define s64   int64_t 
+typedef   int8_t    s8;
+typedef   int16_t   s16;
+typedef   int32_t   s32;
+typedef   int64_t   s64;
 
 /*********************************UNSIGNED TYPES**************************************/
-#define u8    uint8_t 
-#define u16   uint16_t 
-#define u32   uint32_t 
-#define u64   uint64_t
+typedef   uint8_t   u8;
+typedef   uint16_t  u16;
+typedef   uint32_t  u32;
+typedef   uint64_t  u64;
 
 /*******************************UNKNOWN OR TYPE ERASURE TYPE**************************/
-#define handle void*
+typedef   void*   handle;
+
+/*******************************INTERNAL HAKU TYPES***********************************/
+typedef   void*   HakuWindow;
 
 
+/*******************************HAKU RETURN VALUES************************************/
+
+constexpr   s8  H_OK    = 0x0;
+constexpr   s8  H_FAIL  = -0x1;

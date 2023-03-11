@@ -14,9 +14,8 @@ const s8 initializeLogger(void)
 }
 
 
-const s8 shutdownLogger(void)
+void shutdownLogger(void)
 {
-  return H_OK;
 }
 
 void log(log_level lvl,const char* message, ...)
