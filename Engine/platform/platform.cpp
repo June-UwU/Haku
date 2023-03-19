@@ -32,4 +32,5 @@ bool windowValid(HakuWindow window)
 
 const s32 WindowEventLoop(void)
 {
+  return H_OK;
 }
