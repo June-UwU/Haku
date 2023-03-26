@@ -2,7 +2,8 @@
 
 #include "defines.hpp"
 
-HakuWindow createWindow(s32 width, s32 height);
+s32 createWindow(s32 width, s32 height);
 
-void destroyWindow(HakuWindow window);
+void destroyWindow();
 
+void pumpMessages();
