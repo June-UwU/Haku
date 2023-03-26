@@ -29,5 +29,5 @@ void log(log_level lvl,const char* message, ...)
   
   memcpy(LOG_BUFFER + log_level_len, "\n\0",2);
 
-  write(STDOUT_FILENO,LOG_BUFFER,LOGGER_BUFFER_SIZE);
+  write(STDOUT_FILENO,LOG_BUFFER,log_level_len + 2);
 }

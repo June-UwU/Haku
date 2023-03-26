@@ -4,9 +4,7 @@
 
 typedef enum EventType
 {
-  MOUSE_EVT = 0,
-  KEY_EVT,
-
+  WINDOW_CLOSE_EVENT,
   EVENT_TYPE_COUNT
 }EventType;
 
@@ -20,8 +18,7 @@ typedef struct Event
 
 constexpr const char* EVENT_TYPE_STR[EVENT_TYPE_COUNT]
 {
-  "Mouse Event"
-  "Key Event"
+  "WINDOW_CLOSE_EVENT"
 };
 
 typedef s8(*evt_fn)(void* sender, u64 data);

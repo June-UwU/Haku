@@ -45,6 +45,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/p
 
 if (UNIX)
 	add_compile_definitions(HAKU_LINUX)
-	target_link_libraries(${PROJECT_NAME} xcb)
+	target_link_libraries(${PROJECT_NAME} X11)
 endif (UNIX)
 

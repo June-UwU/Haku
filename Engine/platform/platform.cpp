@@ -4,33 +4,24 @@
 #ifdef HAKU_LINUX
 #include "platform_linux.hpp"
 #endif // HAKU_LINUX
- 
-HakuWindow initializeWindow(void)
+
+s32 initializeWindow(void)
 {
-  HakuWindow window = createWindow(HAKU_WINDOW_WIDTH,HAKU_WINDOW_HEIGHT);
-  if(NULL == window)
+  s32 ret_val = createWindow(HAKU_WINDOW_WIDTH,HAKU_WINDOW_HEIGHT);
+  if(H_OK != ret_val)
   {
     LOG_FATAL("Window Creation Failure...");
-    window = nullptr;
+    return ret_val;
   }
-  return window;
+  return ret_val;
 }
 
-void shutdownWindow(HakuWindow window)
+void shutdownWindow()
 {
-  destroyWindow(window);
+  destroyWindow();
 }
 
-bool windowValid(HakuWindow window)
+void processEvents()
 {
-  if(NULL == window)
-  {
-    return false;
-  }
-  return true;
-}
-
-const s32 WindowEventLoop(void)
-{
-  return H_OK;
+  pumpMessages();
 }

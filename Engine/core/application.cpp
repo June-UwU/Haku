@@ -1,15 +1,18 @@
 #include "application.hpp"
 #include "logger.hpp"
+#include "platform/platform.hpp"
+
+static bool RUNNING;
 
 HakuEngine::HakuEngine()
-  :m_window{nullptr}
 {
+  RUNNING = true;
   initializeLogger();
 }
 
 HakuEngine::~HakuEngine()
 {
-  shutdownWindow(m_window);
+  shutdownWindow();
   shutdownLogger();
 }
 
@@ -24,5 +27,9 @@ const s8 HakuEngine::initialize() const
 
 const s8 HakuEngine::exec()
 {
-  while(true);
+  while(RUNNING)
+  {
+    processEvents();
+  }
+  return H_OK;
 }
