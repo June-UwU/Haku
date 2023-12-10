@@ -14,7 +14,7 @@ typedef struct linux_window
 
 static linux_window* WINDOW;
 
-s32 createWindow(s32 width, s32 height)
+Status createWindow(s32 width, s32 height)
 {
   WINDOW = new linux_window;
 
@@ -34,7 +34,7 @@ s32 createWindow(s32 width, s32 height)
   {
     LOG_TRACE("mask is set properly");
   }
-  return H_OK;
+  return OK;
 }
 
 

@@ -2,35 +2,12 @@
 
 #include "defines.hpp"
 
-typedef enum EventType
-{
-  WINDOW_CLOSE_EVENT,
-  EVENT_TYPE_COUNT
-}EventType;
+Status initializeEventSystem(void);
 
-typedef struct Event
-{
-  u64 type;
-  void* sender;
-  void* receiver;
-  u64 data;
-}Event;
+Status registerEvent(void* event);
 
-constexpr const char* EVENT_TYPE_STR[EVENT_TYPE_COUNT]
-{
-  "WINDOW_CLOSE_EVENT"
-};
+Status unregisterEvent(void* event);
 
-typedef s8(*evt_fn)(void* sender, u64 data);
-
-s8 initializeEventSystem(void);
+Status processEvents(void);
 
 void shutdownEventSystem(void);
-
-s8 registerEventVector(evt_fn fn, void* receiver, EventType type);
-
-s8 unregisterEventVector(evt_fn fn, void* receiver, EventType type);
-
-s8 dispatchEvent(void);
-
-void onEvent(void* sender, void* receiver, u64 data, EventType type);

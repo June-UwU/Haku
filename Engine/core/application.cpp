@@ -7,7 +7,8 @@ static bool RUNNING;
 HakuEngine::HakuEngine()
 {
   RUNNING = true;
-  initializeLogger();
+  Status status = initializeLogger();
+  ASSERT_OK(status)
 }
 
 HakuEngine::~HakuEngine()
@@ -16,20 +17,21 @@ HakuEngine::~HakuEngine()
   shutdownLogger();
 }
 
-const s8 HakuEngine::initialize() const
+const Status HakuEngine::initialize() const
 {
   LOG_TRACE("Hellow... UwU");
   
-  initializeWindow();
-
-  return H_OK;
+  Status status = initializeWindow();
+  ASSERT_OK(status)
+  
+  return OK;
 }
 
-const s8 HakuEngine::exec()
+const Status HakuEngine::exec()
 {
   while(RUNNING)
   {
     processEvents();
   }
-  return H_OK;
+  return OK;
 }
