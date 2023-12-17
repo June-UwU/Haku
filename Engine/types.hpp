@@ -1,7 +1,7 @@
 #pragma once
+#include <cassert>
 
-
-typedef Status {
+typedef enum Status {
     OK = 0x0,
     FAIL = -0x1
 } Status;
