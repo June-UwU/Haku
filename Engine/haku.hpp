@@ -9,13 +9,11 @@
 
 extern s8 createGame();
 
-s32 main(s32 argc, char** argv)
-{ 
+s32 main(s32 argc, char** argv) { 
   HakuEngine* Engine = new HakuEngine(); 
   
   s8 ret_val = Engine->initialize();
-  if(H_OK != ret_val)
-  {
+  if(OK != ret_val) {
     LOG_WARN("Engine initialization  faliure...");
     return ret_val;
   }

@@ -1,6 +1,5 @@
 #ifdef HAKU_LINUX
 
-
 #include "platform_linux.hpp"
 #include "logger.hpp"
 #include "event.hpp"
@@ -14,8 +13,7 @@ typedef struct linux_window
 
 static linux_window* WINDOW;
 
-s32 createWindow(s32 width, s32 height)
-{
+s32 createWindow(s32 width, s32 height) {
   WINDOW = new linux_window;
 
   WINDOW->display = XOpenDisplay(nullptr);
@@ -30,47 +28,49 @@ s32 createWindow(s32 width, s32 height)
   XFlush(WINDOW->display);
   XWindowAttributes attr;
   XGetWindowAttributes(WINDOW->display,WINDOW->window,&attr);
-  if((attr.your_event_mask & mask) == mask)
-  {
+  
+  if((attr.your_event_mask & mask) == mask) {
     LOG_TRACE("mask is set properly");
   }
-  return H_OK;
+
+  return OK; 
 }
 
 
-void destroyWindow()
-{
+void destroyWindow() {
   XDestroyWindow(WINDOW->display,WINDOW->window);
   XCloseDisplay(WINDOW->display);
   delete WINDOW;
 }
 
-void pumpMessages()
-{
+void pumpMessages() {
   XFlush(WINDOW->display);
   XEvent event;
-  while(XPending(WINDOW->display))
-  {
+  while(XPending(WINDOW->display)) {
+
     XNextEvent(WINDOW->display,&event);
-    switch(event.type)
-    {
-      case KeyPress:
-      {
+    switch(event.type) {
+
+      case KeyPress: {
         LOG_TRACE("key press event");
         break;
       }
-      case ClientMessage:
-      {
+
+      case ClientMessage: {
+
         Atom wmDelete = XInternAtom(WINDOW->display,"WM_DELETE_WINDOW",false);
         Atom wmProtocols = XInternAtom(WINDOW->display, "WM_PROTOCOLS",false);
-        if ((wmProtocols == event.xclient.message_type) && (Atom)event.xclient.data.l[0] == wmDelete)
-        {
+        if ((wmProtocols == event.xclient.message_type) && (Atom)event.xclient.data.l[0] == wmDelete) {
           LOG_TRACE("window close event");
-          onEvent(nullptr,nullptr,0,WINDOW_CLOSE_EVENT);
+          Event event(EVENT_WINDOW_CLOSED);
+          fireEvent(std::move(event));
         }
+
         break;
       }
+
     }
+
   }
 }
 

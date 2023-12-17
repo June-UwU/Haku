@@ -5,23 +5,19 @@
 #include "platform_linux.hpp"
 #endif // HAKU_LINUX
 
-s32 initializeWindow(void)
-{
-  s32 ret_val = createWindow(HAKU_WINDOW_WIDTH,HAKU_WINDOW_HEIGHT);
-  if(H_OK != ret_val)
-  {
-    LOG_FATAL("Window Creation Failure...");
-    return ret_val;
-  }
-  return ret_val;
+Status initializeWindow(void) {
+  s32 windowStatus = createWindow(HAKU_WINDOW_WIDTH,HAKU_WINDOW_HEIGHT);
+
+  Status status = static_cast<Status>(windowStatus); 
+  ASSERT_OK(status)
+
+  return status;
 }
 
-void shutdownWindow()
-{
+void shutdownWindow() {
   destroyWindow();
 }
 
-void processEvents()
-{
+void processEvents() {
   pumpMessages();
 }

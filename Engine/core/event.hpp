@@ -1,36 +1,95 @@
 #pragma once
 
 #include "defines.hpp"
+#include "logger.hpp"
+#include <cstring>
+#include <utility>
 
-typedef enum EventType
-{
-  WINDOW_CLOSE_EVENT,
-  EVENT_TYPE_COUNT
+typedef u8 KeyCode;
+
+typedef enum MouseButton {
+    MOUSE_BUTTON_LEFT = 0x0,
+    MOUSE_BUTTON_RIGHT = 0x1,
+    MOUSE_BUTTON_MIDDLE = 0x2
+}MouseButton;
+
+typedef struct MouseState {
+    int x;
+    int y;
+    bool click;
+    bool release;
+    MouseButton button;
+}MouseState;
+
+typedef enum EventType {
+    EVENT_NONE = 0x0,
+    EVENT_KEY_PRESSED,
+    EVENT_KEY_RELEASED,
+    EVENT_KEY_TYPED,
+    EVENT_MOUSE_PRESSED,
+    EVENT_MOUSE_RELEASED,
+    EVENT_MOUSE_MOVED,
+    EVENT_MOUSE_SCROLLED,
+    EVENT_WINDOW_RESIZED,
+    EVENT_WINDOW_CLOSED
 }EventType;
 
-typedef struct Event
-{
-  u64 type;
-  void* sender;
-  void* receiver;
-  u64 data;
-}Event;
+class Event {
+    public:
+        Event(): 
+            type(EVENT_NONE){}
 
-constexpr const char* EVENT_TYPE_STR[EVENT_TYPE_COUNT]
-{
-  "WINDOW_CLOSE_EVENT"
+        Event(const Event& rhs) {
+            LOG_WARN("Event copy constructor called %s : %d",__FUNCTION__,__LINE__);
+            type = rhs.type;
+        }
+
+        Event& operator=(const Event& rhs) {
+            LOG_WARN("Event copy assignment called %s : %d",__FUNCTION__,__LINE__);
+            type = rhs.type;
+            return *this;
+        }
+
+        Event(Event&& rhs) {
+            type = rhs.type;
+        }
+
+        Event& operator=(Event&& rhs) {
+            type = rhs.type;
+            return *this;
+        }
+
+
+        Event(EventType type) {
+            this->type = type;
+        }
+
+        Event(EventType type, KeyCode code) 
+            : type(type)
+            , keyCode(code) {}
+        
+        Event(EventType type, MouseState state)
+            : type(type)
+            , mouseState(state) {}
+
+        KeyCode getKeyCode() { return keyCode; }
+        MouseState getMouseState() { return mouseState; }
+
+        EventType type;
+        
+    private:
+        KeyCode keyCode;
+        MouseState mouseState;
 };
 
-typedef s8(*evt_fn)(void* sender, u64 data);
+typedef Status (*EventFn)(Event data);
 
-s8 initializeEventSystem(void);
+Status initializeEventSystem(void);
+
+Status registerEvent(EventType event, EventFn fn);
+
+Status handleEvents(void);
+
+void fireEvent(Event event);
 
 void shutdownEventSystem(void);
-
-s8 registerEventVector(evt_fn fn, void* receiver, EventType type);
-
-s8 unregisterEventVector(evt_fn fn, void* receiver, EventType type);
-
-s8 dispatchEvent(void);
-
-void onEvent(void* sender, void* receiver, u64 data, EventType type);

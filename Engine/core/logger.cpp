@@ -7,10 +7,10 @@
 constexpr s32 LOGGER_BUFFER_SIZE = 512;
 static char LOG_BUFFER[LOGGER_BUFFER_SIZE];
 
-const s8 initializeLogger(void)
+const Status initializeLogger(void)
 {
   memset(LOG_BUFFER,0,LOGGER_BUFFER_SIZE);
-  return H_OK;
+  return OK;
 }
 
 

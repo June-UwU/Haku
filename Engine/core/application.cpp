@@ -1,35 +1,48 @@
 #include "application.hpp"
 #include "logger.hpp"
 #include "platform/platform.hpp"
+#include "event.hpp"
 
 static bool RUNNING;
+
+Status exitApplication(Event event) {
+  RUNNING = false;
+  return OK;
+}
 
 HakuEngine::HakuEngine()
 {
   RUNNING = true;
-  initializeLogger();
+  Status status = initializeLogger();
+  ASSERT_OK(status)
 }
 
-HakuEngine::~HakuEngine()
-{
+HakuEngine::~HakuEngine() {
   shutdownWindow();
   shutdownLogger();
 }
 
-const s8 HakuEngine::initialize() const
-{
+const Status HakuEngine::initialize() const {
   LOG_TRACE("Hellow... UwU");
   
-  initializeWindow();
+  Status status = initializeWindow();
+  ASSERT_OK(status)
 
-  return H_OK;
+  status = initializeEventSystem();
+  ASSERT_OK(status)
+
+  status = registerEvent(EVENT_WINDOW_CLOSED, exitApplication);
+  ASSERT_OK(status)
+
+  return OK;
 }
 
-const s8 HakuEngine::exec()
-{
-  while(RUNNING)
-  {
+const Status HakuEngine::exec() {
+  while(RUNNING) {
     processEvents();
+    Status status = handleEvents();
+    ASSERT_OK(status)
+    
   }
-  return H_OK;
+  return OK;
 }

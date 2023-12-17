@@ -1,4 +1,5 @@
 #pragma once
+#include "types.hpp"
 #include <cstdint>
 #include <cstdlib>
 
@@ -19,9 +20,3 @@ typedef   void*   handle;
 
 /*******************************INTERNAL HAKU TYPES***********************************/
 typedef   void*   HakuWindow;
-
-
-/*******************************HAKU RETURN VALUES************************************/
-
-constexpr   s8  H_OK    = 0x0;
-constexpr   s8  H_FAIL  = -0x1;
