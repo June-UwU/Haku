@@ -11,8 +11,8 @@ public:
   HakuEngine  &operator=(const HakuEngine  &) = default;
   ~HakuEngine ();
  
-  const Status initialize() const;
-  const Status exec();
+  Status initialize() const;
+  Status exec();
 private:
 };
 

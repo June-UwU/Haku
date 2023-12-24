@@ -27,6 +27,9 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_src})
 set(DEPEND_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../vendor)
 
 add_compile_definitions(HAKU_API_BUILD)
+add_compile_definitions(GLM_FORCE_RADIANS)
+add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
+add_compile_options(-Wall -Wextra -Wpedantic)
 add_library(${PROJECT_NAME} 
 	STATIC
 	${global_inc}
@@ -45,6 +48,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/p
 
 if (UNIX)
 	add_compile_definitions(HAKU_LINUX)
-	target_link_libraries(${PROJECT_NAME} X11)
+	target_link_libraries(${PROJECT_NAME} X11 pthread dl vulkan Xrandr Xi Xxf86vm)
 endif (UNIX)
 

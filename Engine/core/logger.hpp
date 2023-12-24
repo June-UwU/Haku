@@ -18,7 +18,7 @@ constexpr const char* LOG_LEVEL_STR[LOG_LEVEL_MAX] =
   "\033[1;31m FATAL : "
 };
 
-const Status initializeLogger(void);
+Status initializeLogger(void);
 void log(log_level lvl,const char* message,...);
 void shutdownLogger(void);
 
