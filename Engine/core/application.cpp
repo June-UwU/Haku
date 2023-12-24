@@ -22,7 +22,7 @@ HakuEngine::~HakuEngine() {
   shutdownLogger();
 }
 
-const Status HakuEngine::initialize() const {
+Status HakuEngine::initialize() const {
   LOG_TRACE("Hellow... UwU");
   
   Status status = initializeWindow();
@@ -37,7 +37,7 @@ const Status HakuEngine::initialize() const {
   return OK;
 }
 
-const Status HakuEngine::exec() {
+Status HakuEngine::exec() {
   while(RUNNING) {
     processEvents();
     Status status = handleEvents();

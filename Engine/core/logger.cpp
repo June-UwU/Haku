@@ -7,19 +7,16 @@
 constexpr s32 LOGGER_BUFFER_SIZE = 512;
 static char LOG_BUFFER[LOGGER_BUFFER_SIZE];
 
-const Status initializeLogger(void)
-{
+Status initializeLogger(void) {
   memset(LOG_BUFFER,0,LOGGER_BUFFER_SIZE);
   return OK;
 }
 
 
-void shutdownLogger(void)
-{
+void shutdownLogger(void){
 }
 
-void log(log_level lvl,const char* message, ...)
-{
+void log(log_level lvl,const char* message, ...) {
   u32 log_level_len = strlen(LOG_LEVEL_STR[lvl]);
   memcpy(LOG_BUFFER,LOG_LEVEL_STR[lvl],log_level_len);
   va_list arg;
