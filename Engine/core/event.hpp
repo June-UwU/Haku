@@ -84,11 +84,11 @@ class Event {
 
 typedef Status (*EventFn)(Event data);
 
-Status initializeEventSystem(void);
+[[nodiscard]] Status initializeEventSystem(void);
 
-Status registerEvent(EventType event, EventFn fn);
+[[nodiscard]] Status registerEvent(EventType event, EventFn fn);
 
-Status handleEvents(void);
+[[nodiscard]] Status handleEvents(void);
 
 void fireEvent(Event event);
 

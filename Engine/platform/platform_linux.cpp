@@ -19,9 +19,9 @@ s32 createWindow(s32 width, s32 height) {
   WINDOW->display = XOpenDisplay(nullptr);
   WINDOW->window = XCreateSimpleWindow(WINDOW->display,DefaultRootWindow(WINDOW->display),0,0,width,height,0,0,WhitePixel(WINDOW->display,0));
   s64 mask = KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask | SubstructureNotifyMask | ClientMessage;
-  Atom wm_delete_window = XInternAtom(WINDOW->display, "WM_DELETE_WINDOW", False);
-  Atom wm_protocols = XInternAtom(WINDOW->display, "WM_PROTOCOLS", False);
-  XSetWMProtocols(WINDOW->display, WINDOW->window, &wm_delete_window, 1);
+  Atom wmDeleteWindow = XInternAtom(WINDOW->display, "WM_DELETE_WINDOW", False);
+  [[maybe_unused]] Atom wmProtocols = XInternAtom(WINDOW->display, "WM_PROTOCOLS", False);
+  XSetWMProtocols(WINDOW->display, WINDOW->window, &wmDeleteWindow, 1);
 
   XSelectInput(WINDOW->display,WINDOW->window,mask);
   XMapWindow(WINDOW->display,WINDOW->window);

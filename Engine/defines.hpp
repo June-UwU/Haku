@@ -20,3 +20,6 @@ typedef   void*   handle;
 
 /*******************************INTERNAL HAKU TYPES***********************************/
 typedef   void*   HakuWindow;
+
+
+#define VULKAN_OK(status,message) if(status != VK_SUCCESS) { assert(false && "failed on __FUNCTION__ : __LINE__"); LOG_FATAL(message);}
