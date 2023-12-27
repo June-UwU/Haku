@@ -22,4 +22,18 @@ typedef   void*   handle;
 typedef   void*   HakuWindow;
 
 
-#define VULKAN_OK(status,message) if(status != VK_SUCCESS) { assert(false && "failed on __FUNCTION__ : __LINE__"); LOG_FATAL(message);}
+constexpr const s32 INVALID_VALUE = -1;
+[[noreturn]] inline void ASSERT_VALID(s32 index) {
+    [[unlikely]] 
+    if(index == INVALID_VALUE) {
+        assert(false && "failed on __FUNCTION__ : __LINE__");
+    }
+}
+
+[[noreturn]] inline void VULKAN_OK(VkResult status, const char* message = ""){
+    [[unlikely]] 
+    if(status != VK_SUCCESS) {
+        assert(false && "failed on __FUNCTION__ : __LINE__"); 
+        LOG_FATAL(message);
+    }
+} 
