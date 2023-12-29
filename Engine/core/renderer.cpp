@@ -5,9 +5,7 @@
 #include <cstring>
 
 struct QueueFamilyIndices {
-    u32 graphicsFamily  = INVALID_VALUE;
-    u32 computeFamily   = INVALID_VALUE;
-    u32 transferFamily  = INVALID_VALUE;
+    s32 graphicsFamily  = INVALID_VALUE;
 };
 
 
@@ -17,8 +15,6 @@ static VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 static VkDevice device; 
 static QueueFamilyIndices queueFamilyIndices;
 static VkQueue graphicsQueue;
-static VkQueue computeQueue;
-static VkQueue transferQueue;
 
 bool checkValidationLayers() {
     const char* validationLayer = VULKAN_VALIDATION_LAYER;
@@ -71,7 +67,7 @@ bool checkValidationLayers() {
 #endif
 
     VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
-    VULKAN_OK(result, "Failed to create vulkan instance")
+    VULKAN_OK(result, "Failed to create vulkan instance");
 
     u32 extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -92,10 +88,10 @@ bool checkValidationLayers() {
 
 [[nodiscard]] s32 findGraphicsFamilies(const VkPhysicalDevice& device, VkQueueFlagBits family) {
     u32 queueFamilyCount = 0;
-    vkGetPhysicalQueueFamilyProperties(device,&queueFamilyCount,nullptr);
+    vkGetPhysicalDeviceQueueFamilyProperties(device,&queueFamilyCount,nullptr);
 
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalQueueFamilyProperties(device,&queueFamilyCount,queueFamilies.data());
+    vkGetPhysicalDeviceQueueFamilyProperties(device,&queueFamilyCount,queueFamilies.data());
 
 
     s32 queueIndex = INVALID_VALUE;
@@ -119,10 +115,7 @@ bool isCapable(const VkPhysicalDevice& device) {
     vkGetPhysicalDeviceFeatures(device,&deviceFeatures);
 
     queueFamilyIndices.graphicsFamily = findGraphicsFamilies(device,VK_QUEUE_GRAPHICS_BIT);
-    ASSERT_VALID(queueFamilyIndices.graphicsFamily)
-
-    queueFamilyIndices.computeFamily = findGraphicsFamilies(device,VK_QUEUE_COMPUTE_BIT);
-    queueFamilyIndices.transferFamily = findGraphicsFamilies(device,VK_QUEUE_TRANSFER_BIT);
+    ASSERT_VALID(queueFamilyIndices.graphicsFamily);
 
     return deviceProperties.deviceType == 
     VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
@@ -136,7 +129,7 @@ bool isCapable(const VkPhysicalDevice& device) {
 
     if(0 == deviceCount) {
         LOG_CRITICAL("No suppported device found!");
-        return ERROR;
+        return FAIL;
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -151,7 +144,7 @@ bool isCapable(const VkPhysicalDevice& device) {
 
     if(VK_NULL_HANDLE == physicalDevice) {
         LOG_CRITICAL("No suppported device found!");
-        return ERROR;
+        return FAIL;
     }
 
     return OK;
@@ -165,26 +158,6 @@ bool isCapable(const VkPhysicalDevice& device) {
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
-        queueCreateInfo.queueCount = 1;
-        queueCreateInfo.pQueuePriorities = &queuePriority;
-        queueCreateInfos.push_back(queueCreateInfo);
-    }
-
-    if(INVALID_VALUE != queueFamilyIndices.computeFamily) {
-        float queuePriority = 1.0f;
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = queueFamilyIndices.computeFamily;
-        queueCreateInfo.queueCount = 1;
-        queueCreateInfo.pQueuePriorities = &queuePriority;
-        queueCreateInfos.push_back(queueCreateInfo);
-    }
-
-    if(INVALID_VALUE != queueFamilyIndices.transferFamily) {
-        float queuePriority = 1.0f;
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = queueFamilyIndices.transferFamily;
         queueCreateInfo.queueCount = 1;
         queueCreateInfo.pQueuePriorities = &queuePriority;
         queueCreateInfos.push_back(queueCreateInfo);
@@ -206,14 +179,6 @@ bool isCapable(const VkPhysicalDevice& device) {
     if(INVALID_VALUE != queueFamilyIndices.graphicsFamily) {
         vkGetDeviceQueue(device,queueFamilyIndices.graphicsFamily,0,&graphicsQueue);
     }
-
-    if(INVALID_VALUE != queueFamilyIndices.computeFamily) {
-        vkGetDeviceQueue(device,queueFamilyIndices.computeFamily,0,&computeFamily);
-    }
-
-    if(INVALID_VALUE != queueFamilyIndices.transferFamily) {
-        vkGetDeviceQueue(device,queueFamilyIndices.transferFamily,0,&transferQueue);
-    }    
 
     return OK;
 }

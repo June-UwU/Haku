@@ -40,14 +40,14 @@ add_library(${PROJECT_NAME}
 	${platform_src}
 	)
 
-
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/core)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/platform)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../Libs/GLFW/include)
 target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:ENGINE_DEBUG>)
 
 if (UNIX)
 	add_compile_definitions(HAKU_LINUX)
-	target_link_libraries(${PROJECT_NAME} X11 pthread dl vulkan Xrandr Xi Xxf86vm)
+	target_link_libraries(${PROJECT_NAME} X11 pthread dl vulkan Xrandr Xi Xxf86vm glfw)
 endif (UNIX)
 

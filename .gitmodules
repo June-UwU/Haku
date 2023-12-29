@@ -1,3 +1,6 @@
 [submodule "vendor/DirectXMath"]
 	path = vendor/DirectXMath
 	url = https://github.com/microsoft/DirectXMath.git
+[submodule "Libs/GLFW"]
+	path = Libs/GLFW
+	url = https://github.com/glfw/glfw.git

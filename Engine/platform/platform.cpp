@@ -1,23 +1,37 @@
 #include "platform.hpp"
 #include "logger.hpp"
+#include "event.hpp"
+#include <GLFW/glfw3.h>
 
-#ifdef HAKU_LINUX
-#include "platform_linux.hpp"
-#endif // HAKU_LINUX
+static GLFWwindow* window = nullptr;
+
+void onClose([[maybe_unused]] GLFWwindow* window) {
+  Event closeEvt(EVENT_WINDOW_CLOSED);
+  fireEvent(std::move(closeEvt));
+}
 
 Status initializeWindow(void) {
-  s32 windowStatus = createWindow(HAKU_WINDOW_WIDTH,HAKU_WINDOW_HEIGHT);
+  if (!glfwInit()) {
+    LOG_WARN("GLFW initialization failed!");
+  }
 
-  Status status = static_cast<Status>(windowStatus); 
-  ASSERT_OK(status)
+  window = glfwCreateWindow(HAKU_WINDOW_WIDTH, HAKU_WINDOW_HEIGHT, "Haku", NULL, NULL);
+  if(nullptr == window) {
+    LOG_WARN("GLFW window initialization failed!");
+    return FAIL;
+  }
 
-  return status;
+  glfwSetWindowCloseCallback(window,onClose);
+
+  return OK;
 }
 
 void shutdownWindow() {
-  destroyWindow();
+  glfwTerminate();
 }
 
 void processEvents() {
-  pumpMessages();
+  if(false == glfwWindowShouldClose(window)) {
+    glfwPollEvents();
+  }
 }
