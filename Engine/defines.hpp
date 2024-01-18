@@ -4,22 +4,24 @@
 #include <vulkan/vulkan.h>
 
 constexpr const s32 INVALID_VALUE = -1;
-inline void ASSERT_VALID(s32 index) {
-    [[unlikely]] 
-    if(index == INVALID_VALUE) {
-        assert(false && "failed on __FUNCTION__ : __LINE__");
-    }
-}
+#define ASSERT_VALID(index) {\
+    [[unlikely]]\
+    if(index == INVALID_VALUE) {\
+        LOG_CRITICAL("failed on %s : %d",__FUNCTION__,__LINE__);\
+        assert(false && "assertion failure");\
+    }\
+}\
 
-inline void VULKAN_OK(VkResult status, const char* message = ""){
-    [[unlikely]] 
-    if(status != VK_SUCCESS) {
-        assert(false && "failed on __FUNCTION__ : __LINE__"); 
-        LOG_FATAL(message);
-    }
-} 
+#define VULKAN_OK(status,message){\
+    [[unlikely]]\
+    if(status != VK_SUCCESS) { \
+        LOG_CRITICAL("failed on %s : %d",__FUNCTION__,__LINE__);\
+        assert(false && "assertion failure");\
+        LOG_FATAL(message);\
+    }\
+}\
 
-#define ASSERT_OK(status) if (!isOK(status)) { assert(false && "failed on __FUNCTION__ : __LINE__"); }
+#define ASSERT_OK(status) if (!isOK(status)) { assert(false && "assertion failure"); }
 
 inline bool isOK(Status status) {
     return status == OK;

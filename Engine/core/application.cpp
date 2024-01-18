@@ -2,7 +2,7 @@
 #include "logger.hpp"
 #include "platform/platform.hpp"
 #include "event.hpp"
-#include "renderer.hpp"
+#include "renderer/renderer.hpp"
 
 static bool RUNNING;
 
@@ -44,6 +44,8 @@ Status HakuEngine::initialize() const {
 
 Status HakuEngine::exec() {
   while(RUNNING) {
+    clearScreen();
+    render();
     processEvents();
     Status status = handleEvents();
     ASSERT_OK(status)

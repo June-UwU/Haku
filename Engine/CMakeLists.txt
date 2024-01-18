@@ -6,6 +6,9 @@ message("Building Haku Shared Library")
 
 set(PROJECT_NAME "Haku_Engine")
 
+find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
+
 file(GLOB_RECURSE global_inc ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 file(GLOB_RECURSE global_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
@@ -15,6 +18,9 @@ file(GLOB_RECURSE core_src ${CMAKE_CURRENT_SOURCE_DIR}/core/*.cpp)
 file(GLOB_RECURSE platform_inc ${CMAKE_CURRENT_SOURCE_DIR}/platform/*.hpp)
 file(GLOB_RECURSE platform_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/*.cpp)
 
+file(GLOB_RECURSE renderer_inc ${CMAKE_CURRENT_SOURCE_DIR}/renderer/*.hpp)
+file(GLOB_RECURSE renderer_src ${CMAKE_CURRENT_SOURCE_DIR}/renderer/*.cpp)
+
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_src})
 
@@ -23,6 +29,9 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_src})
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_src})
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_src})
 
 set(DEPEND_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../vendor)
 
@@ -38,6 +47,8 @@ add_library(${PROJECT_NAME}
 	${core_src}
 	${platform_inc}
 	${platform_src}
+	${renderer_inc}
+	${renderer_src}
 	)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -45,9 +56,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/platform)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../Libs/GLFW/include)
 target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:ENGINE_DEBUG>)
+include_directories(${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
+
+target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES})
 
 if (UNIX)
-	add_compile_definitions(HAKU_LINUX)
-	target_link_libraries(${PROJECT_NAME} X11 pthread dl vulkan Xrandr Xi Xxf86vm glfw)
+	add_compile_definitions(HAKU_LINUX)	
+	target_link_libraries(${PROJECT_NAME} X11 pthread dl Xrandr Xi Xxf86vm glfw)
 endif (UNIX)
 
