@@ -2,10 +2,11 @@
 #include "logger.hpp"
 #include "platform/platform.hpp"
 #include "event.hpp"
+#include "renderer/renderer.hpp"
 
 static bool RUNNING;
 
-Status exitApplication(Event event) {
+Status exitApplication([[maybe_unused]] Event event) {
   RUNNING = false;
   return OK;
 }
@@ -18,6 +19,7 @@ HakuEngine::HakuEngine()
 }
 
 HakuEngine::~HakuEngine() {
+  shutdownRenderer();
   shutdownWindow();
   shutdownLogger();
 }
@@ -34,15 +36,19 @@ Status HakuEngine::initialize() const {
   status = registerEvent(EVENT_WINDOW_CLOSED, exitApplication);
   ASSERT_OK(status)
 
+  status = initializeRenderer();
+  ASSERT_OK(status)
+
   return OK;
 }
 
 Status HakuEngine::exec() {
   while(RUNNING) {
+    clearScreen();
+    render();
     processEvents();
     Status status = handleEvents();
     ASSERT_OK(status)
-    
   }
   return OK;
 }

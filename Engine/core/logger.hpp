@@ -1,5 +1,5 @@
 #pragma once
-#include "defines.hpp"
+#include "types.hpp"
 
 typedef enum
 {
@@ -18,7 +18,7 @@ constexpr const char* LOG_LEVEL_STR[LOG_LEVEL_MAX] =
   "\033[1;31m FATAL : "
 };
 
-Status initializeLogger(void);
+[[nodiscard]] Status initializeLogger(void);
 void log(log_level lvl,const char* message,...);
 void shutdownLogger(void);
 

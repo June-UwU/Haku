@@ -1,22 +1,28 @@
 #pragma once
 #include "types.hpp"
-#include <cstdint>
-#include <cstdlib>
+#include "logger.hpp"
+#include <vulkan/vulkan.h>
 
-/*********************************SIGNED TYPES****************************************/
-typedef   int8_t    s8;
-typedef   int16_t   s16;
-typedef   int32_t   s32;
-typedef   int64_t   s64;
+constexpr const s32 INVALID_VALUE = -1;
+#define ASSERT_VALID(index) {\
+    [[unlikely]]\
+    if(index == INVALID_VALUE) {\
+        LOG_CRITICAL("failed on %s : %d",__FUNCTION__,__LINE__);\
+        assert(false && "assertion failure");\
+    }\
+}\
 
-/*********************************UNSIGNED TYPES**************************************/
-typedef   uint8_t   u8;
-typedef   uint16_t  u16;
-typedef   uint32_t  u32;
-typedef   uint64_t  u64;
+#define VULKAN_OK(status,message){\
+    [[unlikely]]\
+    if(status != VK_SUCCESS) { \
+        LOG_CRITICAL("failed on %s : %d",__FUNCTION__,__LINE__);\
+        assert(false && "assertion failure");\
+        LOG_FATAL(message);\
+    }\
+}\
 
-/*******************************UNKNOWN OR TYPE ERASURE TYPE**************************/
-typedef   void*   handle;
+#define ASSERT_OK(status) if (!isOK(status)) { assert(false && "assertion failure"); }
 
-/*******************************INTERNAL HAKU TYPES***********************************/
-typedef   void*   HakuWindow;
+inline bool isOK(Status status) {
+    return status == OK;
+}
