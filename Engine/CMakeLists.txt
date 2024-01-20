@@ -6,8 +6,19 @@ message("Building Haku Shared Library")
 
 set(PROJECT_NAME "Haku_Engine")
 
+include(FetchContent)
+
+FetchContent_Declare(
+	glm
+	GIT_REPOSITORY	https://github.com/g-truc/glm.git
+	GIT_TAG 	bf71a834948186f4097caa076cd2663c69a10e1e #refs/tags/0.9.9.8
+)
+
+FetchContent_MakeAvailable(glm)
+
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
+find_package(glm CONFIG REQUIRED)
 
 file(GLOB_RECURSE global_inc ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 file(GLOB_RECURSE global_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
@@ -58,10 +69,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/.
 target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:ENGINE_DEBUG>)
 include_directories(${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
 
-target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} pthread glm::glm)
 
 if (UNIX)
 	add_compile_definitions(HAKU_LINUX)	
-	target_link_libraries(${PROJECT_NAME} X11 pthread dl Xrandr Xi Xxf86vm glfw)
+	target_link_libraries(${PROJECT_NAME} PRIVATE X11 dl Xrandr Xi Xxf86vm glfw)
 endif (UNIX)
 

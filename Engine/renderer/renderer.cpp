@@ -1,10 +1,13 @@
 #include "renderer.hpp"
+#include "platform/platform.hpp"
 #include <GL/glew.h>
 #include "core/logger.hpp"
 #include <string>
 #include <vector>
 #include <fstream>
 #include <sstream>
+
+#include <glm/gtc/matrix_transform.hpp>
 
 static const GLfloat g_vertex_buffer_data[] = {
    -1.0f, -1.0f, 0.0f,
@@ -14,7 +17,8 @@ static const GLfloat g_vertex_buffer_data[] = {
 
 GLuint vertexBuffer;
 GLuint programID;
-
+GLuint MatrixID;
+u32 rotateDegree = 0;
 
 GLuint LoadShaders(const char* vertexFilePath, const char* fragmentFilePath) {
 	// Create the shaders
@@ -117,10 +121,33 @@ GLuint LoadShaders(const char* vertexFilePath, const char* fragmentFilePath) {
 
 	programID = LoadShaders("/home/june/repos/Haku/shaders/simpleVertexShader.vertexshader",
 							"/home/june/repos/Haku/shaders/simpleFragmentShader.fragmentshader");
+
+	MatrixID = glGetUniformLocation(programID, "MVP");
+
     return OK;
 }
 
 void render() {
+	u32 width = getWindowWidth();
+	u32 height = getWindowHeight();
+
+	rotateDegree++;
+	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 100.0f);
+	
+	glm::mat4 View = glm::lookAt(
+    	glm::vec3(4,3,3), // Camera is at (4,3,3), in World Space
+    	glm::vec3(0,0,0), // and looks at the origin
+    	glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
+    	);
+
+	// Model matrix : an identity matrix (model will be at the origin)
+
+	glm::mat4 Model = glm::rotate(glm::mat4(1.0f), glm::radians((float)rotateDegree), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::mat4(1.0f);;
+
+	glm::mat4 mvp = Projection * View * Model;
+	
+	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
+
 	glUseProgram(programID);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
