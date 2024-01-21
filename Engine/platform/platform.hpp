@@ -11,3 +11,7 @@ constexpr u32 HAKU_WINDOW_WIDTH   = 1080;
 void shutdownWindow();
 
 void processEvents();
+
+u32 getWindowHeight();
+
+u32 getWindowWidth();
