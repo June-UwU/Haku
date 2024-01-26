@@ -44,8 +44,6 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_src})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_src})
 
-set(DEPEND_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../vendor)
-
 add_compile_definitions(HAKU_API_BUILD)
 add_compile_definitions(GLM_FORCE_RADIANS)
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
@@ -69,7 +67,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/.
 target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:ENGINE_DEBUG>)
 include_directories(${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} pthread glm::glm)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} pthread glm::glm gli)
 
 if (UNIX)
 	add_compile_definitions(HAKU_LINUX)	
