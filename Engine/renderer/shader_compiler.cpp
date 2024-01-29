@@ -5,17 +5,17 @@
 
 GLuint compileShader(std::string& filePath, GLenum shaderType) {
     
-    std::string shaderCode;
 	std::ifstream shaderStream(filePath, std::ios::in);
-	if(true == shaderStream.is_open()){
-		std::stringstream sstr;
-		sstr << shaderStream.rdbuf();
-		shaderCode = sstr.str();
-		shaderStream.close();
-	}else{
+	if(false == shaderStream.is_open()){
 		LOG_CRITICAL("Impossible to open %s. Are you in the right directory ?!\n", filePath.c_str());
 		return 0;
 	}
+
+    std::string shaderCode;
+	std::stringstream sstr;
+	sstr << shaderStream.rdbuf();
+	shaderCode = sstr.str();
+	shaderStream.close();
 
 	GLuint shader = glCreateShader(shaderType);
 
