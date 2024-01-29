@@ -19,6 +19,7 @@ FetchContent_MakeAvailable(glm)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glm CONFIG REQUIRED)
+find_package(assimp REQUIRED)
 
 file(GLOB_RECURSE global_inc ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 file(GLOB_RECURSE global_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
@@ -32,6 +33,9 @@ file(GLOB_RECURSE platform_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/*.cpp)
 file(GLOB_RECURSE renderer_inc ${CMAKE_CURRENT_SOURCE_DIR}/renderer/*.hpp)
 file(GLOB_RECURSE renderer_src ${CMAKE_CURRENT_SOURCE_DIR}/renderer/*.cpp)
 
+file(GLOB_RECURSE model_inc ${CMAKE_CURRENT_SOURCE_DIR}/renderer/model/*.hpp)
+file(GLOB_RECURSE model_src ${CMAKE_CURRENT_SOURCE_DIR}/renderer/model/*.cpp)
+
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_src})
 
@@ -44,10 +48,12 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${core_src})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_src})
 
-add_compile_definitions(HAKU_API_BUILD)
-add_compile_definitions(GLM_FORCE_RADIANS)
-add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${model_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${model_src})
+
+add_compile_definitions(HAKU_API_BUILD GLM_FORCE_RADIANS GLM_FORCE_DEPTH_ZERO_TO_ONE)
 add_compile_options(-Wall -Wextra -Wpedantic)
+
 add_library(${PROJECT_NAME} 
 	STATIC
 	${global_inc}
@@ -58,16 +64,20 @@ add_library(${PROJECT_NAME}
 	${platform_src}
 	${renderer_inc}
 	${renderer_src}
+	${model_inc}
+	${model_src}
 	)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/core)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/platform)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../Libs/GLFW/include)
-target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:ENGINE_DEBUG>)
-include_directories(${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE 
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/core
+	${CMAKE_CURRENT_SOURCE_DIR}/platform
+	${CMAKE_CURRENT_SOURCE_DIR}/../Libs/GLFW/include)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} pthread glm::glm gli)
+target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:ENGINE_DEBUG>)
+include_directories(${ASSIMP_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} ${ASSIMP_LIBRARIES} pthread glm::glm gli)
 
 if (UNIX)
 	add_compile_definitions(HAKU_LINUX)	

@@ -99,8 +99,10 @@ u32 rotateDegree = 0;
 
 GLuint createTexture(std::string filePath) {
 	gli::texture texture = gli::load(filePath);
-	if(texture.empty())
+	if(texture.empty()) {
+        LOG_CRITICAL("Empty texture returned..!");
 		return 0;
+    }
 
 	gli::gl GL(gli::gl::PROFILE_GL33);
 	gli::gl::format const format = GL.translate(texture.format(), texture.swizzles());
@@ -109,9 +111,13 @@ GLuint createTexture(std::string filePath) {
 	GLuint textureName = 0;
 	glGenTextures(1, &textureName);
 	glBindTexture(target, textureName);
-	glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0);
-	glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(texture.levels() - 1));
-	glTexParameteriv(target, GL_TEXTURE_SWIZZLE_RGBA, &format.Swizzles[0]);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
 	
 	glm::tvec3<GLsizei> Extent(texture.extent(0));
 	glTexStorage2D(target, static_cast<GLint>(texture.levels()), format.Internal, Extent.x, Extent.y);
@@ -124,6 +130,7 @@ GLuint createTexture(std::string filePath) {
 			format.Internal, static_cast<GLsizei>(texture.size(Level)), texture.data(0, 0, Level));
 	}
 
+    LOG_TRACE("Texture load complete!");
 	return textureName;
 }
 
@@ -153,9 +160,11 @@ GLuint LoadShaders(std::string vertexFilePath, std::string fragmentFilePath) {
 	glGenBuffers(1, &cubeUV);
 	glBindBuffer(GL_ARRAY_BUFFER, cubeUV);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
-
+    
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
+
+    glEnable(GL_CULL_FACE);
 
 	programID = LoadShaders("/home/june/repos/Haku/shaders/simpleVertexShader.vertexshader",
 							"/home/june/repos/Haku/shaders/simpleFragmentShader.fragmentshader");

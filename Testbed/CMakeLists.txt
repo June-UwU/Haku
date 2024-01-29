@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 message("Building Testbed")
 
-set(PROJECT_NAME "TestBed")
+set(PROJECT_NAME "Editor")
 
 file(GLOB_RECURSE g_inc ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 file(GLOB_RECURSE g_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
@@ -19,8 +19,9 @@ add_executable(${PROJECT_NAME}
 
 message("Dependencies : ${CMAKE_CURRENT_SOURCE_DIR}/../Engine/")
 
-target_include_directories(${PROJECT_NAME}  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../Engine/)
-target_include_directories(${PROJECT_NAME} 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../Engine/core)
+target_include_directories(${PROJECT_NAME}  PUBLIC 
+	${CMAKE_CURRENT_SOURCE_DIR}/../Engine/ 
+	${CMAKE_CURRENT_SOURCE_DIR}/../Engine/core)
 
 message("Linking Haku api")
 target_link_libraries(${PROJECT_NAME} PRIVATE Haku_Engine)
