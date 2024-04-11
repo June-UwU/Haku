@@ -1,3 +1,5 @@
 #pragma once
 
-void print_hellow();
+bool initialize_engine();
+void run_engine();
+void terminate_engine();
