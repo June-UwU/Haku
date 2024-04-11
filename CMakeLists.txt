@@ -1,14 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 
-
-if (WIN32)
-	add_compile_definitions(HWIN32)
-endif (WIN32)
-
-if (UNIX)
-	add_compile_definitions(HUNIX)
-endif (UNIX)
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(PROJECT_NAME "Haku")
 
@@ -30,9 +21,6 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message("Cmake C++ standard : ${CMAKE_CXX_STANDARD}")
 
-add_subdirectory("Engine")
-add_subdirectory("Testbed")
-add_subdirectory("Libs/GLFW")
-add_subdirectory("Libs/gli")
+add_subdirectory("engine")
+add_subdirectory("editor")
