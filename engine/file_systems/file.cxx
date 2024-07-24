@@ -21,6 +21,8 @@ std::vector<byte> read_binary(const std::string path) {
 	file.read(binary_data.data(), file_size);
 	file.close();
 
+	TRACE << "'file opened with binary data : " << binary_data.size() << "\n";
+
 	return binary_data;
 }
 

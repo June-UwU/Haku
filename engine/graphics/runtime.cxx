@@ -6,11 +6,13 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <algorithm>
+#include <limits>
 
 typedef struct pipeline {
 	VkPipeline		 pipeline;
 	VkPipelineLayout layout;
 } pipeline;
+constexpr u32 MAX_IN_FLIGHT_FRAME = 3;
 
 VkFormat				   swap_chain_format;
 VkExtent2D				   swap_chain_extent;
@@ -21,16 +23,18 @@ std::vector<VkFramebuffer> swapchain_frame_buffer;
 VkRenderPass			   render_pass;
 pipeline				   render_pipeline;
 
-VkCommandPool	command_pool;
-VkCommandBuffer command_buffer;
-VkSemaphore		image_available_sema;
-VkSemaphore		render_finish_sema;
-VkFence			in_flight_fence;
+VkCommandPool				 command_pool;
+std::vector<VkCommandBuffer> command_buffer;
+std::vector<VkSemaphore>	 image_available_sema;
+std::vector<VkSemaphore>	 render_finish_sema;
+std::vector<VkFence>		 in_flight_fence;
 
 void destroy_command_module() {
-	vkDestroySemaphore(get_device(), image_available_sema, nullptr);
-	vkDestroySemaphore(get_device(), render_finish_sema, nullptr);
-	vkDestroyFence(get_device(), in_flight_fence, nullptr);
+	for (u32 i = 0; i < MAX_IN_FLIGHT_FRAME; i++) {
+		vkDestroySemaphore(get_device(), image_available_sema[i], nullptr);
+		vkDestroySemaphore(get_device(), render_finish_sema[i], nullptr);
+		vkDestroyFence(get_device(), in_flight_fence[i], nullptr);
+	}
 	vkDestroyCommandPool(get_device(), command_pool, nullptr);
 }
 
@@ -42,14 +46,20 @@ bool create_sync_objects() {
 	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	auto img_avail = vkCreateSemaphore(get_device(), &semaphore_info, nullptr, &image_available_sema);
-	ASSERT(VK_SUCCESS == img_avail, "failed to create image available semaphore..!");
+	image_available_sema.resize(MAX_IN_FLIGHT_FRAME);
+	render_finish_sema.resize(MAX_IN_FLIGHT_FRAME);
+	in_flight_fence.resize(MAX_IN_FLIGHT_FRAME);
 
-	auto render_done = vkCreateSemaphore(get_device(), &semaphore_info, nullptr, &render_finish_sema);
-	ASSERT(VK_SUCCESS == render_done, "failed to create render finish semaphore..!");
+	for (u32 i = 0; i < MAX_IN_FLIGHT_FRAME; i++) {
+		auto img_avail = vkCreateSemaphore(get_device(), &semaphore_info, nullptr, &image_available_sema[i]);
+		ASSERT(VK_SUCCESS == img_avail, "failed to create image available semaphore..!");
 
-	auto in_flight = vkCreateFence(get_device(), &fence_info, nullptr, &in_flight_fence);
-	ASSERT(VK_SUCCESS == in_flight, "failed to create in flight fence..!");
+		auto render_done = vkCreateSemaphore(get_device(), &semaphore_info, nullptr, &render_finish_sema[i]);
+		ASSERT(VK_SUCCESS == render_done, "failed to create render finish semaphore..!");
+
+		auto in_flight = vkCreateFence(get_device(), &fence_info, nullptr, &in_flight_fence[i]);
+		ASSERT(VK_SUCCESS == in_flight, "failed to create in flight fence..!");
+	}
 
 	return true;
 }
@@ -61,8 +71,11 @@ bool create_command_buffer() {
 	alloc_info.level			  = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	alloc_info.commandBufferCount = 1; // TODO maybe multi command buffer thing
 
-	auto result = vkAllocateCommandBuffers(get_device(), &alloc_info, &command_buffer);
-	ASSERT(VK_SUCCESS == result, "failed to allocate command buffers");
+	command_buffer.resize(MAX_IN_FLIGHT_FRAME);
+	for (u32 i = 0; i < MAX_IN_FLIGHT_FRAME; i++) {
+		auto result = vkAllocateCommandBuffers(get_device(), &alloc_info, &command_buffer[i]);
+		ASSERT(VK_SUCCESS == result, "failed to allocate command buffers");	
+	}
 
 	return true;
 }
@@ -495,20 +508,20 @@ void destroy_runtime() {
 }
 
 u32 accquire_image(const u64 frame) {
-	HAKU_UNUSED(frame);
+	auto normalized_frame = frame % MAX_IN_FLIGHT_FRAME;
 
 	constexpr const u64 infinity = std::numeric_limits<u64>::max();
-	vkWaitForFences(get_device(), 1, &in_flight_fence, VK_TRUE, infinity);
-	vkResetFences(get_device(), 1, &in_flight_fence);
+	vkWaitForFences(get_device(), 1, &in_flight_fence[normalized_frame], VK_TRUE, infinity);
+	vkResetFences(get_device(), 1, &in_flight_fence[normalized_frame]);
 
 	u32 image = 0;
-	vkAcquireNextImageKHR(get_device(), swap_chain, infinity, image_available_sema, VK_NULL_HANDLE, &image);
-	vkResetCommandBuffer(command_buffer, 0);
+	vkAcquireNextImageKHR(get_device(), swap_chain, infinity, image_available_sema[normalized_frame], VK_NULL_HANDLE, &image);
+	vkResetCommandBuffer(command_buffer[normalized_frame], 0);
 
 	VkCommandBufferBeginInfo begin_info{};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-	auto command_begun = vkBeginCommandBuffer(command_buffer, &begin_info);
+	auto command_begun = vkBeginCommandBuffer(command_buffer[normalized_frame], &begin_info);
 	ASSERT(VK_SUCCESS == command_begun, "failed to begin command buffer");
 
 	VkRenderPassBeginInfo renderpass_info{};
@@ -522,39 +535,43 @@ u32 accquire_image(const u64 frame) {
 	renderpass_info.clearValueCount = 1;
 	renderpass_info.pClearValues	= &clear_color;
 
-	vkCmdBeginRenderPass(command_buffer, &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(command_buffer[normalized_frame], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
 	return image;
 }
 
 void submit_image(const u64 frame, const u32 image) {
-	vkCmdEndRenderPass(command_buffer);
+	u64 normalized_frame = frame & MAX_IN_FLIGHT_FRAME;
 
-	auto end_command_buffer = vkEndCommandBuffer(command_buffer);
+	vkCmdEndRenderPass(command_buffer[normalized_frame]);
+
+	auto end_command_buffer = vkEndCommandBuffer(command_buffer[normalized_frame]);
 	ASSERT(VK_SUCCESS == end_command_buffer, "failed to record command buffer");
 
 	VkSubmitInfo submit_info{};
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore			 wait_semphores[] = { image_available_sema };
+	VkSemaphore			 wait_semphores[] = { image_available_sema[normalized_frame] };
 	VkPipelineStageFlags waitStages[]	  = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submit_info.waitSemaphoreCount		  = 1;
 	submit_info.pWaitSemaphores			  = wait_semphores;
 	submit_info.pWaitDstStageMask		  = waitStages;
 
 	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers	  = &command_buffer;
+	submit_info.pCommandBuffers	   = &command_buffer[normalized_frame];
 
-	VkSemaphore signal_semaphores[]	 = { render_finish_sema };
+	VkSemaphore signal_semaphores[]	 = { render_finish_sema[normalized_frame] };
 	submit_info.signalSemaphoreCount = 1;
 	submit_info.pSignalSemaphores	 = signal_semaphores;
 
-	auto queue_submit = vkQueueSubmit(get_graphics_queue(), 1, &submit_info, in_flight_fence); 
+	auto queue_submit = vkQueueSubmit(get_graphics_queue(), 1, &submit_info, in_flight_fence[normalized_frame]);
 	ASSERT(VK_SUCCESS == queue_submit, "failed to submit to graphics queue");
 }
 
 void present_image(const u64 frame, const u32 image) {
-	VkSemaphore signal_semaphores[] = { render_finish_sema };
+	u64 normalized_frame = frame % MAX_IN_FLIGHT_FRAME;
+
+	VkSemaphore signal_semaphores[] = { render_finish_sema[normalized_frame] };
 
 	VkPresentInfoKHR present_info{};
 	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -572,8 +589,9 @@ void present_image(const u64 frame, const u32 image) {
 }
 
 void record_image(const u64 frame, const u32 image) {
+	u64 normalized_frame = frame % MAX_IN_FLIGHT_FRAME;
 	/// TODO : this will be reworked in the future
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_pipeline.pipeline);
+	vkCmdBindPipeline(command_buffer[normalized_frame], VK_PIPELINE_BIND_POINT_GRAPHICS, render_pipeline.pipeline);
 
 	VkViewport viewport{};
 	viewport.x		  = 0.0f;
@@ -582,12 +600,12 @@ void record_image(const u64 frame, const u32 image) {
 	viewport.height	  = static_cast<float>(swap_chain_extent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+	vkCmdSetViewport(command_buffer[normalized_frame], 0, 1, &viewport);
 
 	VkRect2D scissor{};
 	scissor.offset = { 0, 0 };
 	scissor.extent = swap_chain_extent;
-	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+	vkCmdSetScissor(command_buffer[normalized_frame], 0, 1, &scissor);
 
-	vkCmdDraw(command_buffer, 3, 1, 0, 0);
+	vkCmdDraw(command_buffer[normalized_frame], 3, 1, 0, 0);
 }

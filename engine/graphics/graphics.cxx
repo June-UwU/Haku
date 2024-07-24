@@ -10,6 +10,8 @@ bool initialize_graphics() {
 	
 	bool runtime_init = initialize_runtime();
 	ASSERT(runtime_init, "failed to initialize runtime structures\n");
+
+	return true;
 }
 
 void terminate_graphics() {
