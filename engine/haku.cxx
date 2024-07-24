@@ -16,13 +16,16 @@ bool initialize_engine() {
 }
 
 void run_engine() {
+	u64 frame = 0;
 	while (true == window_still_open()) {
 		window_update();
-		u32 image_index = accquire_image();
-		// record command
-		submit(image_index);
-		present(image_index);
+		u32 image = accquire_image(frame);
+		record_image(frame, image);
+		submit_image(frame, image);
+		present_image(frame, image);
 	}
+
+	wait_on_gpu_till_idle();
 }
 
 void terminate_engine() {

@@ -5,12 +5,6 @@
 #include "renderer.hpp"
 #include <limits>
 
-VkCommandPool	command_pool;
-VkCommandBuffer command_buffer;
-VkSemaphore		image_available_sema;
-VkSemaphore		render_finish_sema;
-VkFence			in_flight_fence;
-
 void start_render_pass(VkCommandBuffer buffer, u32 index) {
 	VkRenderPassBeginInfo info{};
 	info.sType			   = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -70,46 +64,6 @@ void end_recording_command_buffer(VkCommandBuffer buffer) {
 	ASSERT(VK_SUCCESS == vkEndCommandBuffer(buffer), "failed to end render pass");
 }
 
-void destroy_command_module() {
-	vkDestroySemaphore(get_device(), image_available_sema, nullptr);
-	vkDestroySemaphore(get_device(), render_finish_sema, nullptr);
-	vkDestroyFence(get_device(), in_flight_fence, nullptr);
-	vkDestroyCommandPool(get_device(), command_pool, nullptr);
-}
-
-bool create_command_buffer() {
-	VkCommandBufferAllocateInfo alloc_info{};
-	alloc_info.sType			  = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	alloc_info.commandPool		  = command_pool;
-	alloc_info.level			  = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	alloc_info.commandBufferCount = 1; // TODO maybe multi command buffer thing
-
-	auto result = vkAllocateCommandBuffers(get_device(), &alloc_info, &command_buffer);
-	ASSERT(VK_SUCCESS == result, "failed to allocate command buffers");
-
-	return true;
-}
-
-bool create_sync_objects() {
-	VkSemaphoreCreateInfo semaphore_info{};
-	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	VkFenceCreateInfo fence_info{};
-	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-		
-	auto img_avail = vkCreateSemaphore(get_device(), &semaphore_info, nullptr, &image_available_sema);
-	ASSERT(VK_SUCCESS == img_avail, "failed to create image available semaphore..!");
-
-	auto render_done = vkCreateSemaphore(get_device(), &semaphore_info, nullptr, &render_finish_sema);
-	ASSERT(VK_SUCCESS == render_done, "failed to create render finish semaphore..!");
-
-	auto in_flight = vkCreateFence(get_device(), &fence_info, nullptr, &in_flight_fence);
-	ASSERT(VK_SUCCESS == in_flight, "failed to create in flight fence..!");
-
-	return true;
-}
-
 void wait_for_frame() {
 	vkWaitForFences(get_device(), 1, &in_flight_fence, VK_TRUE, std::numeric_limits<u64>::max());
 	vkResetFences(get_device(), 1, &in_flight_fence);
@@ -167,22 +121,3 @@ void present_work(u32 frame) {
     vkQueuePresentKHR(get_present_queue(), &present_info);
 }
 
-bool initialize_command_module() {
-	gpu_queue queue_family = find_queue_families(get_physical_device());
-
-	VkCommandPoolCreateInfo pool_info{};
-	pool_info.sType			   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	pool_info.flags			   = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	pool_info.queueFamilyIndex = queue_family.graphics_index;
-
-	auto result = vkCreateCommandPool(get_device(), &pool_info, nullptr, &command_pool);
-	ASSERT(VK_SUCCESS == result, "failed to initialize command pool");
-
-	bool command_buffer_status = create_command_buffer();
-	ASSERT(command_buffer_status, "failed to initialize command buffer");
-
-	bool sync_obj = create_sync_objects();
-	ASSERT(sync_obj, "failed to create sync objects");
-
-	return true;
-}

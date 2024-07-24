@@ -1,6 +1,8 @@
 #pragma once
 #include "logger.hpp"
 
+#define HAKU_UNUSED(var) (void)(var)
+
 #if defined(NDEBUG)
 
 #define ASSERT(predicate, format)                           \
