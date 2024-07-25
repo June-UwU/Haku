@@ -24,7 +24,7 @@
 	exit(EXIT_FAILURE);
 
 #define TODO(format) \
-	WARN << "TODO : " << __FUNCTION__ << " \nmessage : " << format << "\n";
+	WARN << "TODO : " << __FUNCTION__ << " : " << format << "\n";
 #else
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -55,6 +55,6 @@
 	exit(EXIT_FAILURE);
 
 #define TODO(format) \
-	WARN << "TODO : " << __FUNCTION__ << " \nmessage : " << format << "\n";
+	WARN << "TODO : " << __FUNCTION__ << " : " << format << "\n";
 
 #endif

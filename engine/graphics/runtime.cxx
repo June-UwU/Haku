@@ -1,12 +1,18 @@
 #include "runtime.hpp"
 #include "device.hpp"
+#include "vertex.hpp"
 #include "shader.hpp"
 #include "file_systems/file.hpp"
 #include "platform/window.hpp"
+#include "vertex.hpp"
+#include "memory.hpp"
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <algorithm>
 #include <limits>
+
+VkDeviceMemory buffer_memory;
+VkBuffer buffer;
 
 typedef struct pipeline {
 	VkPipeline		 pipeline;
@@ -300,14 +306,6 @@ bool create_pipeline_layout() {
 	return true;
 }
 
-void configure_vertex_input_state(VkPipelineVertexInputStateCreateInfo& state) {
-	state.sType							  = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	state.vertexBindingDescriptionCount	  = 0;
-	state.pVertexBindingDescriptions	  = nullptr; // Optional
-	state.vertexAttributeDescriptionCount = 0;
-	state.pVertexAttributeDescriptions	  = nullptr; // Optional
-}
-
 void configure_dynamic_state(std::vector<VkDynamicState>& state, VkPipelineDynamicStateCreateInfo& conf) {
 	conf.sType			   = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	conf.dynamicStateCount = state.size();
@@ -408,8 +406,14 @@ bool create_rendering_pipeline() {
 	VkPipelineDynamicStateCreateInfo dynamic_state{};
 	configure_dynamic_state(dynamic_components, dynamic_state);
 
+	auto binding_description = vertex::get_vertex_binding_description();
+	auto attribute_description = vertex::get_attribute_description();
 	VkPipelineVertexInputStateCreateInfo vertex_input_state{};
-	configure_vertex_input_state(vertex_input_state);
+	vertex_input_state.sType							  = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertex_input_state.vertexBindingDescriptionCount	  = 1;
+	vertex_input_state.pVertexBindingDescriptions	  = &binding_description; // Optional
+	vertex_input_state.vertexAttributeDescriptionCount = attribute_description.size();
+	vertex_input_state.pVertexAttributeDescriptions	  = attribute_description.data(); // Optional
 
 	VkPipelineInputAssemblyStateCreateInfo input_assembly{};
 	configure_input_assembly(input_assembly);
@@ -473,6 +477,11 @@ bool initialize_renderer() {
 
 	bool frame_buffer = create_frame_buffers();
 	ASSERT(frame_buffer, "failed to create rendering frame buffers");
+
+	TODO("clean this test data out")
+	buffer = create_buffer(test_data.size() * sizeof(vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,VK_SHARING_MODE_EXCLUSIVE);
+	buffer_memory = create_memory_for_buffer(buffer, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	fill_buffer(buffer_memory,(void*)(test_data.data()),test_data.size() * sizeof(vertex)); 
 
 	return true;
 }
@@ -607,5 +616,9 @@ void record_image(const u64 frame, const u32 image) {
 	scissor.extent = swap_chain_extent;
 	vkCmdSetScissor(command_buffer[normalized_frame], 0, 1, &scissor);
 
-	vkCmdDraw(command_buffer[normalized_frame], 3, 1, 0, 0);
+	VkBuffer vertex_buffer[] = {buffer};
+	VkDeviceSize offsets[] = {0};
+	vkCmdBindVertexBuffers(command_buffer[normalized_frame], 0, 1, vertex_buffer, offsets);
+
+	vkCmdDraw(command_buffer[normalized_frame], test_data.size(), 1, 0, 0);
 }
