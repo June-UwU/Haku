@@ -10,3 +10,6 @@
 [submodule "Libs/glm"]
 	path = Libs/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "Libs/VulkanMemoryAllocator"]
+	path = Libs/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
