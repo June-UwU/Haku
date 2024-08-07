@@ -1,16 +1,11 @@
 #pragma once
 #include "types.hpp"
-#include <vulkan/vulkan.h>
+#define VMA_IMPLEMENTATION
+#define VMA_VULKAN_VERSION 1002000 // Vulkan 1.2
+#define VMA_STATIC_VULKAN_FUNCTIONS 1
+#define VMA_DEBUG_MARGIN 16
+#define VMA_DEBUG_DETECT_CORRUPTION 1
+#include "vma/vk_mem_alloc.h"
 
-VkBuffer create_buffer(VkDeviceSize size, VkBufferUsageFlags flag, VkSharingMode sharing);
-VkDeviceMemory create_memory_for_buffer(VkBuffer buffer, VkMemoryPropertyFlags sharing);
-u32 find_memory_type(u32 filter, VkMemoryPropertyFlags properties);
-void fill_buffer(VkDeviceMemory buffer, void *data, u32 size); // fill buffer doesn't do a host flush 
-
-// class memory {
-// public:
-
-// private:
-//     VkBuffer buffer;
-//     VkDeviceMemory memory;
-// };
+bool initialize_gpu_memory();
+void destroy_gpu_memory();

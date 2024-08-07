@@ -478,11 +478,6 @@ bool initialize_renderer() {
 	bool frame_buffer = create_frame_buffers();
 	ASSERT(frame_buffer, "failed to create rendering frame buffers");
 
-	TODO("clean this test data out")
-	buffer = create_buffer(test_data.size() * sizeof(vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,VK_SHARING_MODE_EXCLUSIVE);
-	buffer_memory = create_memory_for_buffer(buffer, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	fill_buffer(buffer_memory,(void*)(test_data.data()),test_data.size() * sizeof(vertex)); 
-
 	return true;
 }
 
