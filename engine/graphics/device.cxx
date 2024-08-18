@@ -7,7 +7,6 @@
 #include <map>
 #include <cstring>
 
-
 VkInstance				 instance;
 VkDebugUtilsMessengerEXT debug_messenger;
 VkPhysicalDevice		 physical_device;
@@ -16,15 +15,14 @@ VkQueue					 graphics_queue;
 VkQueue					 present_queue;
 VkSurfaceKHR			 render_surface;
 
-
 VkDevice get_device() {
 	return logical_gpu;
 }
 
+
 VkQueue get_graphics_queue() {
 	return graphics_queue;
 }
-
 VkQueue get_present_queue() {
 	return present_queue;
 }
@@ -216,10 +214,10 @@ bool create_vulkan_instance() {
 	VkApplicationInfo app_info{};
 	app_info.sType				= VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	app_info.pApplicationName	= "Haku";
-	app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+	app_info.applicationVersion = VK_MAKE_VERSION(1, 2, 0);
 	app_info.pEngineName		= "Haku Engine";
-	app_info.engineVersion		= VK_MAKE_VERSION(1, 0, 0);
-	app_info.apiVersion			= VK_API_VERSION_1_0;
+	app_info.engineVersion		= VK_MAKE_VERSION(1, 2, 0);
+	app_info.apiVersion			= VK_API_VERSION_1_2;
 
 	VkInstanceCreateInfo instance_create_info{};
 	instance_create_info.sType			  = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -329,7 +327,7 @@ bool create_logical_device() {
 	gpu_queue queues = find_queue_families(get_physical_device());
 
 	std::vector<VkDeviceQueueCreateInfo> queue_requests;
-	std::set<u32>						 queue_family_index = { static_cast<u32>(queues.graphics_index), static_cast<u32>(queues.present_index) };
+	std::set<u32>						 queue_family_index = { static_cast<u32>(queues.graphics_index), static_cast<u32>(queues.present_index)};
 
 	f32 graphic_priority = 1.0f;
 	for (u32 family : queue_family_index) {
@@ -370,7 +368,7 @@ gpu_queue find_queue_families(VkPhysicalDevice device) {
 	std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
 	vkGetPhysicalDeviceQueueFamilyProperties(get_physical_device(), &queue_family_count, queue_families.data());
 
-	s32 index = 0;
+ 	s32 index = 0;
 	for (const auto& family : queue_families) {
 		if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			gpu_info.graphics_index = index;
@@ -389,7 +387,7 @@ gpu_queue find_queue_families(VkPhysicalDevice device) {
 
 		index++;
 	}
-
+	
 	return gpu_info;
 }
 
@@ -410,7 +408,7 @@ bool initialize_device() {
 	if (debug_layer_enable) {
 		TRACE << "Debugging Support Enabled\n";
 	}
-		
+
 	ASSERT(VK_SUCCESS == glfwCreateWindowSurface(get_instance(), get_window(), nullptr, &render_surface), "failed to create a render surface");
 
 	bool found_gpu = choose_physical_device();

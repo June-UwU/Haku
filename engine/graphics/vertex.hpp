@@ -37,8 +37,23 @@ typedef struct vertex {
 }vertex;
 
 
+typedef struct mvp_ubo {
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 projection;
+}mvp_ubo;
+
 const std::vector<vertex> test_data = {
     {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
     {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
     {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+};
+
+const std::vector<u16> indices = {
+	0,
+	1,
+	2,
+	2,
+	3,
+	0
 };

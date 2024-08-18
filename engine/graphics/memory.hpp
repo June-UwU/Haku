@@ -1,6 +1,5 @@
 #pragma once
 #include "types.hpp"
-#define VMA_IMPLEMENTATION
 #define VMA_VULKAN_VERSION 1002000 // Vulkan 1.2
 #define VMA_STATIC_VULKAN_FUNCTIONS 1
 #define VMA_DEBUG_MARGIN 16
@@ -9,3 +8,5 @@
 
 bool initialize_gpu_memory();
 void destroy_gpu_memory();
+void free_gpu_memory(VmaAllocation alloc);
+void create_buffer(VkBufferCreateInfo* buffer_info, VmaAllocationCreateInfo* alloc_create_info, VkBuffer* buffer, VmaAllocation* alloc, VmaAllocationInfo* alloc_info);
