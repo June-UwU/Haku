@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
+#include <memory>
 
 /*********************************SIGNED TYPES****************************************/
 typedef int8_t	s8;

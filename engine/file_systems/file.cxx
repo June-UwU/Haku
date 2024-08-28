@@ -13,7 +13,7 @@ std::vector<byte> read_binary(const std::string path) {
 		return {};
 	}
 
-	u32 file_size = file.tellg();
+	u32 file_size = static_cast<u32>(file.tellg());
 
 	std::vector<byte> binary_data(file_size);
 

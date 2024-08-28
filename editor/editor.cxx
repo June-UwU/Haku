@@ -6,6 +6,5 @@ int main() {
     }
 
     run_engine();
-    terminate_engine();
     return 0;
 }
