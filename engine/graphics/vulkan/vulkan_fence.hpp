@@ -12,6 +12,8 @@ public:
 	void wait();
 	void wait_time_out(u64 ms);
 
+	VkFence get();
+
 private:
 	VkDevice device;
 	VkFence fence;

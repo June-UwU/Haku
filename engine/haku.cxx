@@ -9,7 +9,7 @@ bool initialize_engine() {
 	bool window_initialised = initialize_windows(720, 1080);
 	ASSERT(window_initialised, "failed to initialize windows.");
 
-	bool renderer_initialized = initialize_renderer();
+	bool renderer_initialized = initialize_renderer(720,1080);
 	ASSERT(renderer_initialized, "failed to initialize renderer.");
 
 	return true;
@@ -19,6 +19,7 @@ void run_engine() {
 	u64 frame = 0;
 	while (true == window_still_open()) {
 		window_update();
+		draw();
 	}
 	terminate_engine();
 }

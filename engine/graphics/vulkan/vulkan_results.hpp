@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 
 constexpr bool is_vulkan_failure(VkResult result) {
+#if defined(NDEBUG)
 	switch (result) {
 	case VK_SUCCESS:
 	case VK_NOT_READY:
@@ -54,6 +55,12 @@ constexpr bool is_vulkan_failure(VkResult result) {
 	default:
 		return true;
 	}
+#else
+	if (result != VK_SUCCESS) {
+		return true;
+	}
+	return false;
+#endif
 }
 
 constexpr std::string get_vulkan_string(VkResult result) {
@@ -153,26 +160,30 @@ constexpr std::string get_vulkan_string(VkResult result) {
 
 #if defined(NDEBUG)
 
-#define VK_ASSERT(result, format)                           \
-	if (true == is_vulkan_failure(result)) {                \
-		ERROR << __FUNCTION__ << " : " << __LINE__ << "\n"; \
-		ERROR << format << "\n";                            \
-		ERROR << get_vulkan_string(result) << "\n";         \
-		exit(EXIT_FAILURE);                                 \
-	} else {                                                \
-		TRACE << get_vulkan_string(result) << "\n";         \
+#define VK_ASSERT(result, format)                                                                   \
+	if (true == is_vulkan_failure(result)) {                                                        \
+		ERROR << __FUNCTION__ << " : " << __LINE__ << "\n";                                         \
+		ERROR << format << "\n";                                                                    \
+		ERROR << get_vulkan_string(result) << "\n";                                                 \
+		exit(EXIT_FAILURE);                                                                         \
+	} else {                                                                                        \
+		if (VK_SUCCESS != result) {                                                                 \
+			WARN << __FUNCTION__ << "(" << __LINE__ << ") : " << get_vulkan_string(result) << "\n"; \
+		}                                                                                           \
 	}
 
 #else
 
-#define VK_ASSERT(result, format)                                                                \
-	if (true == is_vulkan_failure(result)) {                                                     \
-		ERROR << __FUNCTION__ << " : " << __LINE__ << "\n";                                      \
-		ERROR << format << "\n";                                                                 \
-		ERROR << get_vulkan_string(result) << "\n";                                              \
-		exit(EXIT_FAILURE);                                                                      \
-	} else {                                                                                     \
-		TRACE << __FUNCTION__ << "(" << __LINE__ << ") : " << get_vulkan_string(result) << "\n"; \
+#define VK_ASSERT(result, format)                                                                   \
+	if (true == is_vulkan_failure(result)) {                                                        \
+		ERROR << __FUNCTION__ << " : " << __LINE__ << "\n";                                         \
+		ERROR << format << "\n";                                                                    \
+		ERROR << get_vulkan_string(result) << "\n";                                                 \
+		exit(EXIT_FAILURE);                                                                         \
+	} else {                                                                                        \
+		if (VK_SUCCESS != result) {                                                                 \
+			WARN << __FUNCTION__ << "(" << __LINE__ << ") : " << get_vulkan_string(result) << "\n"; \
+		}                                                                                           \
 	}
 
 #endif

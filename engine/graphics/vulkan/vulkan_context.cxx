@@ -129,7 +129,10 @@ void setup_debug_instance(VkInstance instance, VkDebugUtilsMessengerEXT* messeng
 #endif
 }
 
-vulkan_context::vulkan_context() {
+vulkan_context::vulkan_context(u32 height, u32 width)
+	: height(height)
+	, width(width)
+	, frame(0) {
 	VkApplicationInfo application_info{ VK_STRUCTURE_TYPE_APPLICATION_INFO };
 	application_info.pNext				= nullptr;
 	application_info.pApplicationName	= "Haku";
@@ -167,11 +170,18 @@ vulkan_context::vulkan_context() {
 	VkResult surface_created = glfwCreateWindowSurface(instance, get_window(), nullptr, &surface);
 	VK_ASSERT(surface_created, "failed to create window surface..!!");
 
-	device			   = std::make_unique<vulkan_device>(instance);
+	device	  = new vulkan_device(instance, surface);
+	swapchain = new vulkan_swapchain(width, height, surface, device);
+	create_sync_parameter();
+	reserve_command_buffer();
 }
 
 vulkan_context::~vulkan_context() {
-	device			   = nullptr;
+	device->wait_till_idle();
+	destroy_sync_parameter();
+	delete swapchain;
+	delete device;
+	device = nullptr;
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	destroy_debug_util_messenger(instance, debug_messenger, nullptr);
 	vkDestroyInstance(instance, nullptr);
@@ -179,4 +189,111 @@ vulkan_context::~vulkan_context() {
 
 VkInstance vulkan_context::get_instance() {
 	return instance;
+}
+
+u32 vulkan_context::draw_frame() {
+	const u32 size	= in_flight.size();
+	u32		  index = frame % size;
+
+	in_flight[index]->wait();
+	in_flight[index]->reset();
+
+	// TODO : implement not rendering if the application is minimized..
+	u32				image_index		 = swapchain->accquire_image_index(device->get_logical_device(), image_available[index]);
+	VkCommandBuffer recording_buffer = accquire_command_buffer(index);
+	swapchain->clear_swapchain(image_index, recording_buffer);
+
+	// TODO : accquire command buffer here and start recording..
+
+	// submitting
+	VkResult result = vkEndCommandBuffer(recording_buffer);
+	VK_ASSERT(result, "failed to end command buffer..!!");
+	submit_command_buffer(index);
+	present_frame(index, image_index);
+
+	return frame;
+}
+
+void vulkan_context::create_sync_parameter() {
+	const u32 size = swapchain->get_image_count();
+	in_flight.resize(size);
+	image_available.resize(size);
+	render_complete.resize(size);
+
+	VkSemaphoreCreateInfo semaphore_info{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+	semaphore_info.pNext = nullptr;
+	semaphore_info.flags = 0; // reserved for future use
+
+	VkDevice gpu = device->get_logical_device();
+	for (u32 i = 0; i < size; i++) {
+		in_flight[i] = new vulkan_fence(gpu, true);
+		vkCreateSemaphore(gpu, &semaphore_info, nullptr, &image_available[i]);
+		vkCreateSemaphore(gpu, &semaphore_info, nullptr, &render_complete[i]);
+	}
+}
+
+void vulkan_context::destroy_sync_parameter() {
+	const u32 size = in_flight.size();
+
+	VkDevice gpu = device->get_logical_device();
+	for (u32 i = 0; i < size; i++) {
+		delete in_flight[i];
+		in_flight[i] = nullptr;
+		vkDestroySemaphore(gpu, image_available[i], nullptr);
+		vkDestroySemaphore(gpu, render_complete[i], nullptr);
+	}
+}
+
+void vulkan_context::submit_command_buffer(u32 index) {
+	VkSubmitInfo		 create_info{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
+	VkSemaphore			 wait_on_semaphore[] = { image_available[index] };
+	VkPipelineStageFlags wait_stages[]		 = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+	create_info.waitSemaphoreCount = 1;
+	create_info.pWaitDstStageMask  = wait_stages;
+	create_info.pWaitSemaphores	   = wait_on_semaphore;
+
+	create_info.commandBufferCount = 1;
+	create_info.pCommandBuffers	   = &command_buffer[index];
+
+	VkSemaphore signal_semaphores[]	 = { render_complete[index] };
+	create_info.signalSemaphoreCount = 1;
+	create_info.pSignalSemaphores	 = signal_semaphores;
+
+	device->submit_commands(create_info, in_flight[index]->get());
+}
+
+void vulkan_context::present_frame(u32 index, u32 image_index) {
+	VkSwapchainKHR screen[] = { swapchain->get_swapchain() };
+
+	VkPresentInfoKHR create_info{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+	create_info.pNext			   = nullptr;
+	create_info.waitSemaphoreCount = 1;
+	create_info.pWaitSemaphores	   = &render_complete[index];
+	create_info.swapchainCount	   = 1;
+	create_info.pSwapchains		   = screen;
+	create_info.pImageIndices	   = &image_index;
+
+	device->present(create_info);
+}
+
+void vulkan_context::reserve_command_buffer() {
+	u32 size = swapchain->get_image_count();
+	command_buffer.resize(size);
+
+	for (u32 i = 0; i < size; i++) {
+		command_buffer[i] = device->get_graphics_command_buffer(true);
+	}
+}
+
+VkCommandBuffer vulkan_context::accquire_command_buffer(u32 index) {
+	ASSERT(index < command_buffer.size(), "out of bounds look up..!!");
+	VkCommandBufferBeginInfo create_info{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+	VkResult				 result = vkResetCommandBuffer(command_buffer[index], 0);
+	VK_ASSERT(result, "failed to reset command buffer..!!");
+
+	result = vkBeginCommandBuffer(command_buffer[index], &create_info);
+	VK_ASSERT(result, "failed to begin command buffer..!!");
+
+	return command_buffer[index];
 }

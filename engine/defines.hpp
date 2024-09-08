@@ -1,9 +1,25 @@
 #pragma once
 #include "logger.hpp"
+#include <vector>
 
 #define HAKU_UNUSED(var) (void)(var)
 
+template <typename T>
+void print_vec(std::vector<T>& vec) {
+	TRACE << "{";
+	for (auto val : vec) {
+		TRACE << val << ", ";
+	}
+	TRACE << "}\n";
+}
+
 #if defined(NDEBUG)
+
+#if defined(_WIN32) || defined(_WIN64)
+#define debug_break() exit(EXIT_FAILURE)
+#else
+#define debug_break() exit(EXIT_FAILURE)
+#endif
 
 #define ASSERT(predicate, format)                           \
 	if (!(predicate)) {                                     \
@@ -25,6 +41,8 @@
 
 #define TODO(format) \
 	WARN << "TODO : " << __FUNCTION__ << " : " << format << "\n";
+
+#define HAKU_FATAL_CRASH() exit(EXIT_FAILURE)
 #else
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -57,4 +75,5 @@
 #define TODO(format) \
 	WARN << "TODO : " << __FUNCTION__ << " : " << format << "\n";
 
+#define HAKU_FATAL_CRASH() debug_break()
 #endif
