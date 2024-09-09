@@ -2,6 +2,7 @@
 #include "platform/window.hpp"
 #include <GLFW/glfw3.h>
 #include <vector>
+#include <string.h>
 
 void print_available_extensions() {
 	u32		 available_layer_count = 0;
@@ -109,6 +110,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: {
 		ERROR << callback_data->pMessage << "\n";
 	} break;
+	default:
+	break;
 	}
 
 	return VK_FALSE;
@@ -129,10 +132,10 @@ void setup_debug_instance(VkInstance instance, VkDebugUtilsMessengerEXT* messeng
 #endif
 }
 
-vulkan_context::vulkan_context(u32 height, u32 width)
-	: height(height)
+vulkan_context::vulkan_context(u32 width, u32 height)
+	: frame(0)
 	, width(width)
-	, frame(0) {
+	, height(height) {
 	VkApplicationInfo application_info{ VK_STRUCTURE_TYPE_APPLICATION_INFO };
 	application_info.pNext				= nullptr;
 	application_info.pApplicationName	= "Haku";
@@ -201,7 +204,6 @@ u32 vulkan_context::draw_frame() {
 	// TODO : implement not rendering if the application is minimized..
 	u32				image_index		 = swapchain->accquire_image_index(device->get_logical_device(), image_available[index]);
 	VkCommandBuffer recording_buffer = accquire_command_buffer(index);
-	swapchain->clear_swapchain(image_index, recording_buffer);
 
 	// TODO : accquire command buffer here and start recording..
 
@@ -296,4 +298,19 @@ VkCommandBuffer vulkan_context::accquire_command_buffer(u32 index) {
 	VK_ASSERT(result, "failed to begin command buffer..!!");
 
 	return command_buffer[index];
+}
+
+void vulkan_context::create_renderpass() {
+	std::vector<VkAttachmentDescription> attachment;
+	
+	VkAttachmentDescription swap_attachment{};
+	swap_attachment.flags = 0;
+	swap_attachment.format = swapchain->get_swapchain_format();
+	swap_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	swap_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	swap_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	swap_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	swap_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+	swap_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	swap_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; 
 }

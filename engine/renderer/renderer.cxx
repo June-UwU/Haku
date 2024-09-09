@@ -3,8 +3,8 @@
 
 static vulkan_context* context;
 
-bool initialize_renderer(u32 height, u32 width) {
-	context = new vulkan_context(height, width);
+bool initialize_renderer(u32 width, u32 height) {
+	context = new vulkan_context(width, height);
 
 	return true;
 }

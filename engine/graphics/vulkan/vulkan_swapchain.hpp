@@ -16,7 +16,7 @@ public:
 	u32 get_image_count();
 	u32 accquire_image_index(VkDevice device, VkSemaphore image_available);
 	VkSwapchainKHR get_swapchain();
-
+	VkFormat get_swapchain_format();
 private:
 	void create_new_swapchain(VkSurfaceKHR surface, vulkan_device* device);
 	void accquire_swapchain_images(vulkan_device* device);

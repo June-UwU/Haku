@@ -1,6 +1,7 @@
 #include "vulkan_swapchain.hpp"
 #include "vulkan_device.hpp"
 #include <algorithm>
+#include <limits>
 
 vulkan_swapchain::vulkan_swapchain(const u32 request_width, u32 request_height, VkSurfaceKHR surface, vulkan_device* device)
 	: gpu(device) {
@@ -21,7 +22,8 @@ u32 vulkan_swapchain::get_image_count() {
 
 u32 vulkan_swapchain::accquire_image_index(VkDevice device, VkSemaphore image_available) {
 	u32 image_index = -1;
-	vkAcquireNextImageKHR(device, swapchain, std::numeric_limits<u64>::max(), image_available, VK_NULL_HANDLE, &image_index);
+	const u64 INF = std::numeric_limits<u64>::max();
+	vkAcquireNextImageKHR(device, swapchain, INF, image_available, VK_NULL_HANDLE, &image_index);
 	return image_index;
 }
 
@@ -183,4 +185,8 @@ void vulkan_swapchain::destroy_swapchain() {
 		vkDestroyImageView(gpu->get_logical_device(), view[i], nullptr);
 	}
 	gpu->free(depth_buffer);
+}
+
+VkFormat vulkan_swapchain::get_swapchain_format() {
+	return format.format;
 }
