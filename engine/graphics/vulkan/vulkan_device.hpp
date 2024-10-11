@@ -27,8 +27,8 @@ public:
 	u32					 get_transfer_queue_index();
 
 	// device functions
-	vulkan_images*	create_image(std::string name, VkImageCreateInfo& image_info, VkImageViewCreateInfo& view_info);
-	void			free(vulkan_images* image);
+	VkResult		create_image(VkImage* out_image, VmaAllocation* out_memory, VkImageCreateInfo& image_info);
+	void			free(VkImage image, VmaAllocation memory);
 	void			submit_commands(VkSubmitInfo& submit_info, VkFence signal);
 	void			present(VkPresentInfoKHR& present_info);
 	VkCommandBuffer get_graphics_command_buffer(bool is_primary);

@@ -21,22 +21,21 @@ private:
 	void			present_frame(u32 index, u32 image_index);
 	void			reserve_command_buffer();
 	VkCommandBuffer accquire_command_buffer(u32 index);
-	void 			create_renderpass();
+	void			create_renderpass();
+	bool			make_default_context_objects(std::shared_ptr<vulkan_device>& device);
 
 private:
-	u32						 frame;
-	u32						 width;
-	u32						 height;
-	vulkan_device*			 device;
-	VkSurfaceKHR			 surface;
-	VkInstance				 instance;
-	vulkan_swapchain*		 swapchain;
-	VkDebugUtilsMessengerEXT debug_messenger;
-	
-	vulkan_renderpass*		 renderpass; 		
+	u32								  frame;
+	u32								  width;
+	u32								  height;
+	std::shared_ptr<vulkan_device>	  device;
+	VkSurfaceKHR					  surface;
+	VkInstance						  instance;
+	std::shared_ptr<vulkan_swapchain> swapchain;
+	VkDebugUtilsMessengerEXT		  debug_messenger;
+
 	// recording command buffer
 	std::vector<VkCommandBuffer> command_buffer;
-
 	// sync parameters
 	std::vector<vulkan_fence*> in_flight;
 	std::vector<VkSemaphore>   image_available;

@@ -2,9 +2,25 @@
 #include "vulkan_device.hpp"
 #include <algorithm>
 #include <limits>
+#include <array>
 
-vulkan_swapchain::vulkan_swapchain(const u32 request_width, u32 request_height, VkSurfaceKHR surface, vulkan_device* device)
-	: gpu(device) {
+std::vector<VkAttachmentDescription> make_default_attachments_description(VkFormat color_format, VkFormat depth_format) {
+	VkAttachmentDescription color_attachments;
+	color_attachments.flags			 = 0;
+	color_attachments.format		 = color_format;
+	color_attachments.samples		 = VK_SAMPLE_COUNT_1_BIT;
+	color_attachments.loadOp		 = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	color_attachments.storeOp		 = VK_ATTACHMENT_STORE_OP_STORE;
+	color_attachments.stencilLoadOp	 = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	color_attachments.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	color_attachments.initialLayout	 = VK_IMAGE_LAYOUT_UNDEFINED;
+	color_attachments.finalLayout	 = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	return { color_attachments };
+}
+
+vulkan_swapchain::vulkan_swapchain(const u32 request_width, u32 request_height, VkSurfaceKHR surface, std::shared_ptr<vulkan_device> device)
+	: device(device) {
 	ASSERT(VK_NULL_HANDLE != surface, "surface handle cannot be null for swapchain creation");
 	height = request_height;
 	width  = request_width;
@@ -21,8 +37,8 @@ u32 vulkan_swapchain::get_image_count() {
 }
 
 u32 vulkan_swapchain::accquire_image_index(VkDevice device, VkSemaphore image_available) {
-	u32 image_index = -1;
-	const u64 INF = std::numeric_limits<u64>::max();
+	u32			  image_index = -1;
+	constexpr u64 INF		  = std::numeric_limits<u64>::max();
 	vkAcquireNextImageKHR(device, swapchain, INF, image_available, VK_NULL_HANDLE, &image_index);
 	return image_index;
 }
@@ -31,7 +47,7 @@ VkSwapchainKHR vulkan_swapchain::get_swapchain() {
 	return swapchain;
 }
 
-void vulkan_swapchain::create_new_swapchain(VkSurfaceKHR surface, vulkan_device* device) {
+void vulkan_swapchain::create_new_swapchain(VkSurfaceKHR surface, std::shared_ptr<vulkan_device> device) {
 	surface_capabilities capabilites = device->get_surface_device_capabilities(surface);
 
 	bool format_found = false;
@@ -56,10 +72,7 @@ void vulkan_swapchain::create_new_swapchain(VkSurfaceKHR surface, vulkan_device*
 		}
 	}
 
-	VkExtent2D swap_extend{
-		width,
-		height
-	};
+	VkExtent2D swap_extend{ width, height };
 
 	VkExtent2D min	   = capabilites.surface_capabilities.maxImageExtent;
 	VkExtent2D max	   = capabilites.surface_capabilities.minImageExtent;
@@ -79,10 +92,7 @@ void vulkan_swapchain::create_new_swapchain(VkSurfaceKHR surface, vulkan_device*
 
 	if (true != device->is_shared_present_queue()) {
 		// NOTE : this could go south if the present queue is on a different family index... 0w0
-		std::vector<u32> queue_index{
-			device->get_graphics_queue_index(),
-			device->get_present_queue_index()
-		};
+		std::vector<u32> queue_index{ device->get_graphics_queue_index(), device->get_present_queue_index() };
 
 		TRACE << "shared queue index : ";
 		print_vec(queue_index);
@@ -107,9 +117,11 @@ void vulkan_swapchain::create_new_swapchain(VkSurfaceKHR surface, vulkan_device*
 
 	accquire_swapchain_images(device);
 	create_depth_buffer(device);
+	create_renderpass();
+	create_framebuffer();
 }
 
-void vulkan_swapchain::accquire_swapchain_images(vulkan_device* device) {
+void vulkan_swapchain::accquire_swapchain_images(std::shared_ptr<vulkan_device> device) {
 	image.resize(0);
 
 	u32		 image_count = 0;
@@ -137,7 +149,7 @@ void vulkan_swapchain::accquire_swapchain_images(vulkan_device* device) {
 	}
 }
 
-void vulkan_swapchain::create_depth_buffer(vulkan_device* device) {
+void vulkan_swapchain::create_depth_buffer(std::shared_ptr<vulkan_device> device) {
 	VkImageCreateInfo depth_info{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
 	depth_info.pNext				 = nullptr;
 	depth_info.flags				 = 0;
@@ -175,18 +187,85 @@ void vulkan_swapchain::create_depth_buffer(vulkan_device* device) {
 	view_info.components.a	   = VK_COMPONENT_SWIZZLE_A;
 	view_info.subresourceRange = depth_sub_resource;
 
-	depth_buffer = device->create_image("engine depth buffer", depth_info, view_info);
+	depth_buffer = std::make_unique<vulkan_images>("__engine_depth_buffer__", device, depth_info, view_info);
 }
 
 void vulkan_swapchain::destroy_swapchain() {
-	gpu->wait_till_idle();
-	vkDestroySwapchainKHR(gpu->get_logical_device(), swapchain, nullptr);
+	device->wait_till_idle();
+	vkDestroySwapchainKHR(device->get_logical_device(), swapchain, nullptr);
 	for (u32 i = 0; i < view.size(); i++) {
-		vkDestroyImageView(gpu->get_logical_device(), view[i], nullptr);
+		vkDestroyImageView(device->get_logical_device(), view[i], nullptr);
 	}
-	gpu->free(depth_buffer);
+
+	for (auto frame : frame_buffer) {
+		vkDestroyFramebuffer(device->get_logical_device(), frame, nullptr);
+	}
+}
+
+void vulkan_swapchain::create_renderpass() {
+	VkAttachmentReference color_attachment_reference;
+	color_attachment_reference.attachment = 0;
+	color_attachment_reference.layout	  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	std::vector<VkAttachmentReference> color_attachment{ color_attachment_reference };
+	std::vector<VkAttachmentReference> null_list;
+	std::vector<u32>				   null_preserve_list;
+	VkSubpassDescription			   default_subpass =
+		make_subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, null_list, color_attachment, null_list, nullptr, null_preserve_list);
+
+	std::vector<VkAttachmentDescription> default_attachments = make_default_attachments_description(get_swapchain_format(), get_depth_format());
+	std::vector<VkSubpassDescription>	 subpasses{ default_subpass };
+	std::vector<VkSubpassDependency>	 dependency{};
+
+	VkRenderPassCreateInfo create_info = make_renderpass_info(default_attachments, subpasses, dependency);
+	renderpass3d					   = std::make_shared<vulkan_renderpass>(device, create_info);
+}
+
+void vulkan_swapchain::create_framebuffer() {
+	u32 size = view.size();
+	frame_buffer.resize(size);
+
+	for (u32 i = 0; i < size; i++) {
+		std::array<VkImageView, 1> attachments{ view[i] };
+
+		VkFramebufferCreateInfo create_info{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+		create_info.renderPass		= renderpass3d->get();
+		create_info.attachmentCount = attachments.size();
+		create_info.pAttachments	= attachments.data();
+		create_info.width			= width;
+		create_info.height			= height;
+		create_info.layers			= 1;
+
+		VkResult result = vkCreateFramebuffer(device->get_logical_device(), &create_info, nullptr, &frame_buffer[i]);
+		VK_ASSERT(result, "failed to create framebuffer..!!");
+	}
 }
 
 VkFormat vulkan_swapchain::get_swapchain_format() {
 	return format.format;
+}
+
+VkFormat vulkan_swapchain::get_depth_format() {
+	return VK_FORMAT_D24_UNORM_S8_UINT;
+}
+
+std::shared_ptr<vulkan_renderpass> vulkan_swapchain::get_3d_renderpass() {
+	return renderpass3d;
+}
+
+void vulkan_swapchain::start_renderpass(VkCommandBuffer cmd_buffer, u32 image_index) {
+	VkRenderPassBeginInfo begin_info{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+	begin_info.renderPass		 = renderpass3d->get();
+	begin_info.framebuffer		 = frame_buffer[image_index];
+	begin_info.renderArea.offset = { 0, 0 };
+	begin_info.renderArea.extent = { width, height };
+
+	VkClearValue clear_value   = { { { 0.178f, 0.164f, 0.212, 0.400f } } };
+	begin_info.clearValueCount = 1;
+	begin_info.pClearValues	   = &clear_value;
+	vkCmdBeginRenderPass(cmd_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void vulkan_swapchain::end_renderpass(VkCommandBuffer cmd_buffer) {
+	vkCmdEndRenderPass(cmd_buffer);
 }

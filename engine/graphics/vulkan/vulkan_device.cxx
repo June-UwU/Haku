@@ -202,12 +202,12 @@ u32 vulkan_device::get_transfer_queue_index() {
 	return transfer_queue_index;
 }
 
-vulkan_images* vulkan_device::create_image(std::string name, VkImageCreateInfo& image_info, VkImageViewCreateInfo& view_info) {
-	return gpu_allocator->create_image(name, logical_device, image_info, view_info);
+VkResult vulkan_device::create_image(VkImage* out_image, VmaAllocation* out_memory, VkImageCreateInfo& image_info) {
+	return gpu_allocator->create_image(out_image,out_memory,logical_device,image_info);
 }
 
-void vulkan_device::free(vulkan_images* image) {
-	gpu_allocator->free(image, logical_device);
+void vulkan_device::free(VkImage image, VmaAllocation memory) {
+	gpu_allocator->free(image,memory);
 }
 
 void vulkan_device::submit_commands(VkSubmitInfo& submit_info, VkFence signal) {

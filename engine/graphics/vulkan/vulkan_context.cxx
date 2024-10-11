@@ -1,8 +1,11 @@
 #include "vulkan_context.hpp"
+#include "vulkan_pipeline.hpp"
 #include "platform/window.hpp"
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <string.h>
+
+static vulkan_pipeline* test = nullptr;
 
 void print_available_extensions() {
 	u32		 available_layer_count = 0;
@@ -60,7 +63,11 @@ std::vector<const char*> request_extensions() {
 	return extensions;
 }
 
-VkResult create_debug_util_messenger(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+VkResult create_debug_util_messenger(
+	VkInstance								  instance,
+	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+	const VkAllocationCallbacks*			  pAllocator,
+	VkDebugUtilsMessengerEXT*				  pDebugMessenger) {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr) {
 		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -111,7 +118,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 		ERROR << callback_data->pMessage << "\n";
 	} break;
 	default:
-	break;
+		break;
 	}
 
 	return VK_FALSE;
@@ -121,8 +128,10 @@ void setup_debug_instance(VkInstance instance, VkDebugUtilsMessengerEXT* messeng
 #if defined(_DEBUG)
 	VkDebugUtilsMessengerCreateInfoEXT create_info{};
 	create_info.sType			= VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	create_info.messageType		= VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+								  VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+							  VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	create_info.pfnUserCallback = debug_callback;
 	create_info.pUserData		= nullptr; // Optional
 
@@ -144,9 +153,7 @@ vulkan_context::vulkan_context(u32 width, u32 height)
 	application_info.engineVersion		= VK_MAKE_VERSION(1, 0, 0);
 	application_info.apiVersion			= VK_MAKE_VERSION(1, 2, 0);
 
-	std::vector<const char*> requested_layer{
-		"VK_LAYER_KHRONOS_validation"
-	};
+	std::vector<const char*> requested_layer{ "VK_LAYER_KHRONOS_validation" };
 
 	auto enable_layer = request_layers(requested_layer);
 	for (auto val : enable_layer) {
@@ -173,18 +180,19 @@ vulkan_context::vulkan_context(u32 width, u32 height)
 	VkResult surface_created = glfwCreateWindowSurface(instance, get_window(), nullptr, &surface);
 	VK_ASSERT(surface_created, "failed to create window surface..!!");
 
-	device	  = new vulkan_device(instance, surface);
-	swapchain = new vulkan_swapchain(width, height, surface, device);
+	device	  = std::make_shared<vulkan_device>(instance, surface);
+	swapchain = std::make_shared<vulkan_swapchain>(width, height, surface, device);
 	create_sync_parameter();
 	reserve_command_buffer();
+	make_default_context_objects(device);
 }
 
 vulkan_context::~vulkan_context() {
 	device->wait_till_idle();
 	destroy_sync_parameter();
-	delete swapchain;
-	delete device;
-	device = nullptr;
+	swapchain = nullptr;
+	device	  = nullptr;
+	delete test;
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	destroy_debug_util_messenger(instance, debug_messenger, nullptr);
 	vkDestroyInstance(instance, nullptr);
@@ -204,10 +212,29 @@ u32 vulkan_context::draw_frame() {
 	// TODO : implement not rendering if the application is minimized..
 	u32				image_index		 = swapchain->accquire_image_index(device->get_logical_device(), image_available[index]);
 	VkCommandBuffer recording_buffer = accquire_command_buffer(index);
+	swapchain->start_renderpass(recording_buffer,image_index);
 
 	// TODO : accquire command buffer here and start recording..
+	test->bind(recording_buffer);
+
+	VkViewport viewport{};
+	viewport.x		  = 0.0f;
+	viewport.y		  = 0.0f;
+	viewport.width	  = static_cast<float>(width);
+	viewport.height	  = static_cast<float>(height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(recording_buffer, 0, 1, &viewport);
+
+	VkRect2D scissor{};
+	scissor.offset = { 0, 0 };
+	scissor.extent = { width, height };
+	vkCmdSetScissor(recording_buffer, 0, 1, &scissor);
+
+	vkCmdDraw(recording_buffer, 3, 1, 0, 0);
 
 	// submitting
+	swapchain->end_renderpass(recording_buffer);
 	VkResult result = vkEndCommandBuffer(recording_buffer);
 	VK_ASSERT(result, "failed to end command buffer..!!");
 	submit_command_buffer(index);
@@ -302,15 +329,27 @@ VkCommandBuffer vulkan_context::accquire_command_buffer(u32 index) {
 
 void vulkan_context::create_renderpass() {
 	std::vector<VkAttachmentDescription> attachment;
-	
+
 	VkAttachmentDescription swap_attachment{};
-	swap_attachment.flags = 0;
-	swap_attachment.format = swapchain->get_swapchain_format();
-	swap_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	swap_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	swap_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	swap_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	swap_attachment.flags		   = 0;
+	swap_attachment.format		   = swapchain->get_swapchain_format();
+	swap_attachment.samples		   = VK_SAMPLE_COUNT_1_BIT;
+	swap_attachment.loadOp		   = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	swap_attachment.storeOp		   = VK_ATTACHMENT_STORE_OP_STORE;
+	swap_attachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	swap_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-	swap_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	swap_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; 
+	swap_attachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+	swap_attachment.finalLayout	   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	attachment.push_back(swap_attachment);
+}
+
+bool vulkan_context::make_default_context_objects(std::shared_ptr<vulkan_device>& device) {
+	auto vertex_shader = std::make_shared<vulkan_shader>(device, __HAKU_SHADER_PATH__ "default_frag_shader", VK_SHADER_STAGE_FRAGMENT_BIT);
+	auto pixel_shader  = std::make_shared<vulkan_shader>(device, __HAKU_SHADER_PATH__ "default_vert_shader", VK_SHADER_STAGE_VERTEX_BIT);
+
+	auto renderpass = swapchain->get_3d_renderpass();
+	test			= new vulkan_pipeline(device, renderpass, width, height, { vertex_shader, pixel_shader });
+
+	return true;
 }

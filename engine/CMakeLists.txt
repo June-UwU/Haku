@@ -9,7 +9,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glfw)
 find_package(Vulkan REQUIRED)
-
+find_program(GLSLC_EXECUTABLE NAMES glslc)
 
 file(GLOB_RECURSE global_inc ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 file(GLOB_RECURSE global_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cxx)
@@ -52,6 +52,10 @@ add_library(${PROJECT_NAME}
 	${renderer_src}
 	)
 
+string(CONCAT shader_path "${CMAKE_CURRENT_BINARY_DIR}/__haku_built_in__")
+add_compile_definitions(__HAKU_SHADER_ENTRY__="main")
+add_compile_definitions(__HAKU_SHADER_PATH__="${shader_path}")
+
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan glm::glm GPUOpen::VulkanMemoryAllocator)
 target_include_directories(${PROJECT_NAME} PRIVATE 
@@ -61,3 +65,20 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/../Libs/VulkanMemoryAllocator/include/
 	)
 
+
+message(STATUS "shader path" : ${shader_path})
+file(GLOB_RECURSE shaders ${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*)
+foreach(file ${shaders})
+	get_filename_component(name ${file} NAME_WE)
+	string(CONCAT out_path ${shader_path} ${name})
+	set(command "${GLSLC_EXECUTABLE} ${file} -o ${out_path}")
+	execute_process(
+		COMMAND "${command}"
+		OUTPUT_VARIABLE output
+    	ERROR_VARIABLE error
+    	RESULT_VARIABLE result
+	)
+
+	message(STATUS ${command})
+	message(STATUS ${result})
+endforeach()

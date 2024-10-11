@@ -26,30 +26,18 @@ gpu_memory_allocator::~gpu_memory_allocator() {
 	vmaDestroyAllocator(allocator);
 }
 
-vulkan_images* gpu_memory_allocator::create_image(std::string name, VkDevice device, VkImageCreateInfo& image_info, VkImageViewCreateInfo& view_info) {
+VkResult gpu_memory_allocator::create_image(VkImage* out_image, VmaAllocation* out_memory, VkDevice device, VkImageCreateInfo& image_info) {
 	VmaAllocationCreateInfo create_info = {};
 	create_info.usage					= VMA_MEMORY_USAGE_AUTO;
 	create_info.flags					= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 	create_info.priority				= 1.0f;
 
-	VkImage		  image;
-	VmaAllocation memory;
-
-	TRACE << "create image : " << name << "\n";
-	VkResult result = vmaCreateImage(allocator, &image_info, &create_info, &image, &memory, nullptr);
+	VkResult result = vmaCreateImage(allocator, &image_info, &create_info, out_image, out_memory, nullptr);
 	VK_ASSERT(result, "failed to create image");
 
-	view_info.image = image;
-	auto ptr		= new vulkan_images(name, device, memory, image, view_info);
-
-	return ptr;
+	return result;
 }
 
-void gpu_memory_allocator::free(vulkan_images* image, VkDevice device) {
-	vmaDestroyImage(allocator, image->image, image->memory);
-	if (VK_NULL_HANDLE == image->view) {
-		return;
-	}
-
-	vkDestroyImageView(device, image->view, nullptr);
+void gpu_memory_allocator::free(VkImage out_image, VmaAllocation out_memory) {
+	vmaDestroyImage(allocator, out_image, out_memory);
 }

@@ -18,8 +18,8 @@ public:
 	gpu_memory_allocator(gpu_memory_allocator&& alloc)			  = delete;
 	gpu_memory_allocator& operator=(gpu_memory_allocator&& alloc) = delete;
 
-	vulkan_images* create_image(std::string name, VkDevice device, VkImageCreateInfo& image_info, VkImageViewCreateInfo& view_info);
-	void		   free(vulkan_images* image, VkDevice device);
+	VkResult create_image(VkImage* out_image, VmaAllocation* out_memory, VkDevice device, VkImageCreateInfo& image_info);
+	void		   free(VkImage out_image, VmaAllocation out_memory);
 
 private:
 	VmaAllocator allocator;

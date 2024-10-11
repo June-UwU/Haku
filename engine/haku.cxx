@@ -6,6 +6,8 @@
 
 bool initialize_engine() {
 	TRACE << "hello.. ^_^\n";
+	TRACE << "Default shaders on  : " << __HAKU_SHADER_PATH__ << "\n";
+	TRACE << "Default shader entry : " << __HAKU_SHADER_ENTRY__ << "\n";
 	bool window_initialised = initialize_windows(720, 1080);
 	ASSERT(window_initialised, "failed to initialize windows.");
 

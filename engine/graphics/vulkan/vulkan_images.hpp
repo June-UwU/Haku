@@ -7,11 +7,10 @@
 // this is intend to be a data type that is created and destroyed by device class.
 class vulkan_device;
 class vulkan_images {
-	friend class gpu_memory_allocator;
-
 public:
-	vulkan_images(std::string name, VkDevice device, VmaAllocation memory, VkImage image);
-	vulkan_images(std::string name, VkDevice device, VmaAllocation memory, VkImage image, VkImageViewCreateInfo& view_info);
+	vulkan_images(std::string name, std::shared_ptr<vulkan_device> device, VkImageCreateInfo& image_info);
+	vulkan_images(std::string name, std::shared_ptr<vulkan_device> device, VkImageCreateInfo& image_info, VkImageViewCreateInfo& view_info);
+	~vulkan_images();
 
 	vulkan_images(const vulkan_images&)			   = delete;
 	vulkan_images& operator=(const vulkan_images&) = delete;
@@ -23,8 +22,12 @@ public:
 	VkImageView get_view();
 
 private:
-	std::string	  name;
-	VkImage		  image;
-	VkImageView	  view;
-	VmaAllocation memory;
+	inline void create_allocation(std::shared_ptr<vulkan_device> device, VkImageCreateInfo& image_info);
+
+private:
+	std::string					   name;
+	VkImage						   image;
+	VkImageView					   view;
+	VmaAllocation				   memory;
+	std::shared_ptr<vulkan_device> device;
 };
