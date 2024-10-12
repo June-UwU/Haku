@@ -20,7 +20,8 @@ std::vector<VkAttachmentDescription> make_default_attachments_description(VkForm
 }
 
 vulkan_swapchain::vulkan_swapchain(const u32 request_width, u32 request_height, VkSurfaceKHR surface, std::shared_ptr<vulkan_device> device)
-	: device(device) {
+	: device(device)
+	, surface(surface) {
 	ASSERT(VK_NULL_HANDLE != surface, "surface handle cannot be null for swapchain creation");
 	height = request_height;
 	width  = request_width;
@@ -39,7 +40,23 @@ u32 vulkan_swapchain::get_image_count() {
 u32 vulkan_swapchain::accquire_image_index(VkDevice device, VkSemaphore image_available) {
 	u32			  image_index = -1;
 	constexpr u64 INF		  = std::numeric_limits<u64>::max();
-	vkAcquireNextImageKHR(device, swapchain, INF, image_available, VK_NULL_HANDLE, &image_index);
+	VkResult	  result	  = vkAcquireNextImageKHR(device, swapchain, INF, image_available, VK_NULL_HANDLE, &image_index);
+
+	// TODO : handle the resize event properly
+	switch (result) {
+	case VK_ERROR_OUT_OF_DATE_KHR:
+	case VK_SUBOPTIMAL_KHR: {
+		vulkan_swapchain::device->wait_till_idle();
+		destroy_swapchain();
+		create_new_swapchain(vulkan_swapchain::surface, vulkan_swapchain::device);
+	} break;
+	case VK_SUCCESS: {
+	} break;
+	default:
+		FATAL << "unknown swapchain error..!!\n";
+		HAKU_FATAL_CRASH();
+	}
+
 	return image_index;
 }
 

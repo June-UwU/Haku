@@ -32,6 +32,7 @@ private:
 	void create_framebuffer();
 
 private:
+	VkSurfaceKHR					   surface;
 	std::shared_ptr<vulkan_device>	   device;
 	u32								   height;
 	u32								   width;
