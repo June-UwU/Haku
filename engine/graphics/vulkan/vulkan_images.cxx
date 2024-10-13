@@ -4,10 +4,10 @@
 
 vulkan_images::vulkan_images(std::string name, std::shared_ptr<vulkan_device> device, VkImageCreateInfo& image_info)
 	: name(name)
-	, device(device)
-	, memory(memory)
 	, image(VK_NULL_HANDLE)
-	, view(VK_NULL_HANDLE) {
+	, view(VK_NULL_HANDLE) 
+	, memory(memory)
+	, device(device) {
 	create_allocation(device, image_info);
 	ASSERT(VK_NULL_HANDLE == image, "image can't be null handle");
 	view = VK_NULL_HANDLE;
@@ -15,10 +15,10 @@ vulkan_images::vulkan_images(std::string name, std::shared_ptr<vulkan_device> de
 
 vulkan_images::vulkan_images(std::string name, std::shared_ptr<vulkan_device> device, VkImageCreateInfo& image_info, VkImageViewCreateInfo& view_info)
 	: name(name)
-	, memory(memory)
-	, device(device)
 	, image(VK_NULL_HANDLE)
-	, view(VK_NULL_HANDLE) {
+	, view(VK_NULL_HANDLE) 
+	, memory(memory)
+	, device(device) {
 	create_allocation(device, image_info);
 	ASSERT(VK_NULL_HANDLE != image, "image can't be null handle");
 	view_info.image = image;

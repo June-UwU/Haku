@@ -3,7 +3,6 @@
 #include <vector>
 
 #define HAKU_UNUSED(var) (void)(var)
-#define HAKU_OFFSET(structure, member) (u32)(&(((structure*)0x0)->member))
 
 template <typename T>
 void print_vec(std::vector<T>& vec) {

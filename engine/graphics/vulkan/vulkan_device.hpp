@@ -27,8 +27,23 @@ public:
 	u32					 get_transfer_queue_index();
 
 	// device functions
-	VkResult		create_image(VkImage* out_image, VmaAllocation* out_memory, VkImageCreateInfo& image_info);
+	u32		 get_allocation_size(VmaAllocation memory);
+	VkResult create_buffer(
+		VkBuffer*				 out_buffer,
+		VmaAllocation*			 out_memory,
+		VkBufferCreateInfo&		 image_info,
+		VmaAllocationCreateFlags flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT);
+	VkResult create_image(
+		VkImage*				 out_image,
+		VmaAllocation*			 out_memory,
+		VkImageCreateInfo&		 image_info,
+		VmaAllocationCreateFlags flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT);
+
 	void			free(VkImage image, VmaAllocation memory);
+	void			free(VkBuffer buffer, VmaAllocation memory);
+	void			copy_to_device(void* data, VmaAllocation dest, VkDeviceSize offset, VkDeviceSize size);
+	void			copy_from_device(VmaAllocation src, VkDeviceSize offset, void* dest, VkDeviceSize size);
+	void			copy_btw_device_memory(VkBuffer src, VkBuffer dest, VkDeviceSize size, VkDeviceSize src_offset = 0, VkDeviceSize dest_offset = 0);
 	void			submit_commands(VkSubmitInfo& submit_info, VkFence signal);
 	void			present(VkPresentInfoKHR& present_info);
 	VkCommandBuffer get_graphics_command_buffer(bool is_primary);

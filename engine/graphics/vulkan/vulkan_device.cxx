@@ -26,9 +26,7 @@ u32 rate_gpu(VkPhysicalDevice& device) {
 	constexpr const u32 GPU_NOT_COMPLAINT = 0;
 	u32					gpu_score		  = GPU_NOT_COMPLAINT;
 
-	const std::vector<const char*> device_extension{
-		VK_KHR_SWAPCHAIN_EXTENSION_NAME
-	};
+	const std::vector<const char*> device_extension{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 	VkPhysicalDeviceProperties device_properties;
 	VkPhysicalDeviceFeatures   device_features;
@@ -56,9 +54,8 @@ u32 rate_gpu(VkPhysicalDevice& device) {
 }
 
 vulkan_device::vulkan_device(VkInstance instance, VkSurfaceKHR surface) {
-	u32		 device_count = 0;
-	VkResult device_enumerated =
-		vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+	u32		 device_count	   = 0;
+	VkResult device_enumerated = vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
 	VK_ASSERT(device_enumerated, "failed to enumerate devices");
 	TRACE << device_count << " Potential Devices Found.\n";
 	ASSERT(0 != device_count, "no complaint physical device exists...!!");
@@ -106,9 +103,7 @@ vulkan_device::vulkan_device(VkInstance instance, VkSurfaceKHR surface) {
 		index++;
 	}
 
-	const std::vector<const char*> device_extensions{
-		VK_KHR_SWAPCHAIN_EXTENSION_NAME
-	};
+	const std::vector<const char*> device_extensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 	VkDeviceCreateInfo device_create_info{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
 	device_create_info.pNext				   = nullptr;
@@ -171,11 +166,7 @@ surface_capabilities vulkan_device::get_surface_device_capabilities(VkSurfaceKHR
 }
 
 bool vulkan_device::is_shared_present_queue() {
-	std::vector<u32> family_index{
-		graphics_queue_index,
-		transfer_queue_index,
-		compute_queue_index
-	};
+	std::vector<u32> family_index{ graphics_queue_index, transfer_queue_index, compute_queue_index };
 
 	for (const auto index : family_index) {
 		if (index == present_queue_index) {
@@ -202,12 +193,67 @@ u32 vulkan_device::get_transfer_queue_index() {
 	return transfer_queue_index;
 }
 
-VkResult vulkan_device::create_image(VkImage* out_image, VmaAllocation* out_memory, VkImageCreateInfo& image_info) {
-	return gpu_allocator->create_image(out_image,out_memory,logical_device,image_info);
+u32 vulkan_device::get_allocation_size(VmaAllocation memory) {
+	return gpu_allocator->get_size(memory);
+}
+
+VkResult vulkan_device::create_buffer(
+	VkBuffer*				 out_buffer,
+	VmaAllocation*			 out_memory,
+	VkBufferCreateInfo&		 image_info,
+	VmaAllocationCreateFlags flags) {
+	return gpu_allocator->create_buffer(out_buffer, out_memory, logical_device, image_info, flags);
+}
+
+VkResult vulkan_device::create_image(VkImage* out_image, VmaAllocation* out_memory, VkImageCreateInfo& image_info, VmaAllocationCreateFlags flags) {
+	return gpu_allocator->create_image(out_image, out_memory, logical_device, image_info, flags);
 }
 
 void vulkan_device::free(VkImage image, VmaAllocation memory) {
-	gpu_allocator->free(image,memory);
+	gpu_allocator->free(image, memory);
+}
+
+void vulkan_device::free(VkBuffer buffer, VmaAllocation memory) {
+	gpu_allocator->free(buffer, memory);
+}
+
+void vulkan_device::copy_to_device(void* data, VmaAllocation dest, VkDeviceSize offset, VkDeviceSize size) {
+	gpu_allocator->copy_to_memory(data, dest, offset, size);
+}
+
+void vulkan_device::copy_from_device(VmaAllocation src, VkDeviceSize offset, void* dest, VkDeviceSize size) {
+	gpu_allocator->copy_from_memory(src, offset, dest, size);
+}
+
+void vulkan_device::copy_btw_device_memory(VkBuffer src, VkBuffer dest, VkDeviceSize size, VkDeviceSize src_offset, VkDeviceSize dest_offset) {
+	TRACE << "copying from device to device memory \n -- size : " << size << "\n";
+	VkCommandBuffer cmd = transfer_allocator->allocate_command_buffer(true);
+	
+	VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+	begin_info.flags					= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	VkResult result = vkBeginCommandBuffer(cmd, &begin_info);
+	VK_ASSERT(result, "failed to begin command buffer..!!");
+
+	VkBufferCopy	region;
+	region.srcOffset = src_offset;
+	region.dstOffset = dest_offset;
+	region.size		 = size;
+
+	vkCmdCopyBuffer(cmd, src, dest, 1, &region);
+
+	result = vkEndCommandBuffer(cmd);
+	VK_ASSERT(result, "failed to end command buffer..!!");
+
+	VkSubmitInfo submit_info	  = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers	   = &cmd;
+
+	result = vkQueueSubmit(transfer_queue, 1, &submit_info, VK_NULL_HANDLE);
+	VK_ASSERT(result, "failed to submit to transfer queue..!!");
+	result = vkQueueWaitIdle(transfer_queue);
+	VK_ASSERT(result, "failed to wait for transfer queue..!!");
+
+	transfer_allocator->free_command_buffer(cmd);
 }
 
 void vulkan_device::submit_commands(VkSubmitInfo& submit_info, VkFence signal) {

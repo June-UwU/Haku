@@ -5,7 +5,16 @@
 #include <vector>
 #include <string.h>
 
-static vulkan_pipeline* test = nullptr;
+#include "vulkan_primitives.hpp"
+static vulkan_pipeline*				  test = nullptr;
+static std::shared_ptr<vulkan_buffer> vertex_buffer;
+static std::shared_ptr<vulkan_buffer> index_buffer;
+
+const std::vector<vertex> vertices = { { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f } },
+									   { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } },
+									   { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } },
+									   { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f } } };
+const std::vector<u16>	  indices  = { 0, 1, 2, 2, 3, 0 };
 
 void print_available_extensions() {
 	u32		 available_layer_count = 0;
@@ -192,6 +201,8 @@ vulkan_context::~vulkan_context() {
 	destroy_sync_parameter();
 	swapchain = nullptr;
 	device	  = nullptr;
+	vertex_buffer = nullptr;
+	index_buffer  = nullptr;
 	delete test;
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	destroy_debug_util_messenger(instance, debug_messenger, nullptr);
@@ -212,7 +223,7 @@ u32 vulkan_context::draw_frame() {
 	// TODO : implement not rendering if the application is minimized..
 	u32				image_index		 = swapchain->accquire_image_index(device->get_logical_device(), image_available[index]);
 	VkCommandBuffer recording_buffer = accquire_command_buffer(index);
-	swapchain->start_renderpass(recording_buffer,image_index);
+	swapchain->start_renderpass(recording_buffer, image_index);
 
 	// TODO : accquire command buffer here and start recording..
 	test->bind(recording_buffer);
@@ -231,7 +242,10 @@ u32 vulkan_context::draw_frame() {
 	scissor.extent = { width, height };
 	vkCmdSetScissor(recording_buffer, 0, 1, &scissor);
 
-	vkCmdDraw(recording_buffer, 3, 1, 0, 0);
+	vertex_buffer->bind(recording_buffer, 0, 0);
+	index_buffer->bind_as_index(recording_buffer);
+
+	vkCmdDrawIndexed(recording_buffer, 6, 1, 0, 0, 0);
 
 	// submitting
 	swapchain->end_renderpass(recording_buffer);
@@ -348,8 +362,21 @@ bool vulkan_context::make_default_context_objects(std::shared_ptr<vulkan_device>
 	auto vertex_shader = std::make_shared<vulkan_shader>(device, __HAKU_SHADER_PATH__ "default_frag_shader", VK_SHADER_STAGE_FRAGMENT_BIT);
 	auto pixel_shader  = std::make_shared<vulkan_shader>(device, __HAKU_SHADER_PATH__ "default_vert_shader", VK_SHADER_STAGE_VERTEX_BIT);
 
+	// testing shit..
 	auto renderpass = swapchain->get_3d_renderpass();
 	test			= new vulkan_pipeline(device, renderpass, width, height, { vertex_shader, pixel_shader });
+	vertex_buffer	= std::make_shared<vulkan_buffer>(
+		  "name",
+		  device,
+		  vertices.size() * sizeof(vertex),
+		  (byte*)vertices.data(),
+		  (VkBufferUsageFlags)(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+	index_buffer = std::make_shared<vulkan_buffer>(
+		"test_buffer index",
+		device,
+		indices.size() * sizeof(u16),
+		(byte*)indices.data(),
+		(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT));
 
 	return true;
 }
