@@ -380,3 +380,16 @@ bool vulkan_context::make_default_context_objects(std::shared_ptr<vulkan_device>
 
 	return true;
 }
+
+void vulkan_context::update_projection(glm::mat4& proj) {
+	local_constant.proj = proj;
+}
+
+void vulkan_context::update_view(glm::mat4& view) {
+	local_constant.view = view;
+}
+
+void vulkan_context::update_model(glm::mat4& model) {
+	local_constant.model = model;
+}
+

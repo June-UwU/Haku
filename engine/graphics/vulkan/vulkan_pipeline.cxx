@@ -126,12 +126,17 @@ vulkan_pipeline::vulkan_pipeline(
 	color_blending.blendConstants[2] = 0.0f; // Optional
 	color_blending.blendConstants[3] = 0.0f; // Optional
 
+	std::array<VkPushConstantRange , 1> push_constants;
+	push_constants[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	push_constants[0].offset = 0;
+	push_constants[0].size = sizeof(mvp);
+
 	VkPipelineLayoutCreateInfo pipeline_layout_info{};
 	pipeline_layout_info.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipeline_layout_info.setLayoutCount			= 0;	   // Optional
 	pipeline_layout_info.pSetLayouts			= nullptr; // Optional
-	pipeline_layout_info.pushConstantRangeCount = 0;	   // Optional
-	pipeline_layout_info.pPushConstantRanges	= nullptr; // Optional
+	pipeline_layout_info.pushConstantRangeCount = push_constants.size();
+	pipeline_layout_info.pPushConstantRanges	= push_constants.data();
 
 	VkResult result = vkCreatePipelineLayout(device->get_logical_device(), &pipeline_layout_info, nullptr, &layout);
 	VK_ASSERT(result, "failed to create pipeline layout!");
