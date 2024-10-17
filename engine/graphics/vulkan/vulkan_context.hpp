@@ -5,6 +5,7 @@
 #include "vulkan_swapchain.hpp"
 #include "vulkan_fence.hpp"
 #include "vulkan_renderpass.hpp"
+#include "renderer/vertex_data.hpp"
 
 class vulkan_context {
 public:
@@ -13,6 +14,9 @@ public:
 
 	VkInstance get_instance();
 	u32		   draw_frame();
+	void	   update_projection(glm::mat4& proj);
+	void	   update_view(glm::mat4& view);
+	void	   update_model(glm::mat4& model);
 
 private:
 	void			create_sync_parameter();
@@ -23,9 +27,7 @@ private:
 	VkCommandBuffer accquire_command_buffer(u32 index);
 	void			create_renderpass();
 	bool			make_default_context_objects(std::shared_ptr<vulkan_device>& device);
-	void 			update_projection(glm::mat4& proj);
-	void 			update_view(glm::mat4& view);
-	void 			update_model(glm::mat4& model);
+
 private:
 	u32								  frame;
 	u32								  width;
@@ -36,7 +38,7 @@ private:
 	std::shared_ptr<vulkan_swapchain> swapchain;
 	VkDebugUtilsMessengerEXT		  debug_messenger;
 
-	mvp 						 local_constant;
+	mvp local_constant;
 	// recording command buffer
 	std::vector<VkCommandBuffer> command_buffer;
 	// sync parameters

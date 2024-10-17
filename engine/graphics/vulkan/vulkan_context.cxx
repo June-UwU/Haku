@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <string.h>
+#include "glm/gtc/matrix_transform.hpp"
 
 #include "vulkan_primitives.hpp"
 static vulkan_pipeline*				  test = nullptr;
@@ -199,8 +200,8 @@ vulkan_context::vulkan_context(u32 width, u32 height)
 vulkan_context::~vulkan_context() {
 	device->wait_till_idle();
 	destroy_sync_parameter();
-	swapchain = nullptr;
-	device	  = nullptr;
+	swapchain	  = nullptr;
+	device		  = nullptr;
 	vertex_buffer = nullptr;
 	index_buffer  = nullptr;
 	delete test;
@@ -227,6 +228,7 @@ u32 vulkan_context::draw_frame() {
 
 	// TODO : accquire command buffer here and start recording..
 	test->bind(recording_buffer);
+	test->push_constants(recording_buffer, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mvp), &local_constant);
 
 	VkViewport viewport{};
 	viewport.x		  = 0.0f;
@@ -392,4 +394,3 @@ void vulkan_context::update_view(glm::mat4& view) {
 void vulkan_context::update_model(glm::mat4& model) {
 	local_constant.model = model;
 }
-

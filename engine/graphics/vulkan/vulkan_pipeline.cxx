@@ -95,6 +95,8 @@ vulkan_pipeline::vulkan_pipeline(
 	rasterizer.depthBiasClamp		   = 0.0f; // Optional
 	rasterizer.depthBiasSlopeFactor	   = 0.0f; // Optional
 	rasterizer.lineWidth			   = 1.0f;
+	rasterizer.cullMode				   = VK_CULL_MODE_BACK_BIT;
+	rasterizer.frontFace			   = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
 	VkPipelineMultisampleStateCreateInfo multisampling{};
 	multisampling.sType					= VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -170,4 +172,8 @@ vulkan_pipeline::~vulkan_pipeline() {
 
 void vulkan_pipeline::bind(VkCommandBuffer cmd_buffer) {
 	vkCmdBindPipeline(cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+}
+
+void vulkan_pipeline::push_constants(VkCommandBuffer cmd, VkShaderStageFlags stage, u32 offset, u32 size, void* data) {
+	vkCmdPushConstants(cmd, layout, stage, offset, size, data);
 }

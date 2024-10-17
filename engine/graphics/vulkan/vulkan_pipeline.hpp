@@ -28,6 +28,7 @@ public:
 	~vulkan_pipeline();
 
 	void bind(VkCommandBuffer cmd_buffer);
+	void push_constants(VkCommandBuffer cmd, VkShaderStageFlags stage, u32 offset, u32 size, void* data);
 
 private:
 	std::shared_ptr<vulkan_device>	   device;
