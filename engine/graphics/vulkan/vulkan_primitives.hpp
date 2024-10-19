@@ -4,7 +4,6 @@
 #include <array>
 #include "vulkan/vulkan.h"
 #include "renderer/vertex_data.hpp"
-#include "vulkan_images.hpp"
 #include "vulkan_device.hpp"
 #include <cstddef>
 

@@ -2,7 +2,6 @@
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 #include "defines.hpp"
-#include "vulkan_images.hpp"
 
 gpu_memory_allocator::gpu_memory_allocator(VkPhysicalDevice gpu, VkDevice device, VkInstance instance) {
 	VmaAllocatorCreateInfo create_info{};

@@ -6,7 +6,6 @@
 #include "vk_mem_alloc.h"
 #include <vector>
 
-class vulkan_images;
 class gpu_memory_allocator {
 public:
 	gpu_memory_allocator(VkPhysicalDevice gpu, VkDevice device, VkInstance instance);

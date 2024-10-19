@@ -133,7 +133,6 @@ void vulkan_swapchain::create_new_swapchain(VkSurfaceKHR surface, std::shared_pt
 	VK_ASSERT(result, "failed to create swapchain");
 
 	accquire_swapchain_images(device);
-	create_depth_buffer(device);
 	create_renderpass();
 	create_framebuffer();
 }
@@ -164,47 +163,6 @@ void vulkan_swapchain::accquire_swapchain_images(std::shared_ptr<vulkan_device> 
 		result = vkCreateImageView(device->get_logical_device(), &view_info, nullptr, &view[i]);
 		VK_ASSERT(result, "failed to create image view");
 	}
-}
-
-void vulkan_swapchain::create_depth_buffer(std::shared_ptr<vulkan_device> device) {
-	VkImageCreateInfo depth_info{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-	depth_info.pNext				 = nullptr;
-	depth_info.flags				 = 0;
-	depth_info.format				 = VK_FORMAT_D24_UNORM_S8_UINT;
-	depth_info.imageType			 = VK_IMAGE_TYPE_2D;
-	depth_info.extent.width			 = width;
-	depth_info.extent.height		 = height;
-	depth_info.extent.depth			 = 1;
-	depth_info.mipLevels			 = 1;
-	depth_info.arrayLayers			 = 1;
-	depth_info.samples				 = VK_SAMPLE_COUNT_1_BIT;
-	depth_info.tiling				 = VK_IMAGE_TILING_OPTIMAL;
-	depth_info.usage				 = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	depth_info.sharingMode			 = VK_SHARING_MODE_EXCLUSIVE;
-	depth_info.queueFamilyIndexCount = 0;
-	depth_info.pQueueFamilyIndices	 = nullptr;
-	depth_info.initialLayout		 = VK_IMAGE_LAYOUT_UNDEFINED;
-
-	VkImageSubresourceRange depth_sub_resource;
-	depth_sub_resource.aspectMask	  = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-	depth_sub_resource.baseArrayLayer = 0;
-	depth_sub_resource.baseMipLevel	  = 0;
-	depth_sub_resource.layerCount	  = 1;
-	depth_sub_resource.levelCount	  = 1;
-
-	VkImageViewCreateInfo view_info{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-	view_info.pNext			   = nullptr;
-	view_info.flags			   = 0;
-	view_info.image			   = VK_NULL_HANDLE;
-	view_info.viewType		   = VK_IMAGE_VIEW_TYPE_2D;
-	view_info.format		   = VK_FORMAT_D24_UNORM_S8_UINT;
-	view_info.components.r	   = VK_COMPONENT_SWIZZLE_R;
-	view_info.components.g	   = VK_COMPONENT_SWIZZLE_G;
-	view_info.components.b	   = VK_COMPONENT_SWIZZLE_B;
-	view_info.components.a	   = VK_COMPONENT_SWIZZLE_A;
-	view_info.subresourceRange = depth_sub_resource;
-
-	depth_buffer = std::make_unique<vulkan_images>("__engine_depth_buffer__", device, depth_info, view_info);
 }
 
 void vulkan_swapchain::destroy_swapchain() {

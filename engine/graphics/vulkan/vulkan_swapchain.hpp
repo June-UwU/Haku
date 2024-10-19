@@ -1,7 +1,6 @@
 #pragma once
 #include "types.hpp"
 #include "vulkan_results.hpp"
-#include "vulkan_images.hpp"
 #include "vulkan_renderpass.hpp"
 #include <vector>
 #include <memory>
@@ -26,7 +25,6 @@ public:
 private:
 	void create_new_swapchain(VkSurfaceKHR surface, std::shared_ptr<vulkan_device> device);
 	void accquire_swapchain_images(std::shared_ptr<vulkan_device> device);
-	void create_depth_buffer(std::shared_ptr<vulkan_device> device);
 	void destroy_swapchain();
 	void create_renderpass();
 	void create_framebuffer();
@@ -41,6 +39,5 @@ private:
 	std::vector<VkImage>			   image;
 	std::vector<VkImageView>		   view;
 	std::vector<VkFramebuffer>		   frame_buffer;
-	std::unique_ptr<vulkan_images>	   depth_buffer;
 	std::shared_ptr<vulkan_renderpass> renderpass3d;
 };
