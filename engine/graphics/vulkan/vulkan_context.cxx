@@ -7,18 +7,19 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "vulkan_primitives.hpp"
-#define STB_IMAGE_IMPLEMENTATION 
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "vulkan_helpers.hpp"
 static vulkan_pipeline*				  test		 = nullptr;
 static vulkan_image*				  test_image = nullptr;
 static std::shared_ptr<vulkan_buffer> vertex_buffer;
 static std::shared_ptr<vulkan_buffer> index_buffer;
-
-const std::vector<vertex> vertices = { { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f } },
-									   { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } },
-									   { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } },
-									   { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f } } };
-const std::vector<u16>	  indices  = { 0, 1, 2, 2, 3, 0 };
+static VkSampler					  sampler  = VK_NULL_HANDLE;
+const std::vector<vertex>			  vertices = { { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f } },
+												   { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } },
+												   { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } },
+												   { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f } } };
+const std::vector<u16>				  indices  = { 0, 1, 2, 2, 3, 0 };
 
 void print_available_extensions() {
 	u32		 available_layer_count = 0;
@@ -372,29 +373,45 @@ bool vulkan_context::make_default_context_objects(std::shared_ptr<vulkan_device>
 	test			= new vulkan_pipeline(device, renderpass, width, height, { vertex_shader, pixel_shader });
 
 	s32		 image_width, image_height, channels, size;
-	stbi_uc* image_data = stbi_load(__HAKU_ASSETS_PATH__"images/milize.jpg", &image_width, &image_height, &channels, STBI_rgb_alpha);
+	stbi_uc* image_data = stbi_load(__HAKU_ASSETS_PATH__ "images/milize.jpg", &image_width, &image_height, &channels, STBI_rgb_alpha);
 	size				= image_width * image_height * 4;
 	if (nullptr == image_data) {
 		WARN << "failed to open image..!!\n";
 	}
 
-	test_image = new vulkan_image(
-		"__test_image__",
-		device,
-		image_width,
-		image_width,
-		(byte*)image_data,
-		VK_IMAGE_USAGE_SAMPLED_BIT,
-		VK_IMAGE_TILING_OPTIMAL);
+	test_image =
+		new vulkan_image("__test_image__", device, image_width, image_width, (byte*)image_data, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL);
 
 	stbi_image_free(image_data);
+	test_image->create_view(VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_SRGB);
 
-	vertex_buffer = std::make_shared<vulkan_buffer>(
-		"name",
-		device,
-		vertices.size() * sizeof(vertex),
-		(byte*)vertices.data(),
-		(VkBufferUsageFlags)(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+	VkSamplerCreateInfo sampler_info{};
+	sampler_info.sType					 = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	sampler_info.magFilter				 = VK_FILTER_LINEAR;
+	sampler_info.minFilter				 = VK_FILTER_LINEAR;
+	sampler_info.addressModeU			 = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler_info.addressModeV			 = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler_info.addressModeW			 = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler_info.anisotropyEnable		 = VK_TRUE;
+	sampler_info.maxAnisotropy			 = device->get_device_properties().limits.maxSamplerAnisotropy;
+	sampler_info.borderColor			 = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	sampler_info.unnormalizedCoordinates = VK_FALSE;
+	sampler_info.compareEnable			 = VK_FALSE;
+	sampler_info.compareOp				 = VK_COMPARE_OP_ALWAYS;
+	sampler_info.mipmapMode				 = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	sampler_info.mipLodBias				 = 0.0f;
+	sampler_info.minLod					 = 0.0f;
+	sampler_info.maxLod					 = 0.0f;
+
+	VkResult result = vkCreateSampler(device->get_logical_device(), &sampler_info, nullptr, &sampler);
+	VK_ASSERT(result, "failed to create texture sampler..!!");
+
+	vertex_buffer	= std::make_shared<vulkan_buffer>(
+		  "name",
+		  device,
+		  vertices.size() * sizeof(vertex),
+		  (byte*)vertices.data(),
+		  (VkBufferUsageFlags)(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 	index_buffer = std::make_shared<vulkan_buffer>(
 		"test_buffer index",
 		device,

@@ -49,6 +49,7 @@ public:
 	void			submit_commands(VkSubmitInfo& submit_info, VkFence signal);
 	void			present(VkPresentInfoKHR& present_info);
 	VkCommandBuffer get_graphics_command_buffer(bool is_primary);
+	VkPhysicalDeviceProperties get_device_properties();
 
 private:
 	void set_queue_index(VkSurfaceKHR surface);

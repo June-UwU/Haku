@@ -1,5 +1,6 @@
 #include "vulkan_swapchain.hpp"
 #include "vulkan_device.hpp"
+#include "vulkan_helpers.hpp"
 #include <algorithm>
 #include <limits>
 #include <array>
@@ -160,8 +161,9 @@ void vulkan_swapchain::accquire_swapchain_images(std::shared_ptr<vulkan_device> 
 		view_info.subresourceRange.baseArrayLayer = 0;
 		view_info.subresourceRange.layerCount	  = 1;
 
-		result = vkCreateImageView(device->get_logical_device(), &view_info, nullptr, &view[i]);
-		VK_ASSERT(result, "failed to create image view");
+		result	= vkCreateImageView(device->get_logical_device(), &view_info, nullptr, &view[i]);
+		view[i] = create_image_view(device, image[i], format.format);
+		ASSERT(VK_NULL_HANDLE != view[i], "failed to create image view");
 	}
 }
 

@@ -19,6 +19,8 @@ public:
 	void	 bind(VkCommandBuffer cmd, u32 binding, VkDeviceSize offset);
 	void	 bind_as_index(VkCommandBuffer cmd);
 
+	VkBuffer get();
+
 private:
 	std::string					   name;
 	VkBuffer					   buffer;
@@ -51,6 +53,9 @@ public:
 	VkResult upload_data(std::vector<byte>& data);
 	VkResult upload_data(const u32 size, byte* data);
 
+	VkImage get();
+	VkResult create_view(VkImageViewType type, VkFormat format);
+
 private:
 	VkResult transition_layout_for_copy(VkImageLayout new_layout);
 
@@ -60,6 +65,7 @@ private:
 	std::string					   name;
 	VkImageLayout				   layout;
 	VkImage						   image;
+	VkImageView					   view;
 	VmaAllocation				   memory;
 	std::shared_ptr<vulkan_device> device;
 };

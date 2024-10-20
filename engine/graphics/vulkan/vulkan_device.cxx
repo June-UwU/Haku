@@ -1,5 +1,6 @@
 #include "vulkan_device.hpp"
 #include "vulkan_results.hpp"
+#include "vulkan_helpers.hpp"
 #include "defines.hpp"
 #include <vector>
 #include <map>
@@ -32,6 +33,10 @@ u32 rate_gpu(VkPhysicalDevice& device) {
 	VkPhysicalDeviceFeatures   device_features;
 	vkGetPhysicalDeviceProperties(device, &device_properties);
 	vkGetPhysicalDeviceFeatures(device, &device_features);
+
+	if (VK_FALSE == device_features.samplerAnisotropy) {
+		return GPU_NOT_COMPLAINT;
+	}
 
 	std::cout << device_properties.deviceName << "(" << device_properties.driverVersion << ") : ";
 
@@ -105,6 +110,9 @@ vulkan_device::vulkan_device(VkInstance instance, VkSurfaceKHR surface) {
 
 	const std::vector<const char*> device_extensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
+	VkPhysicalDeviceFeatures device_feature{};
+	device_feature.samplerAnisotropy = VK_TRUE;
+
 	VkDeviceCreateInfo device_create_info{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
 	device_create_info.pNext				   = nullptr;
 	device_create_info.flags				   = 0;
@@ -112,7 +120,7 @@ vulkan_device::vulkan_device(VkInstance instance, VkSurfaceKHR surface) {
 	device_create_info.pQueueCreateInfos	   = required_queues.data();
 	device_create_info.enabledExtensionCount   = static_cast<u32>(device_extensions.size());
 	device_create_info.ppEnabledExtensionNames = device_extensions.data();
-	device_create_info.pEnabledFeatures		   = nullptr;
+	device_create_info.pEnabledFeatures		   = &device_feature;
 
 	VkResult logical_device_created = vkCreateDevice(physical_device, &device_create_info, nullptr, &logical_device);
 	VK_ASSERT(logical_device_created, "failed to create logical device");
@@ -291,6 +299,13 @@ void vulkan_device::present(VkPresentInfoKHR& present_info) {
 
 VkCommandBuffer vulkan_device::get_graphics_command_buffer(bool is_primary) {
 	return primary_allocator->allocate_command_buffer(is_primary);
+}
+
+VkPhysicalDeviceProperties vulkan_device::get_device_properties() {
+	VkPhysicalDeviceProperties properties{};
+	vkGetPhysicalDeviceProperties(physical_device, &properties);
+
+	return properties;
 }
 
 void vulkan_device::set_queue_index(VkSurfaceKHR surface) {

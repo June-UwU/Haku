@@ -1,4 +1,5 @@
 #include "vulkan_primitives.hpp"
+#include "vulkan_helpers.hpp"
 
 vulkan_buffer::vulkan_buffer(std::string name, std::shared_ptr<vulkan_device>& device, u64 size, byte* data, VkBufferUsageFlags usage)
 	: name(name)
@@ -79,6 +80,10 @@ void vulkan_buffer::bind_as_index(VkCommandBuffer cmd) {
 	vkCmdBindIndexBuffer(cmd, buffer, 0, VK_INDEX_TYPE_UINT16);
 }
 
+VkBuffer vulkan_buffer::get() {
+	return buffer;
+}
+
 vulkan_image::vulkan_image(
 	std::string						name,
 	std::shared_ptr<vulkan_device>& device,
@@ -91,7 +96,8 @@ vulkan_image::vulkan_image(
 	, device(device)
 	, height(height)
 	, width(width)
-	, layout(VK_IMAGE_LAYOUT_UNDEFINED) {
+	, layout(VK_IMAGE_LAYOUT_UNDEFINED)
+	, view(VK_NULL_HANDLE) {
 	TRACE << "creating image : " << name << "\n";
 
 	VkImageCreateInfo create_info{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
@@ -129,7 +135,8 @@ vulkan_image::vulkan_image(
 	, device(device)
 	, height(height)
 	, width(width)
-	, layout(VK_IMAGE_LAYOUT_UNDEFINED) {
+	, layout(VK_IMAGE_LAYOUT_UNDEFINED)
+	, view(VK_NULL_HANDLE) {
 	TRACE << "creating image : " << name << "\n" << width << " X " << height << "\n";
 
 	VkImageCreateInfo create_info{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
@@ -148,7 +155,7 @@ vulkan_image::vulkan_image(
 	create_info.samples		  = VK_SAMPLE_COUNT_1_BIT;
 	create_info.flags		  = 0;
 	const u32 size			  = width * height * 4;
-	VkResult result = device->create_image(&image, &memory, create_info);
+	VkResult  result		  = device->create_image(&image, &memory, create_info);
 	VK_ASSERT(result, "failed to allocate image");
 
 	result = upload_data(size, data);
@@ -205,8 +212,21 @@ VkResult vulkan_image::upload_data(const u32 size, byte* data) {
 	VK_ASSERT(result, "failed to change layout for copy..!!\n");
 
 	device->free(staging, staging_mem);
-	
+
 	return result;
+}
+
+VkImage vulkan_image::get() {
+	return image;
+}
+
+VkResult vulkan_image::create_view(VkImageViewType type, VkFormat format) {
+	view = create_image_view(device,image,format,type);
+	if (VK_NULL_HANDLE == view) {
+		return VK_ERROR_IMAGE_USAGE_NOT_SUPPORTED_KHR;
+	}
+
+	return VK_SUCCESS;
 }
 
 VkResult vulkan_image::transition_layout_for_copy(VkImageLayout new_layout) {
