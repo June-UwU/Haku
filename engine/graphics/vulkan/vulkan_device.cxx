@@ -217,8 +217,39 @@ void vulkan_device::free(VkBuffer buffer, VmaAllocation memory) {
 	gpu_allocator->free(buffer, memory);
 }
 
+VkResult vulkan_device::transition_layout(VkImageMemoryBarrier& barrier) {
+	VkCommandBuffer cmd = primary_allocator->allocate_command_buffer(true);
+	begin_command_buffer(cmd, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+	auto mask = resolve_image_barrier_stage_masks(barrier.oldLayout, barrier.newLayout, barrier);
+	vkCmdPipelineBarrier(cmd, mask.first, mask.second, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+	VkResult result = vkEndCommandBuffer(cmd);
+	VK_ASSERT(result, "failed to end command buffer recording..!!");
+
+	submit_command_buffer(cmd, present_queue);
+	result = vkQueueWaitIdle(present_queue);
+	VK_ASSERT(result, "failed to wait for present queue..!!");
+	primary_allocator->free_command_buffer(cmd);
+
+	return VK_SUCCESS;
+}
+
 void vulkan_device::copy_to_device(void* data, VmaAllocation dest, VkDeviceSize offset, VkDeviceSize size) {
 	gpu_allocator->copy_to_memory(data, dest, offset, size);
+}
+
+void vulkan_device::copy_from_memory_to_image(VkBuffer buffer, VkImage image, VkImageLayout layout, VkBufferImageCopy& region) {
+	VkCommandBuffer cmd = transfer_allocator->allocate_command_buffer(true);
+	begin_command_buffer(cmd, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+	vkCmdCopyBufferToImage(cmd, buffer, image, layout, 1, &region);
+
+	VkResult result = vkEndCommandBuffer(cmd);
+	VK_ASSERT(result, "failed to end command buffer recording..!!");
+
+	submit_command_buffer(cmd, transfer_queue);
+	result = vkQueueWaitIdle(transfer_queue);
+	VK_ASSERT(result, "failed to wait for transfer queue..!!");
 }
 
 void vulkan_device::copy_from_device(VmaAllocation src, VkDeviceSize offset, void* dest, VkDeviceSize size) {
@@ -228,28 +259,20 @@ void vulkan_device::copy_from_device(VmaAllocation src, VkDeviceSize offset, voi
 void vulkan_device::copy_btw_device_memory(VkBuffer src, VkBuffer dest, VkDeviceSize size, VkDeviceSize src_offset, VkDeviceSize dest_offset) {
 	TRACE << "copying from device to device memory \n -- size : " << size << "\n";
 	VkCommandBuffer cmd = transfer_allocator->allocate_command_buffer(true);
-	
-	VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-	begin_info.flags					= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	VkResult result = vkBeginCommandBuffer(cmd, &begin_info);
-	VK_ASSERT(result, "failed to begin command buffer..!!");
 
-	VkBufferCopy	region;
+	begin_command_buffer(cmd, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+	VkBufferCopy region;
 	region.srcOffset = src_offset;
 	region.dstOffset = dest_offset;
 	region.size		 = size;
 
 	vkCmdCopyBuffer(cmd, src, dest, 1, &region);
 
-	result = vkEndCommandBuffer(cmd);
+	VkResult result = vkEndCommandBuffer(cmd);
 	VK_ASSERT(result, "failed to end command buffer..!!");
 
-	VkSubmitInfo submit_info	  = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers	   = &cmd;
-
-	result = vkQueueSubmit(transfer_queue, 1, &submit_info, VK_NULL_HANDLE);
-	VK_ASSERT(result, "failed to submit to transfer queue..!!");
+	submit_command_buffer(cmd, transfer_queue);
 	result = vkQueueWaitIdle(transfer_queue);
 	VK_ASSERT(result, "failed to wait for transfer queue..!!");
 

@@ -41,7 +41,9 @@ public:
 
 	void			free(VkImage image, VmaAllocation memory);
 	void			free(VkBuffer buffer, VmaAllocation memory);
+	VkResult		transition_layout(VkImageMemoryBarrier& barrier);
 	void			copy_to_device(void* data, VmaAllocation dest, VkDeviceSize offset, VkDeviceSize size);
+	void			copy_from_memory_to_image(VkBuffer buffer, VkImage image, VkImageLayout layout, VkBufferImageCopy& region);
 	void			copy_from_device(VmaAllocation src, VkDeviceSize offset, void* dest, VkDeviceSize size);
 	void			copy_btw_device_memory(VkBuffer src, VkBuffer dest, VkDeviceSize size, VkDeviceSize src_offset = 0, VkDeviceSize dest_offset = 0);
 	void			submit_commands(VkSubmitInfo& submit_info, VkFence signal);

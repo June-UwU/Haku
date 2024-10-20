@@ -55,6 +55,7 @@ add_library(${PROJECT_NAME}
 string(CONCAT shader_path "${CMAKE_CURRENT_BINARY_DIR}/__haku_built_in__")
 add_compile_definitions(__HAKU_SHADER_ENTRY__="main")
 add_compile_definitions(__HAKU_SHADER_PATH__="${shader_path}")
+add_compile_definitions(__HAKU_ASSETS_PATH__="${CMAKE_CURRENT_SOURCE_DIR}/assets/")
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan glm::glm GPUOpen::VulkanMemoryAllocator)

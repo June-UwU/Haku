@@ -26,6 +26,44 @@ private:
 	std::shared_ptr<vulkan_device> device;
 };
 
+// TODO : variable format ?
+class vulkan_image {
+public:
+	vulkan_image() = delete;
+	vulkan_image(
+		std::string						name,
+		std::shared_ptr<vulkan_device>& device,
+		u32								width,
+		u32								height,
+		std::vector<byte>&				data,
+		VkImageUsageFlags				usage,
+		VkImageTiling					tiling);
+	vulkan_image(
+		std::string						name,
+		std::shared_ptr<vulkan_device>& device,
+		u32								width,
+		u32								height,
+		byte*							data,
+		VkImageUsageFlags				usage,
+		VkImageTiling					tiling);
+	~vulkan_image();
+
+	VkResult upload_data(std::vector<byte>& data);
+	VkResult upload_data(const u32 size, byte* data);
+
+private:
+	VkResult transition_layout_for_copy(VkImageLayout new_layout);
+
+private:
+	u32							   height;
+	u32							   width;
+	std::string					   name;
+	VkImageLayout				   layout;
+	VkImage						   image;
+	VmaAllocation				   memory;
+	std::shared_ptr<vulkan_device> device;
+};
+
 // NOTE : describes how the data in gpu onces uploaded to gpu
 // TODO : instanced rendering
 static VkVertexInputBindingDescription get_binding_description() {

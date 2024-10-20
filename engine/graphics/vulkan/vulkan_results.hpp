@@ -160,30 +160,75 @@ constexpr std::string get_vulkan_string(VkResult result) {
 
 #if defined(NDEBUG)
 
-#define VK_ASSERT(result, format)                                                                   \
-	if (true == is_vulkan_failure(result)) {                                                        \
-		ERROR << __FUNCTION__ << " : " << __LINE__ << "\n";                                         \
-		ERROR << format << "\n";                                                                    \
-		ERROR << get_vulkan_string(result) << "\n";                                                 \
-		exit(EXIT_FAILURE);                                                                         \
-	} else {                                                                                        \
-		if (VK_SUCCESS != result) {                                                                 \
-			WARN << __FUNCTION__ << "(" << __LINE__ << ") : " << get_vulkan_string(result) << "\n"; \
-		}                                                                                           \
+#define VK_ASSERT(result, format)                                                                                                                    \
+	if (true == is_vulkan_failure(result)) {                                                                                                         \
+		ERROR << __FUNCTION__ << " : " << __LINE__ << "\n";                                                                                          \
+		ERROR << format << "\n";                                                                                                                     \
+		ERROR << get_vulkan_string(result) << "\n";                                                                                                  \
+		exit(EXIT_FAILURE);                                                                                                                          \
+	} else {                                                                                                                                         \
+		if (VK_SUCCESS != result) {                                                                                                                  \
+			WARN << __FUNCTION__ << "(" << __LINE__ << ") : " << get_vulkan_string(result) << "\n";                                                  \
+		}                                                                                                                                            \
 	}
 
 #else
 
-#define VK_ASSERT(result, format)                                                                   \
-	if (true == is_vulkan_failure(result)) {                                                        \
-		ERROR << __FUNCTION__ << " : " << __LINE__ << "\n";                                         \
-		ERROR << format << "\n";                                                                    \
-		ERROR << get_vulkan_string(result) << "\n";                                                 \
-		exit(EXIT_FAILURE);                                                                         \
-	} else {                                                                                        \
-		if (VK_SUCCESS != result) {                                                                 \
-			WARN << __FUNCTION__ << "(" << __LINE__ << ") : " << get_vulkan_string(result) << "\n"; \
-		}                                                                                           \
+#define VK_ASSERT(result, format)                                                                                                                    \
+	if (true == is_vulkan_failure(result)) {                                                                                                         \
+		ERROR << __FUNCTION__ << " : " << __LINE__ << "\n";                                                                                          \
+		ERROR << format << "\n";                                                                                                                     \
+		ERROR << get_vulkan_string(result) << "\n";                                                                                                  \
+		exit(EXIT_FAILURE);                                                                                                                          \
+	} else {                                                                                                                                         \
+		if (VK_SUCCESS != result) {                                                                                                                  \
+			WARN << __FUNCTION__ << "(" << __LINE__ << ") : " << get_vulkan_string(result) << "\n";                                                  \
+		}                                                                                                                                            \
 	}
 
 #endif
+
+inline VkResult begin_command_buffer(VkCommandBuffer cmd, VkCommandBufferUsageFlags flags) {
+	VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+	begin_info.flags					= flags;
+	VkResult result						= vkBeginCommandBuffer(cmd, &begin_info);
+	VK_ASSERT(result, "failed to begin command buffer..!!");
+
+	return result;
+}
+
+inline VkResult submit_command_buffer(VkCommandBuffer cmd, VkQueue queue) {
+	VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers	  = &cmd;
+
+	VkResult result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+	VK_ASSERT(result, "failed to submit queue recording..!!");
+
+	return result;
+}
+
+inline std::pair<VkPipelineStageFlags, VkPipelineStageFlags> resolve_image_barrier_stage_masks(
+	VkImageLayout		  from,
+	VkImageLayout		  to,
+	VkImageMemoryBarrier& barrier) {
+	std::pair<VkPipelineStageFlags, VkPipelineStageFlags> mask;
+
+	if (from == VK_IMAGE_LAYOUT_UNDEFINED && to == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		mask.first	= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		mask.second = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	} else if (from == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && to == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		mask.first	= VK_PIPELINE_STAGE_TRANSFER_BIT;
+		mask.second = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	} else {
+		TRACE << "unsupported layout transition..!!\n";
+	}
+
+	return mask;
+}

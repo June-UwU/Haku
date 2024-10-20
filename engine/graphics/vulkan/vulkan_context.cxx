@@ -7,7 +7,10 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "vulkan_primitives.hpp"
-static vulkan_pipeline*				  test = nullptr;
+#define STB_IMAGE_IMPLEMENTATION 
+#include "stb_image.h"
+static vulkan_pipeline*				  test		 = nullptr;
+static vulkan_image*				  test_image = nullptr;
 static std::shared_ptr<vulkan_buffer> vertex_buffer;
 static std::shared_ptr<vulkan_buffer> index_buffer;
 
@@ -367,12 +370,31 @@ bool vulkan_context::make_default_context_objects(std::shared_ptr<vulkan_device>
 	// testing shit..
 	auto renderpass = swapchain->get_3d_renderpass();
 	test			= new vulkan_pipeline(device, renderpass, width, height, { vertex_shader, pixel_shader });
-	vertex_buffer	= std::make_shared<vulkan_buffer>(
-		  "name",
-		  device,
-		  vertices.size() * sizeof(vertex),
-		  (byte*)vertices.data(),
-		  (VkBufferUsageFlags)(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+
+	s32		 image_width, image_height, channels, size;
+	stbi_uc* image_data = stbi_load(__HAKU_ASSETS_PATH__"images/milize.jpg", &image_width, &image_height, &channels, STBI_rgb_alpha);
+	size				= image_width * image_height * 4;
+	if (nullptr == image_data) {
+		WARN << "failed to open image..!!\n";
+	}
+
+	test_image = new vulkan_image(
+		"__test_image__",
+		device,
+		image_width,
+		image_width,
+		(byte*)image_data,
+		VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_IMAGE_TILING_OPTIMAL);
+
+	stbi_image_free(image_data);
+
+	vertex_buffer = std::make_shared<vulkan_buffer>(
+		"name",
+		device,
+		vertices.size() * sizeof(vertex),
+		(byte*)vertices.data(),
+		(VkBufferUsageFlags)(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 	index_buffer = std::make_shared<vulkan_buffer>(
 		"test_buffer index",
 		device,
