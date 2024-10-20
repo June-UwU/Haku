@@ -1,5 +1,6 @@
 #include "vulkan_device.hpp"
 #include "vulkan_results.hpp"
+#include "vulkan_helpers.hpp"
 #include "defines.hpp"
 #include <vector>
 #include <map>
