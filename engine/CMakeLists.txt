@@ -1,18 +1,86 @@
 cmake_minimum_required(VERSION 3.20)
 
 set(PROJECT_NAME "haku_engine")
+include(FetchContent)
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG        master
+)
+FetchContent_MakeAvailable(glfw)
+find_package(Vulkan REQUIRED)
+find_program(GLSLC_EXECUTABLE NAMES glslc)
 
 file(GLOB_RECURSE global_inc ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 file(GLOB_RECURSE global_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cxx)
+file(GLOB_RECURSE platform_inc ${CMAKE_CURRENT_SOURCE_DIR}/platform/*.hpp)
+file(GLOB_RECURSE platform_src ${CMAKE_CURRENT_SOURCE_DIR}/platform/*.cxx)
+file(GLOB_RECURSE vulkan_inc ${CMAKE_CURRENT_SOURCE_DIR}/graphics/vulkan/*.hpp)
+file(GLOB_RECURSE vulkan_src ${CMAKE_CURRENT_SOURCE_DIR}/graphics/vulkan/*.cxx)
+file(GLOB_RECURSE file_inc ${CMAKE_CURRENT_SOURCE_DIR}/file_systems/*.hpp)
+file(GLOB_RECURSE file_src ${CMAKE_CURRENT_SOURCE_DIR}/file_systems/*.cxx)
+file(GLOB_RECURSE renderer_inc ${CMAKE_CURRENT_SOURCE_DIR}/renderer/*.hpp)
+file(GLOB_RECURSE renderer_src ${CMAKE_CURRENT_SOURCE_DIR}/renderer/*.cxx)
 
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_src})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${renderer_src})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${platform_src})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_inc})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${global_src})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${graphics_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${graphics_src})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${file_inc})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${file_src})
 
-add_compile_options(-Wall -Wextra -Wpedantic)
+add_compile_options(-Wall)
 add_library(${PROJECT_NAME} 
 	STATIC
 	${global_inc}
 	${global_src}
+	${graphics_inc}
+	${graphics_src}
+	${platform_inc}
+	${platform_src}
+	${file_inc}
+	${file_src}
+	${vulkan_inc}
+	${vulkan_src}
+	${renderer_inc}
+	${renderer_src}
 	)
 
+string(CONCAT shader_path "${CMAKE_CURRENT_BINARY_DIR}/__haku_built_in__")
+add_compile_definitions(__HAKU_SHADER_ENTRY__="main")
+add_compile_definitions(__HAKU_SHADER_PATH__="${shader_path}")
+add_compile_definitions(__HAKU_ASSETS_PATH__="${CMAKE_CURRENT_SOURCE_DIR}/assets/")
+
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan glm::glm GPUOpen::VulkanMemoryAllocator)
+target_include_directories(${PROJECT_NAME} PRIVATE 
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/file_systems/
+	glm
+	${CMAKE_CURRENT_SOURCE_DIR}/../Libs/VulkanMemoryAllocator/include/
+	${CMAKE_CURRENT_SOURCE_DIR}/../Libs/stb/
+	)
+
+
+message(STATUS "shader path" : ${shader_path})
+file(GLOB_RECURSE shaders ${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*)
+foreach(file ${shaders})
+	get_filename_component(name ${file} NAME_WE)
+	string(CONCAT out_path ${shader_path} ${name})
+	set(command "${GLSLC_EXECUTABLE} ${file} -o ${out_path}")
+	execute_process(
+		COMMAND "${command}"
+		OUTPUT_VARIABLE output
+    	ERROR_VARIABLE error
+    	RESULT_VARIABLE result
+	)
+
+	message(STATUS ${command})
+	message(STATUS ${result})
+endforeach()

@@ -1,3 +1,6 @@
 #pragma once
+#include "../file_systems/file.hpp"
 
-void print_hellow();
+bool initialize_engine();
+void run_engine();
+void terminate_engine();

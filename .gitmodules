@@ -1,9 +1,12 @@
-[submodule "vendor/DirectXMath"]
-	path = vendor/DirectXMath
-	url = https://github.com/microsoft/DirectXMath.git
 [submodule "Libs/GLFW"]
 	path = Libs/GLFW
 	url = https://github.com/glfw/glfw.git
-[submodule "Libs/gli"]
-	path = Libs/gli
-	url = https://github.com/g-truc/gli.git
+[submodule "Libs/glm"]
+	path = Libs/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Libs/VulkanMemoryAllocator"]
+	path = Libs/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "Libs/stb"]
+	path = Libs/stb
+	url = https://github.com/nothings/stb.git
