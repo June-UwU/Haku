@@ -38,7 +38,13 @@
 #define ANSI_STYLE_UNDERLINE		 "\x1b[4m"
 #define ANSI_STYLE_REVERSED			 "\x1b[7m"
 
+#define PRINT_FILE "file : " << __FILE__
+#define PRINT_FUNC "function : " << __FUNCTION__
+#define PRINT_LINE "line : " << __LINE__
+
+#define PRINT_LOCATION PRINT_FILE << "\n" << PRINT_FUNC << "\n" << PRINT_LINE << "\n"
+
 #define TRACE std::cout << ANSI_COLOR_GREEN
 #define WARN std::cout << ANSI_COLOR_YELLOW
-#define ERROR std::cerr << ANSI_COLOR_RED
-#define FATAL std::cerr << ANSI_COLOR_BRIGHT_RED << __FUNCTION__ << " : " << __LINE__ << " " 
+#define ERROR std::cerr << ANSI_COLOR_RED 
+#define FATAL std::cerr << ANSI_COLOR_BRIGHT_RED << PRINT_LOCATION
