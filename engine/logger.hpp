@@ -41,4 +41,4 @@
 #define TRACE std::cout << ANSI_COLOR_GREEN
 #define WARN std::cout << ANSI_COLOR_YELLOW
 #define ERROR std::cerr << ANSI_COLOR_RED
-#define FATAL std::cerr << ANSI_COLOR_BRIGHT_RED << __FUNCTION__ << " : " << __LINE__ << " " << 
+#define FATAL std::cerr << ANSI_COLOR_BRIGHT_RED << __FUNCTION__ << " : " << __LINE__ << " " 

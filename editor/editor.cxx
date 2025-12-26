@@ -2,8 +2,11 @@
 #include <iostream>
 
 
-int main() {
-  std::cout << "starting editor\n";
-  engine* p_engine = initialize_engine(0,nullptr);  
+int main(int argc, char** argv) {
+  std::cout << "Hellow ^_^\n";
+  engine *p_engine = new engine(argc, argv);
+  p_engine->run_engine();
+  delete p_engine;
+  
   return 0;
 }  

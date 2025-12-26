@@ -7,3 +7,6 @@
 [submodule "Libs/gli"]
 	path = Libs/gli
 	url = https://github.com/g-truc/gli.git
+[submodule "lib/glfw"]
+	path = lib/glfw
+	url = https://github.com/glfw/glfw.git
