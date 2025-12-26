@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "05dc4658_3a479649",
+        "filename": "engine/renderer/vulkan/vulkan_defines.hpp",
+        "patchSetId": 6
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1039159
+      },
+      "writtenOn": "2025-12-26T14:48:28Z",
+      "side": 1,
+      "message": "VK_SUCCESS should make it pass",
+      "revId": "5c7428e446430d440618c16b292f7388aeae693e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}

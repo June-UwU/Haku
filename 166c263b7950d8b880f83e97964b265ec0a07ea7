@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "90a75772_b2cd0b9c",
+        "filename": "engine/renderer/vulkan/vulkan_driver.cxx",
+        "patchSetId": 7
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1039159
+      },
+      "writtenOn": "2025-12-26T14:48:28Z",
+      "side": 1,
+      "message": "clear the end spaces out",
+      "revId": "166c263b7950d8b880f83e97964b265ec0a07ea7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
