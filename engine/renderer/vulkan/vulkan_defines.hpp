@@ -1,5 +1,5 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include "../../logger.hpp"
 
 #define VALIDATE_RESULT(result, reason)                                        \
