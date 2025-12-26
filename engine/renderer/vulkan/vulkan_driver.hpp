@@ -9,4 +9,8 @@ public:
   ~vulkan_driver();
 
 private:
+  u32 create_instance();
+
+private:
+  VkInstance instance;
 };
