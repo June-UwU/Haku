@@ -19,8 +19,8 @@ engine::engine(s32 argc, char **argv)
   glfwSetErrorCallback(error_callback);
 
   name = "Haku";
-  main_window = std::make_unique<window>(name, 1280, 720);
-
+  p_main_window = std::make_shared<window>(name, 1280, 720);
+  p_gpu_context = std::make_unique<context>(VULKAN_API, p_main_window);
   return;
   
 glfw_init_fail:
@@ -37,7 +37,7 @@ s32 engine::run_engine() {
 }  
 
 engine::~engine() {
-  main_window = nullptr;
+  p_main_window = nullptr;
   glfwTerminate();
 }
 

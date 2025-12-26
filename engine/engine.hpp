@@ -3,7 +3,7 @@
 #include "defines.hpp"
 #include <string>
 #include <memory>
-
+#include "renderer/context.hpp"
 
 class window;
 class engine {
@@ -19,6 +19,7 @@ public:
 private:
   bool running;
   std::string name;
-  std::unique_ptr<window> main_window;  
+  std::shared_ptr<window> p_main_window;
+  std::unique_ptr<context> p_gpu_context;
 };  
 
