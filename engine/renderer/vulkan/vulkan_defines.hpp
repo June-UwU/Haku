@@ -4,4 +4,4 @@
 
 #define VALIDATE_RESULT(result, reason) if(VK_SUCCESS == (result))	\
     { \
-      FATAL << "Vulkan error: " << << reason << "\n"; std::abort();}
+      FATAL << "Vulkan error: " << result << reason << "\n"; std::abort();}
