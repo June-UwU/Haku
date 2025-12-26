@@ -3,12 +3,14 @@
 #include "../../logger.hpp"
 #include "../../window/window.hpp"
 #include "vulkan_defines.hpp"
-#include <ranges>
 #include <vector>
+#include <cstring>
 
 const char* ENGINE_NAME = "Void";
-std::vector<const char *> requested_layers{
-    "VK_LAYER_KHRONOS_validation",
+std::vector<const char *> requested_layers {
+#if defined(DEBUG)
+  "VK_LAYER_KHRONOS_validation",
+#endif
 };
 
 std::vector<const char *> request_layers() {
@@ -27,7 +29,7 @@ std::vector<const char *> request_layers() {
     }
   }
 
-  if (layer_count != supported_layer_count) {
+  if (requested_layers.size() != supported_layer_count) {
     FATAL << "not all requested layers are supported!";
     std::abort();
   }
@@ -42,7 +44,10 @@ std::vector<const char *> request_extensions() {
 
   std::vector<const char *> extensions(glfw_extension,
                                        glfw_extension + extension_count);
+#if defined(DEBUG)
   extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
+  extensions.push_back("VK_KHR_portability_enumeration");
 
   return extensions;
 }
@@ -66,11 +71,6 @@ u32 vulkan_driver::create_instance() {
   TRACE << "Vulkan Version " << VK_API_VERSION_MAJOR(supported_version) << "."
         << VK_API_VERSION_MINOR(supported_version) << "\n";
 
-  if (4 > VK_API_VERSION_MINOR(supported_version)) {
-    FATAL << "vulkan version is too old";
-    std::abort();
-  }
-
   VkApplicationInfo app_info{};
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app_info.pNext = nullptr;
@@ -78,7 +78,7 @@ u32 vulkan_driver::create_instance() {
   app_info.applicationVersion = VK_MAKE_API_VERSION(0, 0, 0, 1);
   app_info.pEngineName = "libVoid";
   app_info.engineVersion = VK_MAKE_API_VERSION(0, 0, 0, 1);
-  app_info.apiVersion = supported_version;
+  app_info.apiVersion = VK_API_VERSION_1_4;
 
   VkInstanceCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
