@@ -27,7 +27,7 @@ std::vector<const char *> request_layers() {
     }
   }
 
-  if (layer_count != supported_layer_count) {
+  if (available_layers != supported_layer_count) {
     FATAL << "not all requested layers are supported!";
     std::abort();
   }
@@ -42,8 +42,11 @@ std::vector<const char *> request_extensions() {
 
   std::vector<const char *> extensions(glfw_extension,
                                        glfw_extension + extension_count);
+#if defined(DEBUG)
   extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-
+#endif
+  extensions.push_back("VK_KHR_portability_enumeration");
+  
   return extensions;
 }
 
@@ -65,11 +68,6 @@ u32 vulkan_driver::create_instance() {
 
   TRACE << "Vulkan Version " << VK_API_VERSION_MAJOR(supported_version) << "."
         << VK_API_VERSION_MINOR(supported_version) << "\n";
-
-  if (4 > VK_API_VERSION_MINOR(supported_version)) {
-    FATAL << "vulkan version is too old";
-    std::abort();
-  }
 
   VkApplicationInfo app_info{};
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
