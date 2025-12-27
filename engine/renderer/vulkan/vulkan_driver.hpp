@@ -10,7 +10,10 @@ public:
 
 private:
   u32 create_instance();
-
+  u32 set_up_validation();
 private:
   VkInstance instance;
+#if defined(DEBUG)
+  VkDebugUtilsMessengerEXT debugger;
+#endif  
 };
