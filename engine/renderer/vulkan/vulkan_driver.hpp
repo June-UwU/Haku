@@ -11,8 +11,10 @@ public:
 private:
   u32 create_instance();
   u32 set_up_validation();
+  u32 pick_physical_device();
 private:
   VkInstance instance;
+  VkPhysicalDevice gpu;
 #if defined(DEBUG)
   VkDebugUtilsMessengerEXT debugger;
 #endif  

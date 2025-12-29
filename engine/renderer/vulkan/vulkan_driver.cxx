@@ -1,5 +1,6 @@
 #include "vulkan_driver.hpp"
 #include "../../types.hpp"
+#include "../../defines.hpp"
 #include "../../logger.hpp"
 #include "../../window/window.hpp"
 #include "vulkan_defines.hpp"
@@ -107,6 +108,7 @@ vulkan_driver::vulkan_driver(std::shared_ptr<window> p_window)
     : renderer(p_window) {
   create_instance();
   set_up_validation();
+  pick_physical_device();
 }
 
 vulkan_driver::~vulkan_driver() {
@@ -175,4 +177,53 @@ u32 vulkan_driver::set_up_validation() {
   return 0;
 }
 
+u32 vulkan_driver::pick_physical_device() {
+  u32 device_count = 0;
+  VkResult result =
+      vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+  VALIDATE_RESULT(result, "failed to retrive device count");
+
+  std::vector<VkPhysicalDevice> candidates(device_count);
+  result =
+      vkEnumeratePhysicalDevices(instance, &device_count, candidates.data());
+  VALIDATE_RESULT(result, "failed to retrive devices");
+
+  gpu = VK_NULL_HANDLE;
+  for (auto device : candidates) {
+    u32 queue_count = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_count, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queue_property(queue_count);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_count, queue_property.data());
+
+    u32 family_bits = 0x0;
+    // should be 0x7, which is all three family
+    constexpr u32 needed_family =
+      (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT);
+    for (auto property : queue_property) {
+      family_bits = family_bits | (property.queueFlags & needed_family);
+    }
+
+    if (nullptr == gpu) {
+      gpu = device;
+    }
+
+    if (needed_family != family_bits) {
+      continue;
+    }
+
+    VkPhysicalDeviceProperties device_properties;
+    vkGetPhysicalDeviceProperties(device, &device_properties);
+
+    if (VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU == device_properties.deviceType) {
+      gpu = device;
+    }
+  }
+
+  VkPhysicalDeviceProperties picked_device;
+  vkGetPhysicalDeviceProperties(gpu, &picked_device);
+
+  TRACE << "Using : " << picked_device.deviceName << "\n";
+  VERIFY_PTR(gpu);
+  return 0;
 }
