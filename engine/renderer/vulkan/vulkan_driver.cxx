@@ -109,6 +109,8 @@ vulkan_driver::vulkan_driver(std::shared_ptr<window> p_window)
   create_instance();
   set_up_validation();
   pick_physical_device();
+  populate_queue_info();
+  create_logical_device();
 }
 
 vulkan_driver::~vulkan_driver() {
@@ -227,3 +229,78 @@ u32 vulkan_driver::pick_physical_device() {
   VERIFY_PTR(gpu);
   return 0;
 }
+
+u32 vulkan_driver::create_logical_device() {
+  std::vector<VkDeviceQueueCreateInfo> queue_list;
+
+  u32 size = queue_info.size();
+  std::vector<f32> priority_list(size, 1.0f);
+      
+  std::unordered_map<u32, u32> queue_list_to_index;
+  u32 queue_index = 0;
+  for (auto [type, index] : queue_info) {
+    if (queue_list_to_index.find(index) != queue_list_to_index.end()) {
+      u32 lookup = queue_list_to_index[index];
+      queue_list[lookup].queueCount++;
+      continue;
+    }
+
+    VkDeviceQueueCreateInfo property{};
+    property.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    property.queueFamilyIndex = index;
+    property.queueCount = 1;
+    property.pQueuePriorities = priority_list.data();
+
+    queue_list.push_back(property);
+    queue_index++;
+  }
+
+  VkPhysicalDeviceFeatures feature_list{};
+  std::vector<const char*> extensions = request_extensions();
+  
+  VkDeviceCreateInfo create_info{};
+  create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+  create_info.pNext = nullptr;
+  create_info.flags = 0; // unused
+  create_info.pQueueCreateInfos = queue_list.data();
+  create_info.queueCreateInfoCount = static_cast<u32>(queue_list.size());
+  create_info.enabledLayerCount = static_cast<u32>(requested_layers.size());
+  create_info.ppEnabledLayerNames = requested_layers.data();
+  create_info.enabledExtensionCount = static_cast<u32>(extensions.size());
+  create_info.ppEnabledExtensionNames = extensions.data();
+  create_info.pEnabledFeatures = nullptr;
+
+  VkResult result = vkCreateDevice(gpu, &create_info, nullptr, &device);
+  VALIDATE_RESULT(result, "failed to create device");
+  return 0;
+}
+
+u32 vulkan_driver::populate_queue_info() {
+  u32 queue_count = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_count, nullptr);
+
+  std::vector<VkQueueFamilyProperties> queue_property(queue_count);
+  vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_count,
+                                           queue_property.data());
+
+  u32 index = 0;
+  for (auto prop : queue_property) {
+    VkQueueFlags flags = prop.queueFlags;
+
+    if (VK_QUEUE_GRAPHICS_BIT & flags) {
+      queue_info[VK_QUEUE_GRAPHICS_BIT] = index; 
+    }
+
+    if (VK_QUEUE_COMPUTE_BIT & flags) {
+      queue_info[VK_QUEUE_COMPUTE_BIT] = index;   
+    }
+
+    if (VK_QUEUE_TRANSFER_BIT & flags) {
+      queue_info[VK_QUEUE_TRANSFER_BIT] = index;
+    }
+
+    index++;
+  }
+  return 0;
+}
+
